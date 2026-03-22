@@ -260,37 +260,40 @@ function Toolbar:render()
 	
 	return createElement(StatsContext.context.Consumer, {
 		render = function(data)
-			local clampedProgress = math.clamp(data.BurpCharge / data.BurpChargeThreshold, 0, 1)
-			local burpPower = math.floor(StatCalculation.GetBurpPower(data.Level, data.BurpCharge))
-			local burpPowerString = NumberFormatter:GetFormattedLargeNumber(burpPower)
-			
+			local equippedPickaxe = data.EquippedPickaxe or "Wood Pickaxe"
+			local equippedWeapon = data.EquippedWeapon or "Wood Sword"
+
 			return createElement("Frame", {
 				Position = UDim2.new(0.5, 0, 1, -32),
-				Size = UDim2.new(0.7, -200, 0, 112),
+				Size = UDim2.new(0.7, -200, 0, 80),
 				AnchorPoint = Vector2.new(0.5, 1),
 				BackgroundTransparency = 1,
 			}, {
-				BurpPowerLabel = createElement(TextLabel, {
-					Text = 'Power: <font color="rgb(255, 15, 15)">'..burpPowerString..'</font>',
-					textSize = 16,
-					Size = UDim2.new(0.3, 0, 0, 20),
+				EquipInfo = createElement("Frame", {
+					Size = UDim2.new(0.6, 0, 0, 20),
 					AnchorPoint = Vector2.new(0.5, 0),
-					Position = UDim2.new(0.5, 0, 0, 0)
-				}),
-				ChargeUp = createElement(ProgressBar, {
-					AnchorPoint = Vector2.new(0.5, 0),
-					Position = clampedProgress < 1 and UDim2.new(0.5, 0, 0, 26) or UDim2.new(0.5, 0, 0, 24),
-					width = UDim.new(0.5, 0),
-					height = clampedProgress < 1 and UDim.new(0, 16) or UDim.new(0, 20),
-					progress = clampedProgress,
-					text = clampedProgress < 1 and "Burp charge ("..data.BurpCharge..")" or "FULLY CHARGED ("..data.BurpCharge..")",
-					textSize = clampedProgress < 1 and 12 or 14,
-					doAnimation = true,
-					colorName = clampedProgress < 1 and "green" or "orange"
+					Position = UDim2.new(0.5, 0, 0, 0),
+					BackgroundTransparency = 1,
+				}, {
+					UIListLayout = createElement("UIListLayout", {
+						FillDirection = Enum.FillDirection.Horizontal,
+						HorizontalAlignment = Enum.HorizontalAlignment.Center,
+						Padding = UDim.new(0, 16),
+					}),
+					PickaxeLabel = createElement(TextLabel, {
+						Text = equippedPickaxe,
+						textSize = 14,
+						Size = UDim2.new(0, 120, 1, 0),
+					}),
+					WeaponLabel = createElement(TextLabel, {
+						Text = equippedWeapon,
+						textSize = 14,
+						Size = UDim2.new(0, 120, 1, 0),
+					}),
 				}),
 				Toolbar = createElement("Frame", {
 					Position = UDim2.new(0, 0, 1, 0),
-					Size = UDim2.new(1, 0, 1, -48),
+					Size = UDim2.new(1, 0, 1, -26),
 					BackgroundTransparency = 1,
 					AnchorPoint = Vector2.new(0, 1)
 				}, {

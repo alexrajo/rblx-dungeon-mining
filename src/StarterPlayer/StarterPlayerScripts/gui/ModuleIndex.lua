@@ -20,12 +20,14 @@ local ModuleIndex = {
 	NotificationManager = components.NotificationManager,
 	NotificationPanel = components.NotificationPanel,
 	TutorialManager = components.TutorialManager,
-	IngredientCounter = components.IngredientCounter,
+	ItemCounter = components.ItemCounter,
 	Tab = components.Tab,
 	Clickable = components.Clickable,
+	HealthBar = components.HealthBar,
+	FloorIndicator = components.FloorIndicator,
 
-	InventoryIngredientsView = components.InventoryPage.IngredientsView,
-	InventoryDrinksView = components.InventoryPage.DrinksView,
+	InventoryResourcesView = components.InventoryPage.ResourcesView,
+	InventoryGearView = components.InventoryPage.GearView,
 
 	StatsContext = contexts.StatsContext,
 	ScreenContext = contexts.ScreenContext,

@@ -1,27 +1,57 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+
 local StatCalculation = {}
 
-function StatCalculation.GetBurpDistance(level: number, burpCharge: number)
-	return 8*(1+level*0.2+(burpCharge-1)*0.5)
+function StatCalculation.GetMiningDamage(pickaxeTier: number): number
+	local tierStats = GearConfig.GetTierStats(pickaxeTier)
+	if tierStats then
+		return tierStats.pickaxePower
+	end
+	return 1
 end
 
-function StatCalculation.GetBurpForce(level: number, burpCharge: number)
-	return (100+math.sqrt(level*1000)*burpCharge)*5
+function StatCalculation.GetCombatDamage(weaponTier: number, level: number): number
+	local baseDamage = 2 + (level - 1)
+	local tierStats = GearConfig.GetTierStats(weaponTier)
+	local weaponDamage = 0
+	if tierStats then
+		weaponDamage = tierStats.weaponDamage
+	end
+	return baseDamage + weaponDamage
 end
 
-function StatCalculation.GetBurpDamage(level: number, burpCharge: number)
-	return (33+level*2)*(burpCharge/5)
+function StatCalculation.GetPlayerDefense(helmetTier: number, chestplateTier: number, bootsTier: number): number
+	local total = 0
+	if helmetTier > 0 then
+		local stats = GearConfig.GetTierStats(helmetTier)
+		if stats then total += stats.armorDefense end
+	end
+	if chestplateTier > 0 then
+		local stats = GearConfig.GetTierStats(chestplateTier)
+		if stats then total += stats.armorDefense end
+	end
+	if bootsTier > 0 then
+		local stats = GearConfig.GetTierStats(bootsTier)
+		if stats then total += stats.armorDefense end
+	end
+	return total
 end
 
-function StatCalculation.GetLevelUpXPRequirement(currentLevel: number)
-	return 100 * currentLevel * (1.25^(currentLevel-1))
+function StatCalculation.GetPlayerMaxHealth(level: number): number
+	return 100 + 5 * (level - 1)
 end
 
-function StatCalculation.GetBurpPower(level: number, burpCharge: number)
-	return (10*(burpCharge*0.5))*(1.25^(level-1))
+function StatCalculation.GetPlayerMoveSpeed(bootsTier: number): number
+	local baseSpeed = 16
+	if bootsTier > 0 then
+		baseSpeed += bootsTier
+	end
+	return baseSpeed
 end
 
-function StatCalculation.GetCharacterScale(level: number)
-	return math.min(1 + level/50, 3)
+function StatCalculation.GetLevelUpXPRequirement(currentLevel: number): number
+	return 100 * currentLevel * (1.2 ^ (currentLevel - 1))
 end
 
 return StatCalculation

@@ -8,8 +8,8 @@ APIService:CreateEventEndpoint("DropCoins")
 -- Event that tells the client to visualize item drops when fired
 APIService:CreateEventEndpoint("DropItems")
 
--- Event that tells the client to visualize burps from other players
-APIService:CreateEventEndpoint("VisualizeBurp")
+-- Event that tells the client to visualize mining hit effects
+APIService:CreateEventEndpoint("VisualizeMineHit")
 
 -- Event to send a notification from the server to the client
 APIService:CreateEventEndpoint("SendNotification")

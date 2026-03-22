@@ -1,67 +1,96 @@
 local CollectionService = game:GetService("CollectionService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local enemy = script.Parent
-local animations = enemy.Animations
-local humanoid: Humanoid = enemy.Humanoid
-local animator = humanoid.Animator
-local root = enemy.HumanoidRootPart
+local humanoid: Humanoid = enemy:FindFirstChildOfClass("Humanoid")
+local root = enemy:FindFirstChild("HumanoidRootPart")
 
-local idleAnim = animations.Idle
-local walkAnim = animations.Walk
-local attack1Anim = animations.Attack1
-local attack2Anim = animations.Attack2
-local deathAnim = animations.Death
+if humanoid == nil or root == nil then
+	warn("EnemyController: Missing Humanoid or HumanoidRootPart on", enemy.Name)
+	return
+end
 
-local ATTACK_RANGE = 7
-local WALK_SPEED = 20
+-- Read stats from attributes (set by the Enemy tag handler init.lua)
+local ATTACK_RANGE = enemy:GetAttribute("AttackRange") or 5
+local WALK_SPEED = enemy:GetAttribute("WalkSpeed") or 8
 local ATTACK_INTERVAL = 0.5
-local DETECTION_RADIUS = 100
-local MAX_INTEREST_DISTANCE = 150
-local DAMAGE = 20
+local DETECTION_RADIUS = enemy:GetAttribute("DetectionRadius") or 25
+local MAX_INTEREST_DISTANCE = DETECTION_RADIUS * 2
+local DAMAGE = enemy:GetAttribute("Damage") or 10
 
 humanoid.WalkSpeed = WALK_SPEED
 
-local idleTrack = animator:LoadAnimation(idleAnim)
-idleTrack.Looped = true
-idleTrack:Play()
+-- Load animations if they exist
+local animations = enemy:FindFirstChild("Animations")
+local idleTrack, walkTrack, attack1Track, attack2Track, deathTrack
 
-local walkTrack = animator:LoadAnimation(walkAnim)
-walkTrack.Looped = true
+if animations then
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if animator then
+		local idleAnim = animations:FindFirstChild("Idle")
+		local walkAnim = animations:FindFirstChild("Walk")
+		local attack1Anim = animations:FindFirstChild("Attack1")
+		local attack2Anim = animations:FindFirstChild("Attack2")
+		local deathAnim = animations:FindFirstChild("Death")
 
-local attack1Track = animator:LoadAnimation(attack1Anim)
-attack1Track.Looped = false
-
-local attack2Track = animator:LoadAnimation(attack2Anim)
-attack2Track.Looped = false
-
-local deathTrack = animator:LoadAnimation(deathAnim)
-deathTrack.Looped = false
+		if idleAnim then
+			idleTrack = animator:LoadAnimation(idleAnim)
+			idleTrack.Looped = true
+			idleTrack:Play()
+		end
+		if walkAnim then
+			walkTrack = animator:LoadAnimation(walkAnim)
+			walkTrack.Looped = true
+		end
+		if attack1Anim then
+			attack1Track = animator:LoadAnimation(attack1Anim)
+			attack1Track.Looped = false
+		end
+		if attack2Anim then
+			attack2Track = animator:LoadAnimation(attack2Anim)
+			attack2Track.Looped = false
+		end
+		if deathAnim then
+			deathTrack = animator:LoadAnimation(deathAnim)
+			deathTrack.Looped = false
+		end
+	end
+end
 
 local alive = humanoid.Health > 0
-
 local runningConnection = nil
+
+-- Load EnemyLootHandler for death drops
+local EnemyLootHandler = require(ServerScriptService.modules.EnemyLootHandler)
 
 humanoid.Died:Once(function()
 	if runningConnection ~= nil then
 		runningConnection:Disconnect()
 		runningConnection = nil
 	end
-	
+
 	alive = false
 	root.Anchored = true
-	walkTrack:Stop()
-	idleTrack:Stop()
-	deathTrack:Play()
+
+	if walkTrack then walkTrack:Stop() end
+	if idleTrack then idleTrack:Stop() end
+	if deathTrack then deathTrack:Play() end
+
+	-- Handle loot drops
+	EnemyLootHandler.HandleDeath(enemy)
+
 	task.delay(3, function()
 		enemy:Destroy()
 	end)
 end)
 
 runningConnection = humanoid.Running:Connect(function(speed)
-	if speed <= 0 then
-		walkTrack:Stop()
-	else
-		walkTrack:Play()
+	if walkTrack then
+		if speed <= 0 then
+			walkTrack:Stop()
+		else
+			walkTrack:Play()
+		end
 	end
 end)
 
@@ -70,19 +99,22 @@ function getClosestVisiblePlayer()
 	for _, plr in ipairs(players) do
 		local character = plr.Character
 		if character == nil then continue end
-		
+
 		local characterRoot = character:FindFirstChild("HumanoidRootPart")
+		if characterRoot == nil then continue end
+
 		local diff: Vector3 = (characterRoot.Position - root.Position)
-		
+		if diff.Magnitude > DETECTION_RADIUS then continue end
+
 		local allEnemies = CollectionService:GetTagged("Enemy")
-		
+
 		local raycastParams = RaycastParams.new()
 		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 		raycastParams.FilterDescendantsInstances = allEnemies
-		
-		local raycastResult = game.Workspace:Raycast(root.Position, diff.Unit*DETECTION_RADIUS)
+
+		local raycastResult = game.Workspace:Raycast(root.Position, diff.Unit * DETECTION_RADIUS, raycastParams)
 		if raycastResult == nil then continue end
-		
+
 		return plr, raycastResult.Position
 	end
 end
@@ -93,21 +125,21 @@ function getInterestAndPosition(targetPlayer: Player)
 		if character == nil then
 			return false
 		end
-		
-		local humanoid = character:FindFirstChild("Humanoid")
-		if humanoid == nil then
+
+		local plrHumanoid = character:FindFirstChild("Humanoid")
+		if plrHumanoid == nil then
 			return false
 		end
-		
-		if humanoid.Health <= 0 then
+
+		if plrHumanoid.Health <= 0 then
 			return false
 		end
-		
+
 		local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 		if humanoidRootPart == nil then
 			return false
 		end
-		
+
 		return true, humanoidRootPart.Position
 	else
 		return false
@@ -116,12 +148,17 @@ end
 
 function attack(character)
 	if character == nil then return end
-	local humanoid = character:FindFirstChild("Humanoid")
-	if humanoid == nil or humanoid.Health <= 0 then return end
-	
-	local track = math.random() < 0.5 and attack1Track or attack2Track
-	track:Play()
-	humanoid:TakeDamage(DAMAGE)
+	local plrHumanoid = character:FindFirstChild("Humanoid")
+	if plrHumanoid == nil or plrHumanoid.Health <= 0 then return end
+
+	if attack1Track and attack2Track then
+		local track = math.random() < 0.5 and attack1Track or attack2Track
+		track:Play()
+	elseif attack1Track then
+		attack1Track:Play()
+	end
+
+	plrHumanoid:TakeDamage(DAMAGE)
 end
 
 local targetPlayer = nil
@@ -137,7 +174,7 @@ while alive do
 		task.wait()
 		continue
 	end
-	
+
 	local diff = (position - root.Position)
 	local dir = diff.Unit
 	local distance = diff.Magnitude
@@ -145,12 +182,12 @@ while alive do
 		targetPlayer = nil
 		continue
 	end
-	
+
 	humanoid:Move(dir)
-	
+
 	if distance <= ATTACK_RANGE then
 		attack(targetPlayer.Character)
 	end
-	
-	task.wait(1)
+
+	task.wait(ATTACK_INTERVAL)
 end

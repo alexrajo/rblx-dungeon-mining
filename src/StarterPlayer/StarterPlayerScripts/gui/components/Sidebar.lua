@@ -30,8 +30,8 @@ function Sidebar:renderContent(screenData)
 		or (isAtleast("lg") and UDim2.new(0.125, 0, 0.5, 0)) 
 		or UDim2.new(0.15, 0, 0.5, 0)
 	
-	local itemsPerRow = isAtleast("md") and 3 or 2
-	local numItems = 3
+	local itemsPerRow = isAtleast("md") and 4 or 2
+	local numItems = 4
 	local numRows = math.ceil(numItems/itemsPerRow)
 	local paddingPixels = 12
 	
@@ -123,7 +123,7 @@ function Sidebar:renderContent(screenData)
 				})
 			}),
 			["2_Inventory"] = createElement(Button, {
-				color = "green", 
+				color = "green",
 				onClick = function()
 					togglePage("Inventory")
 				end
@@ -137,6 +137,26 @@ function Sidebar:renderContent(screenData)
 				}),
 				TextLabel = createElement(TextLabel, {
 					Text = "Inventory",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 1),
+					ZIndex = 2
+				})
+			}),
+			["3_Crafting"] = createElement(Button, {
+				color = "green",
+				onClick = function()
+					togglePage("CraftingPage")
+				end
+			}, {
+				Icon = createElement("ImageLabel", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = UDim2.new(0.75, 0, 0.75, 0),
+					BackgroundTransparency = 1,
+					Image = "rbxassetid://ASSET_ID_HERE"
+				}),
+				TextLabel = createElement(TextLabel, {
+					Text = "Craft",
 					AnchorPoint = Vector2.new(0.5, 0.5),
 					Position = UDim2.fromScale(0.5, 1),
 					ZIndex = 2

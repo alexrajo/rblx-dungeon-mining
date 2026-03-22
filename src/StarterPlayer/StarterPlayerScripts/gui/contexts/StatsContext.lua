@@ -7,15 +7,21 @@ local Maid = require(Services.Maid)
 local createElement = Roact.createElement
 
 local DEFAULT_VALUE = {
-	BurpPoints = 0,
 	Coins = 0,
 	Level = 1,
 	XP = 0,
-	BurpCharge = 0,
-	BurpChargeThreshold = 5,
-	Ingredients = {},
-	OwnedDrinks = {{name = "Soda", value = 0}},
-	EquippedDrink = "Soda"
+	MaxFloorReached = 0,
+	UnlockedCheckpoints = {},
+	Inventory = {},
+	EquippedPickaxe = "Wood Pickaxe",
+	EquippedWeapon = "Wood Sword",
+	EquippedHelmet = "",
+	EquippedChestplate = "",
+	EquippedBoots = "",
+	UnlockedRecipes = {},
+	TutorialStates = {{name = "Intro", value = false}},
+	CurrentFloor = 0,
+	InMine = false,
 }
 local StatsContext = Roact.createContext(DEFAULT_VALUE)
 local StatsController = Roact.Component:extend("StatsController")
@@ -28,7 +34,7 @@ end
 
 function StatsController:didMount()
 	local playerData = ReplicatedStorage:WaitForChild("PlayerData")
-	if playerData == nil then 
+	if playerData == nil then
 		warn("StatsController: No player data folder found in ReplicatedStorage!")
 		return
 	end
@@ -37,7 +43,7 @@ function StatsController:didMount()
 		warn("StatsController: No player data folder found for player: "..plr.Name)
 		return
 	end
-	
+
 	for statName, defaultStatValue in pairs(DEFAULT_VALUE) do
 		local valueRef = myData:WaitForChild(statName)
 		if valueRef == nil then
@@ -50,7 +56,7 @@ function StatsController:didMount()
 					[statName] = newValue
 				})
 			end))
-			
+
 			self:setState({
 				[statName] = valueRef.Value
 			})
@@ -61,21 +67,21 @@ function StatsController:didMount()
 					if not child:IsA("ValueBase") then continue end
 					table.insert(newStat, {name = child.Name, value = child.Value})
 				end
-				
+
 				self:setState({
 					[statName] = newStat
 				})
 			end
-			
+
 			dataUpdateMaid:GiveTask(valueRef.ChildAdded:Connect(updateFolderStat))
 			dataUpdateMaid:GiveTask(valueRef.ChildRemoved:Connect(updateFolderStat))
-			
+
 			for _, child: ValueBase in pairs(valueRef:GetChildren()) do
 				if not child:IsA("ValueBase") then continue end
-				
+
 				dataUpdateMaid:GiveTask(child.Changed:Connect(updateFolderStat))
 			end
-			
+
 			updateFolderStat()
 		end
 	end

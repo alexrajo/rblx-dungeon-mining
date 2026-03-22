@@ -10,14 +10,13 @@ local PlayerDataHandler = require(ServerModules.PlayerDataHandler)
 
 -- Endpoint handlers
 local EndpointFolder = ServerModules.api_endpoints
-local UpgradeEndpoint = require(EndpointFolder.Upgrade)
-local DrinkEndpoint = require(EndpointFolder.Drink)
-local MixDrinkEndpoint = require(EndpointFolder.MixDrink)
-local EquipDrinkEndpoint = require(EndpointFolder.EquipDrink)
-
--- Actions
-local playerActions = ServerModules.player_actions
-local BurpAction = require(playerActions.Burp)
+local MineEndpoint = require(EndpointFolder.Mine)
+local SellOreEndpoint = require(EndpointFolder.SellOre)
+local EquipGearEndpoint = require(EndpointFolder.EquipGear)
+local CraftEndpoint = require(EndpointFolder.Craft)
+local AttackEndpoint = require(EndpointFolder.Attack)
+local EnterMineEndpoint = require(EndpointFolder.EnterMine)
+local ExitMineEndpoint = require(EndpointFolder.ExitMine)
 
 -- Cross script communication
 local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
@@ -25,15 +24,14 @@ local startTutorialEvent = crossScriptCommunicationBindables.StartTutorial
 local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 local skipTutorialEvent = crossScriptCommunicationBindables.SkipTutorial
 
-function Burp(player: Player, cameraDirection: Vector3)
-	return BurpAction.Activate(player, cameraDirection)
-end
-
-APIService:CreateEventEndpoint("Drink", DrinkEndpoint.Call)
-APIService:CreateFunctionEndpoint("Burp", Burp)
-APIService:CreateFunctionEndpoint("Upgrade", UpgradeEndpoint.Call)
-APIService:CreateFunctionEndpoint("MixDrink", MixDrinkEndpoint.Call)
-APIService:CreateEventEndpoint("EquipDrink", EquipDrinkEndpoint.Call)
+-- Game endpoints
+APIService:CreateFunctionEndpoint("Mine", MineEndpoint.Call)
+APIService:CreateFunctionEndpoint("SellOre", SellOreEndpoint.Call)
+APIService:CreateEventEndpoint("EquipGear", EquipGearEndpoint.Call)
+APIService:CreateFunctionEndpoint("Craft", CraftEndpoint.Call)
+APIService:CreateFunctionEndpoint("Attack", AttackEndpoint.Call)
+APIService:CreateFunctionEndpoint("EnterMine", EnterMineEndpoint.Call)
+APIService:CreateFunctionEndpoint("ExitMine", ExitMineEndpoint.Call)
 
 -- Tutorial
 function startTutorial(...)
