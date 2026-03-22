@@ -1,0 +1,56 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local utils = ReplicatedStorage.utils
+
+local tableUtils = require(utils.TableUtils)
+
+local tempStatsNames = {
+	"BurpCharge",
+	"BurpChargeThreshold"
+}
+
+local module = {}
+
+module.DataFolderMapping = {}
+
+function module:InitializePlayer(player: Player)
+	local playerDataFolder
+	local allPlayerData = ReplicatedStorage:WaitForChild("PlayerData")
+	if allPlayerData then
+		playerDataFolder = allPlayerData:WaitForChild(player.Name)
+	end
+	
+	if playerDataFolder == nil then
+		error("TempStats - InitializePlayer: No player data folder found!")
+		return
+	end
+	
+	self.DataFolderMapping[player] = playerDataFolder
+	
+	local burpCharge = Instance.new("IntValue")
+	burpCharge.Name = "BurpCharge"
+	burpCharge.Parent = playerDataFolder
+	burpCharge.Value = 0
+
+	local burpChargeThreshold = Instance.new("IntValue")
+	burpChargeThreshold.Name = "BurpChargeThreshold"
+	burpChargeThreshold.Parent = playerDataFolder
+	burpChargeThreshold.Value = 5
+end
+
+function module:GetTempStat(player: Player, tempStatName: string): ValueBase
+	-- Prevent getting non temp stats using this method
+	if not tableUtils.TableContains(tempStatsNames, tempStatName) then return end
+	
+	local playerDataFolder = self.DataFolderMapping[player]
+	if not playerDataFolder then
+		local allPlayerData = ReplicatedStorage:FindFirstChild("PlayerData")
+		if allPlayerData then
+			playerDataFolder = allPlayerData:FindFirstChild(player.Name)
+		end
+	end
+	if not playerDataFolder then return end
+	
+	return playerDataFolder:FindFirstChild(tempStatName)
+end
+
+return module

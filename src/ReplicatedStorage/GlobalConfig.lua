@@ -1,0 +1,10 @@
+local config = {
+	DRINK_INTERVAL = 1.5, -- Seconds
+	BURP_DURATION = 2,
+	BURP_CLOUD_MULTI = 3,
+	DEFAULT_WALKSPEED = 26,
+	DEFAULT_MAXHEALTH = 100,
+	DEFAULT_XP_REWARD = 15
+}
+
+return config
