@@ -1,3 +1,8 @@
+---
+name: game
+description: Explains the game idea and the design decisions for Dungeon Mining, a Roblox mining/crafting/combat game inspired by Stardew Valley's mines. This is the authoritative reference for what to build.
+---
+
 # Dungeon Mining — Game Design Reference
 
 This document defines the game design for **Dungeon Mining**, a Roblox mining/crafting/combat game inspired by Stardew Valley's mines. Use this as the authoritative reference for what to build. For code patterns and architecture, see `skills/codebase/SKILL.md`.
@@ -34,14 +39,14 @@ This document defines the game design for **Dungeon Mining**, a Roblox mining/cr
 
 The mine is divided into 6 distinct layers. Each layer spans multiple floors. Players must reach a minimum gear tier to survive each layer.
 
-| Layer | Name | Theme | Floors | Min Gear Tier | Primary Ore | Secondary Ore |
-|-------|------|-------|--------|---------------|-------------|---------------|
-| 1 | Shallow Mines | Rocky caves, dim torchlight | 1–15 | Tier 1 (Wood) | Copper | Stone |
-| 2 | Copper Caves | Orange-tinted tunnels, dripping water | 16–30 | Tier 2 (Copper) | Iron | Copper |
-| 3 | Iron Depths | Dark narrow tunnels, rusted supports | 31–50 | Tier 3 (Iron) | Gold | Iron |
-| 4 | Golden Caverns | Glittering walls, underground rivers | 51–70 | Tier 4 (Gold) | Diamond | Gold |
-| 5 | Crystal Hollows | Bioluminescent crystals, open chambers | 71–90 | Tier 5 (Diamond) | Obsidian | Diamond |
-| 6 | Obsidian Core | Lava flows, volcanic rock, intense heat | 91–120 | Tier 6 (Obsidian) | Mythril | Obsidian |
+| Layer | Name            | Theme                                   | Floors | Min Gear Tier     | Primary Ore | Secondary Ore |
+| ----- | --------------- | --------------------------------------- | ------ | ----------------- | ----------- | ------------- |
+| 1     | Shallow Mines   | Rocky caves, dim torchlight             | 1–15   | Tier 1 (Wood)     | Copper      | Stone         |
+| 2     | Copper Caves    | Orange-tinted tunnels, dripping water   | 16–30  | Tier 2 (Copper)   | Iron        | Copper        |
+| 3     | Iron Depths     | Dark narrow tunnels, rusted supports    | 31–50  | Tier 3 (Iron)     | Gold        | Iron          |
+| 4     | Golden Caverns  | Glittering walls, underground rivers    | 51–70  | Tier 4 (Gold)     | Diamond     | Gold          |
+| 5     | Crystal Hollows | Bioluminescent crystals, open chambers  | 71–90  | Tier 5 (Diamond)  | Obsidian    | Diamond       |
+| 6     | Obsidian Core   | Lava flows, volcanic rock, intense heat | 91–120 | Tier 6 (Obsidian) | Mythril     | Obsidian      |
 
 Each layer is **procedurally generated** — floor layouts, ore placement, enemy spawns, and ladder locations are randomized each run.
 
@@ -51,26 +56,26 @@ Each layer is **procedurally generated** — floor layouts, ore placement, enemy
 
 ### Ore Table
 
-| Ore | Layer Found | Min Pickaxe Tier | Rarity | Base Value (Coins) |
-|-----|-------------|------------------|--------|-------------------|
-| Stone | All layers | Tier 1 (Wood) | Common | 1 |
-| Copper | Layer 1+ | Tier 1 (Wood) | Common | 5 |
-| Iron | Layer 2+ | Tier 2 (Copper) | Common | 12 |
-| Gold | Layer 3+ | Tier 3 (Iron) | Uncommon | 25 |
-| Diamond | Layer 4+ | Tier 4 (Gold) | Rare | 60 |
-| Obsidian | Layer 5+ | Tier 5 (Diamond) | Rare | 120 |
-| Mythril | Layer 6 | Tier 6 (Obsidian) | Very Rare | 250 |
+| Ore      | Layer Found | Min Pickaxe Tier  | Rarity    | Base Value (Coins) |
+| -------- | ----------- | ----------------- | --------- | ------------------ |
+| Stone    | All layers  | Tier 1 (Wood)     | Common    | 1                  |
+| Copper   | Layer 1+    | Tier 1 (Wood)     | Common    | 5                  |
+| Iron     | Layer 2+    | Tier 2 (Copper)   | Common    | 12                 |
+| Gold     | Layer 3+    | Tier 3 (Iron)     | Uncommon  | 25                 |
+| Diamond  | Layer 4+    | Tier 4 (Gold)     | Rare      | 60                 |
+| Obsidian | Layer 5+    | Tier 5 (Diamond)  | Rare      | 120                |
+| Mythril  | Layer 6     | Tier 6 (Obsidian) | Very Rare | 250                |
 
 ### Other Resources
 
-| Resource | Source | Use |
-|----------|--------|-----|
-| Wood | Hub Area (trees, shop) | Crafting handles/shafts |
-| Slime Gel | Slime drops | Crafting potions |
-| Bat Wing | Bat drops | Crafting potions |
-| Bone Fragment | Skeleton drops | Crafting weapons |
-| Fire Essence | Layer 6 enemies | Crafting Tier 6 gear |
-| Healing Herb | Found on mine floors | Crafting health potions |
+| Resource      | Source                 | Use                     |
+| ------------- | ---------------------- | ----------------------- |
+| Wood          | Hub Area (trees, shop) | Crafting handles/shafts |
+| Slime Gel     | Slime drops            | Crafting potions        |
+| Bat Wing      | Bat drops              | Crafting potions        |
+| Bone Fragment | Skeleton drops         | Crafting weapons        |
+| Fire Essence  | Layer 6 enemies        | Crafting Tier 6 gear    |
+| Healing Herb  | Found on mine floors   | Crafting health potions |
 
 ---
 
@@ -79,13 +84,13 @@ Each layer is **procedurally generated** — floor layouts, ore placement, enemy
 ### Tiers Overview
 
 | Tier | Material | Pickaxe Power | Weapon Damage | Armor Defense |
-|------|----------|--------------|---------------|---------------|
-| 1 | Wood | 1 | 5 | 2 |
-| 2 | Copper | 2 | 10 | 5 |
-| 3 | Iron | 3 | 18 | 10 |
-| 4 | Gold | 4 | 28 | 16 |
-| 5 | Diamond | 5 | 40 | 24 |
-| 6 | Obsidian | 6 | 55 | 34 |
+| ---- | -------- | ------------- | ------------- | ------------- |
+| 1    | Wood     | 1             | 5             | 2             |
+| 2    | Copper   | 2             | 10            | 5             |
+| 3    | Iron     | 3             | 18            | 10            |
+| 4    | Gold     | 4             | 28            | 16            |
+| 5    | Diamond  | 5             | 40            | 24            |
+| 6    | Obsidian | 6             | 55            | 34            |
 
 ### Equipment Slots
 
@@ -109,15 +114,15 @@ Each layer is **procedurally generated** — floor layouts, ore placement, enemy
 
 ### Ore Node HP by Tier
 
-| Ore | Node HP | Hits with Matching Pickaxe |
-|-----|---------|---------------------------|
-| Stone | 2 | 2 |
-| Copper | 4 | 2 |
-| Iron | 6 | 2 |
-| Gold | 8 | 2 |
-| Diamond | 12 | 3 |
-| Obsidian | 15 | 3 |
-| Mythril | 18 | 3 |
+| Ore      | Node HP | Hits with Matching Pickaxe |
+| -------- | ------- | -------------------------- |
+| Stone    | 2       | 2                          |
+| Copper   | 4       | 2                          |
+| Iron     | 6       | 2                          |
+| Gold     | 8       | 2                          |
+| Diamond  | 12      | 3                          |
+| Obsidian | 15      | 3                          |
+| Mythril  | 18      | 3                          |
 
 ---
 
@@ -136,23 +141,23 @@ Crafting is done at a **Workbench** in the Hub Area. Players cannot craft inside
 
 ### Example Recipes
 
-| Item | Ingredients | Result |
-|------|-------------|--------|
-| Copper Pickaxe | 8x Copper, 3x Wood | Tier 2 Pickaxe |
-| Copper Sword | 6x Copper, 2x Wood | Tier 2 Weapon |
-| Copper Helmet | 5x Copper | Tier 2 Helmet |
-| Copper Chestplate | 10x Copper | Tier 2 Chestplate |
-| Copper Boots | 6x Copper | Tier 2 Boots |
-| Iron Pickaxe | 10x Iron, 3x Wood | Tier 3 Pickaxe |
-| Iron Sword | 8x Iron, 2x Wood | Tier 3 Weapon |
-| Iron Helmet | 7x Iron | Tier 3 Helmet |
-| Iron Chestplate | 14x Iron | Tier 3 Chestplate |
-| Iron Boots | 8x Iron | Tier 3 Boots |
-| Health Potion | 3x Healing Herb, 1x Slime Gel | Restores 30 HP |
-| Speed Potion | 2x Healing Herb, 2x Bat Wing | +20% speed for 30s |
-| Strength Potion | 2x Bone Fragment, 1x Slime Gel | +25% damage for 30s |
+| Item              | Ingredients                    | Result              |
+| ----------------- | ------------------------------ | ------------------- |
+| Copper Pickaxe    | 8x Copper, 3x Wood             | Tier 2 Pickaxe      |
+| Copper Sword      | 6x Copper, 2x Wood             | Tier 2 Weapon       |
+| Copper Helmet     | 5x Copper                      | Tier 2 Helmet       |
+| Copper Chestplate | 10x Copper                     | Tier 2 Chestplate   |
+| Copper Boots      | 6x Copper                      | Tier 2 Boots        |
+| Iron Pickaxe      | 10x Iron, 3x Wood              | Tier 3 Pickaxe      |
+| Iron Sword        | 8x Iron, 2x Wood               | Tier 3 Weapon       |
+| Iron Helmet       | 7x Iron                        | Tier 3 Helmet       |
+| Iron Chestplate   | 14x Iron                       | Tier 3 Chestplate   |
+| Iron Boots        | 8x Iron                        | Tier 3 Boots        |
+| Health Potion     | 3x Healing Herb, 1x Slime Gel  | Restores 30 HP      |
+| Speed Potion      | 2x Healing Herb, 2x Bat Wing   | +20% speed for 30s  |
+| Strength Potion   | 2x Bone Fragment, 1x Slime Gel | +25% damage for 30s |
 
-*Pattern: Each tier follows the same recipe structure with its tier's ore. Quantities increase slightly per tier.*
+_Pattern: Each tier follows the same recipe structure with its tier's ore. Quantities increase slightly per tier._
 
 ---
 
@@ -170,30 +175,30 @@ Crafting is done at a **Workbench** in the Hub Area. Players cannot craft inside
 
 ### Player Stats
 
-| Stat | Base Value | Scaling |
-|------|-----------|---------|
-| Health | 100 | +5 per level |
-| Base Damage | 2 | +1 per level |
-| Defense | 0 | From armor only |
-| Mining Power | 1 | From pickaxe only |
-| Move Speed | 16 | From boots bonus |
+| Stat         | Base Value | Scaling           |
+| ------------ | ---------- | ----------------- |
+| Health       | 100        | +5 per level      |
+| Base Damage  | 2          | +1 per level      |
+| Defense      | 0          | From armor only   |
+| Mining Power | 1          | From pickaxe only |
+| Move Speed   | 16         | From boots bonus  |
 
 ### Enemies by Layer
 
-| Enemy | Layer | HP | Damage | Defense | Behavior | Drops |
-|-------|-------|-----|--------|---------|----------|-------|
-| Cave Slime | 1 | 15 | 5 | 0 | Wanders, aggros on proximity | Slime Gel, Coins |
-| Cave Bat | 1 | 10 | 8 | 0 | Flies, swoops at player | Bat Wing, Coins |
-| Goblin | 2 | 30 | 12 | 3 | Patrols, charges when aggro'd | Coins, Iron Ore |
-| Shadow Bat | 2 | 20 | 15 | 2 | Fast, swoops in darkness | Bat Wing, Coins |
-| Skeleton | 3 | 50 | 18 | 5 | Ranged bone throw + melee | Bone Fragment, Coins |
-| Rock Golem | 3 | 80 | 15 | 12 | Slow, high defense, slam attack | Stone, Gold Ore, Coins |
-| Gold Guardian | 4 | 100 | 25 | 10 | Defends gold nodes, enrages at low HP | Gold Ore, Coins |
-| Crystal Spider | 4 | 60 | 30 | 5 | Fast, web slows player | Diamond, Coins |
-| Lava Slime | 5 | 90 | 28 | 8 | Leaves fire trail, splits on death | Slime Gel, Obsidian, Coins |
-| Obsidian Knight | 5 | 150 | 35 | 20 | Shield blocks frontal attacks, sword combos | Obsidian, Coins |
-| Fire Elemental | 6 | 120 | 40 | 10 | Ranged fireballs, area denial | Fire Essence, Coins |
-| Magma Wyrm | 6 | 200 | 45 | 15 | Burrows, emerges for surprise attacks | Fire Essence, Mythril, Coins |
+| Enemy           | Layer | HP  | Damage | Defense | Behavior                                    | Drops                        |
+| --------------- | ----- | --- | ------ | ------- | ------------------------------------------- | ---------------------------- |
+| Cave Slime      | 1     | 15  | 5      | 0       | Wanders, aggros on proximity                | Slime Gel, Coins             |
+| Cave Bat        | 1     | 10  | 8      | 0       | Flies, swoops at player                     | Bat Wing, Coins              |
+| Goblin          | 2     | 30  | 12     | 3       | Patrols, charges when aggro'd               | Coins, Iron Ore              |
+| Shadow Bat      | 2     | 20  | 15     | 2       | Fast, swoops in darkness                    | Bat Wing, Coins              |
+| Skeleton        | 3     | 50  | 18     | 5       | Ranged bone throw + melee                   | Bone Fragment, Coins         |
+| Rock Golem      | 3     | 80  | 15     | 12      | Slow, high defense, slam attack             | Stone, Gold Ore, Coins       |
+| Gold Guardian   | 4     | 100 | 25     | 10      | Defends gold nodes, enrages at low HP       | Gold Ore, Coins              |
+| Crystal Spider  | 4     | 60  | 30     | 5       | Fast, web slows player                      | Diamond, Coins               |
+| Lava Slime      | 5     | 90  | 28     | 8       | Leaves fire trail, splits on death          | Slime Gel, Obsidian, Coins   |
+| Obsidian Knight | 5     | 150 | 35     | 20      | Shield blocks frontal attacks, sword combos | Obsidian, Coins              |
+| Fire Elemental  | 6     | 120 | 40     | 10      | Ranged fireballs, area denial               | Fire Essence, Coins          |
+| Magma Wyrm      | 6     | 200 | 45     | 15      | Burrows, emerges for surprise attacks       | Fire Essence, Mythril, Coins |
 
 ### Enemy AI Behaviors
 
@@ -213,22 +218,22 @@ Crafting is done at a **Workbench** in the Hub Area. Players cannot craft inside
 
 ### Sources of Income
 
-| Source | Amount |
-|--------|--------|
-| Selling ores | Varies by ore tier (see ore table) |
-| Monster drops | 2–15 coins per kill (scales with layer) |
-| Floor completion bonus | 10 coins per floor |
-| Layer boss reward | 100–500 coins (scales with layer) |
+| Source                 | Amount                                  |
+| ---------------------- | --------------------------------------- |
+| Selling ores           | Varies by ore tier (see ore table)      |
+| Monster drops          | 2–15 coins per kill (scales with layer) |
+| Floor completion bonus | 10 coins per floor                      |
+| Layer boss reward      | 100–500 coins (scales with layer)       |
 
 ### Spending (Sinks)
 
-| Sink | Cost Range |
-|------|-----------|
-| Crafting blueprints (unlock new recipes) | 50–500 coins |
-| Health Potions (from shop) | 15 coins |
-| Buff Potions (from shop) | 30 coins |
-| Checkpoint teleport (skip floors) | 20 coins |
-| Cosmetics (hats, trail effects) | 100–1000 coins |
+| Sink                                     | Cost Range     |
+| ---------------------------------------- | -------------- |
+| Crafting blueprints (unlock new recipes) | 50–500 coins   |
+| Health Potions (from shop)               | 15 coins       |
+| Buff Potions (from shop)                 | 30 coins       |
+| Checkpoint teleport (skip floors)        | 20 coins       |
+| Cosmetics (hats, trail effects)          | 100–1000 coins |
 
 ---
 
@@ -338,6 +343,7 @@ These features are intentionally excluded from the first version:
 ## Inspiration Reference
 
 **Stardew Valley Mines** — the primary inspiration. Key elements to capture:
+
 - Descending floor-by-floor through a mine
 - Finding ladders (sometimes hidden under rocks) to go deeper
 - Each floor has ores to mine and enemies to fight

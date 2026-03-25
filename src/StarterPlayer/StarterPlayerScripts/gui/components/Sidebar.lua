@@ -153,7 +153,7 @@ function Sidebar:renderContent(screenData)
 					Position = UDim2.fromScale(0.5, 0.5),
 					Size = UDim2.new(0.75, 0, 0.75, 0),
 					BackgroundTransparency = 1,
-					Image = "rbxassetid://ASSET_ID_HERE"
+					Image = "rbxassetid://77344538197277"
 				}),
 				TextLabel = createElement(TextLabel, {
 					Text = "Craft",

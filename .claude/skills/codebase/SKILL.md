@@ -1,3 +1,8 @@
+---
+name: codebase
+description: Explains the codebase setup and architecture, as well as code style and conventions. This is used as a reference when generating code to ensure consistency across the project.
+---
+
 # Roblox Game Development — Code Reference Guide
 
 This document captures the architecture, patterns, and conventions used across Roblox simulator-style games built with Rojo. Use it as a reference when generating code to ensure consistency.
@@ -49,12 +54,12 @@ src/
 
 ### File Naming Conventions
 
-| Type | Convention | Example |
-|------|-----------|---------|
-| Server scripts | `Name.server.lua` | `API.server.lua`, `TagManager.server.lua` |
-| Client scripts | `Name.client.lua` | `init.client.lua` |
-| Module scripts | `Name.lua` | `DatabaseClient.lua`, `StatCalculation.lua` |
-| Folder entry points | `init.lua` / `init.client.lua` / `init.server.lua` | `ActionHandler/init.client.lua` |
+| Type                | Convention                                         | Example                                     |
+| ------------------- | -------------------------------------------------- | ------------------------------------------- |
+| Server scripts      | `Name.server.lua`                                  | `API.server.lua`, `TagManager.server.lua`   |
+| Client scripts      | `Name.client.lua`                                  | `init.client.lua`                           |
+| Module scripts      | `Name.lua`                                         | `DatabaseClient.lua`, `StatCalculation.lua` |
+| Folder entry points | `init.lua` / `init.client.lua` / `init.server.lua` | `ActionHandler/init.client.lua`             |
 
 ---
 
@@ -80,15 +85,15 @@ The `default.project.json` maps each top-level folder in `src/` to its correspon
 
 ## Naming Conventions
 
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Files / Modules | PascalCase | `DatabaseClient.lua`, `StatCalculation.lua` |
-| Functions | camelCase (local), PascalCase (module methods) | `local function blowAway()`, `StatCalculation.GetBurpDamage()` |
-| Variables | camelCase | `local playerDataFolder`, `local burpCharge` |
-| Constants | UPPER_SNAKE_CASE | `local RESPAWN_TIME = 10`, `local DATASTORE_PREFIX = "PlayerData1_"` |
-| Class names | PascalCase | `DatabaseClient`, `TagHandler` |
-| Private members | Prefixed with `_` | `self._connections`, `self._profile` |
-| Roblox services | Declared at top of file | `local ReplicatedStorage = game:GetService("ReplicatedStorage")` |
+| Element         | Convention                                     | Example                                                              |
+| --------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| Files / Modules | PascalCase                                     | `DatabaseClient.lua`, `StatCalculation.lua`                          |
+| Functions       | camelCase (local), PascalCase (module methods) | `local function blowAway()`, `StatCalculation.GetBurpDamage()`       |
+| Variables       | camelCase                                      | `local playerDataFolder`, `local burpCharge`                         |
+| Constants       | UPPER_SNAKE_CASE                               | `local RESPAWN_TIME = 10`, `local DATASTORE_PREFIX = "PlayerData1_"` |
+| Class names     | PascalCase                                     | `DatabaseClient`, `TagHandler`                                       |
+| Private members | Prefixed with `_`                              | `self._connections`, `self._profile`                                 |
+| Roblox services | Declared at top of file                        | `local ReplicatedStorage = game:GetService("ReplicatedStorage")`     |
 
 ---
 
@@ -203,6 +208,7 @@ return action
 No framework (Knit, Flamework, etc.) is used. Instead, a custom `APIService` module abstracts RemoteEvent/RemoteFunction creation and discovery.
 
 **Server-side (in a `.server.lua` entry script):**
+
 ```lua
 local APIService = require(ReplicatedStorage.services.APIService)
 
@@ -219,6 +225,7 @@ end)
 ```
 
 **Client-side:**
+
 ```lua
 local APIService = require(ReplicatedStorage.services.APIService)
 
@@ -232,6 +239,7 @@ local result = APIService.GetFunction("Burp"):InvokeServer(...)
 ### Endpoint Registration Pattern
 
 All endpoints are registered in a single `API.server.lua` file that:
+
 1. Requires all endpoint handler modules
 2. Calls `APIService:CreateEventEndpoint()` or `APIService:CreateFunctionEndpoint()` for each
 
@@ -270,6 +278,7 @@ ActionFireService.GetAction("Burp"):Invoke(...)
 Player data is persisted using the bundled `ProfileService` library, wrapped by a custom `DatabaseClient` class.
 
 **Profile Template** (defines the data schema):
+
 ```lua
 return {
     BurpPoints = 0,
@@ -284,18 +293,21 @@ return {
 ```
 
 **Key conventions:**
+
 - DataStore key prefix: `"PlayerData1_" .. player.UserId`
 - Tables use `{name = "key", value = val}` entries (not dictionary keys) for replication compatibility
 - Data replicates to `ReplicatedStorage.PlayerData[PlayerName]` as ValueBase instances
 - Numbers → `NumberValue`, Strings → `StringValue`, Booleans → `BoolValue`, Tables → `Folder`
 
 **Reading data (client):**
+
 ```lua
 local StatRetrieval = require(ReplicatedStorage.utils.StatRetrieval)
 local coins = StatRetrieval.GetPlayerStat("Coins", player)
 ```
 
 **Writing data (server only):**
+
 ```lua
 local dbClient = PlayerDataHandler.GetClient(player)
 dbClient:SetDataValue("Coins", newValue)
@@ -308,11 +320,13 @@ dbClient:SetDataValue("Coins", newValue)
 Tags are applied to instances in Studio. A `TagManager.server.lua` script auto-loads all handler modules from `modules/tag_handlers/` and applies them.
 
 **How it works:**
+
 1. `TagManager` loads all modules from `tag_handlers/` by name
 2. For every tag in the game, if a handler module with that name exists, `.Apply(instance)` is called
 3. New instances getting a tag at runtime are handled via `GetInstanceAddedSignal`
 
 **Tag handler modules must:**
+
 - Be named exactly as the tag (e.g., tag `"DestructibleByBurp"` → `DestructibleByBurp.lua`)
 - Export a table with an `.Apply(instance: Instance)` function
 
@@ -331,6 +345,7 @@ return {
 ```
 
 **Self-loading config folders** (like `DropsConfig`) use `init.lua` to auto-require child modules:
+
 ```lua
 local config = { itemDefinitions = { ... }, types = {} }
 
@@ -395,19 +410,19 @@ Server-side `TutorialManager.server.lua` orchestrates step progression. Tutorial
 
 ## Common Utility Modules
 
-| Module | Location | Purpose |
-|--------|----------|---------|
-| `StatCalculation` | `utils/` | Level-based formula calculations |
-| `StatRetrieval` | `utils/` | Read replicated player stats on client |
-| `ModuleLoader` | `utils/` | Dynamic module loading from folders |
-| `TableUtils` | `utils/` | Table manipulation helpers |
-| `LinAlg` | `utils/` | Linear algebra operations |
-| `CameraShake` | `utils/` | Camera shake effects |
-| `NumberFormatter` | `utils/` | Number display formatting |
-| `Welding` | `utils/` | Mesh welding utilities |
-| `Maid` | `services/` | Connection/instance cleanup (prevents memory leaks) |
-| `APIService` | `services/` | Client-server networking abstraction |
-| `ProfileService` | `services/` | DataStore persistence library |
+| Module            | Location    | Purpose                                             |
+| ----------------- | ----------- | --------------------------------------------------- |
+| `StatCalculation` | `utils/`    | Level-based formula calculations                    |
+| `StatRetrieval`   | `utils/`    | Read replicated player stats on client              |
+| `ModuleLoader`    | `utils/`    | Dynamic module loading from folders                 |
+| `TableUtils`      | `utils/`    | Table manipulation helpers                          |
+| `LinAlg`          | `utils/`    | Linear algebra operations                           |
+| `CameraShake`     | `utils/`    | Camera shake effects                                |
+| `NumberFormatter` | `utils/`    | Number display formatting                           |
+| `Welding`         | `utils/`    | Mesh welding utilities                              |
+| `Maid`            | `services/` | Connection/instance cleanup (prevents memory leaks) |
+| `APIService`      | `services/` | Client-server networking abstraction                |
+| `ProfileService`  | `services/` | DataStore persistence library                       |
 
 ---
 
@@ -434,6 +449,7 @@ local dataValue: ValueBase | Folder = playerDataFolder:FindFirstChild(key)
 ## Common Idioms
 
 ### Service declarations at top of file
+
 ```lua
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -441,6 +457,7 @@ local CollectionService = game:GetService("CollectionService")
 ```
 
 ### Require chains
+
 ```lua
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -449,6 +466,7 @@ local DrinkRecipes = require(Configs.DrinkRecipes)
 ```
 
 ### Debounce pattern
+
 ```lua
 local debounce = {}
 function onAction(player: Player)
@@ -462,6 +480,7 @@ end
 ```
 
 ### Asset references
+
 ```lua
 -- Animations
 local animation = Instance.new("Animation")
@@ -472,6 +491,7 @@ imageId = "ASSET_ID_HERE"  -- Just the numeric ID, without rbxassetid:// prefix
 ```
 
 ### Iterating children
+
 ```lua
 for _, child in pairs(parent:GetChildren()) do
     if child:IsA("ModuleScript") then
@@ -481,6 +501,7 @@ end
 ```
 
 ### Using Attributes for instance configuration
+
 ```lua
 local reward = instance:GetAttribute("Reward")
 instance:SetAttribute("Reward", 5)

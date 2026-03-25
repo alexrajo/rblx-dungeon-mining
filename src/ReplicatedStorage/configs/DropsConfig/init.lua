@@ -1,43 +1,43 @@
 local dropsConfig = {
 	itemDefinitions = {
 		Stone = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "131498599100053"
 		},
 		Copper = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "119748007578926"
 		},
 		Iron = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "94875433906041"
 		},
 		Gold = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "109771614530170"
 		},
 		Diamond = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "124595491268959"
 		},
 		Obsidian = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "136977272561074"
 		},
 		Mythril = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "124856000628050"
 		},
 		Wood = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "111503525768885"
 		},
 		["Slime Gel"] = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "113708158375500"
 		},
 		["Bat Wing"] = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "100838722686920"
 		},
 		["Bone Fragment"] = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "134407417210423"
 		},
 		["Fire Essence"] = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "137224694813959"
 		},
 		["Healing Herb"] = {
-			imageId = "ASSET_ID_HERE"
+			imageId = "108507164585415"
 		},
 	},
 	types = {}

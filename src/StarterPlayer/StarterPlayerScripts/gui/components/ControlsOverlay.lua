@@ -96,7 +96,7 @@ function ControlsOverlay:renderControls(screenData)
 			onClick = function()
 				self:activateMine()
 			end,
-			imageId = "ASSET_ID_HERE",
+			imageId = "84216914378212",
 			text = (device == "computer" and "Mine (E)") or (device == "console" and "Mine (X)") or "Mine",
 			textSize = 20
 		}),
@@ -105,7 +105,7 @@ function ControlsOverlay:renderControls(screenData)
 			size = "md",
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = isAtleast("md") and UDim2.new(0.9, 0, 0.6, 0) or UDim2.new(0.9, 0, 0.5, 0),
-			imageId = "ASSET_ID_HERE",
+			imageId = "93381643136380",
 			text = (device == "computer" and "Attack (Q)") or (device == "console" and "Attack (Y)") or "Attack",
 			onClick = function()
 				self:activateAttack()
