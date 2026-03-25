@@ -33,7 +33,7 @@ src/
 │   ├── tutorials/            # Tutorial definitions (data-driven)
 │   ├── effects/              # Visual effect templates
 │   ├── area_ambiance/        # Per-area lighting configs
-│   └── drinks/               # Drink-specific client modules
+│   └── tools/                # Tool-specific client modules (e.g., pickaxe swing, weapon slash)
 ├── ServerScriptService/
 │   ├── src/                  # Entry-point server scripts (.server.lua)
 │   └── modules/              # Server module library
@@ -88,8 +88,8 @@ The `default.project.json` maps each top-level folder in `src/` to its correspon
 | Element         | Convention                                     | Example                                                              |
 | --------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
 | Files / Modules | PascalCase                                     | `DatabaseClient.lua`, `StatCalculation.lua`                          |
-| Functions       | camelCase (local), PascalCase (module methods) | `local function blowAway()`, `StatCalculation.GetBurpDamage()`       |
-| Variables       | camelCase                                      | `local playerDataFolder`, `local burpCharge`                         |
+| Functions       | camelCase (local), PascalCase (module methods) | `local function swingPickaxe()`, `StatCalculation.GetDamageMultiplier()` |
+| Variables       | camelCase                                      | `local playerDataFolder`, `local chargeAmount`                           |
 | Constants       | UPPER_SNAKE_CASE                               | `local RESPAWN_TIME = 10`, `local DATASTORE_PREFIX = "PlayerData1_"` |
 | Class names     | PascalCase                                     | `DatabaseClient`, `TagHandler`                                       |
 | Private members | Prefixed with `_`                              | `self._connections`, `self._profile`                                 |
@@ -163,7 +163,7 @@ end
 return TagHandler
 ```
 
-**Examples:** `DestructibleByBurp`, `Animated`, `AreaGate`, `RunningNPC`, `Bush`, `Tree`
+**Examples:** `Interactable`, `Animated`, `AreaGate`, `RunningNPC`, `Collectible`, `Destructible`
 
 ### Pattern 4: API Endpoint Module
 
@@ -180,7 +180,7 @@ end
 return endpoint
 ```
 
-**Examples:** `Upgrade`, `Drink`, `MixDrink`, `EquipDrink`
+**Examples:** `Upgrade`, `UseItem`, `CraftItem`, `EquipItem`
 
 ### Pattern 5: Client Action Module
 
@@ -197,7 +197,7 @@ end
 return action
 ```
 
-**Examples:** `Burp`, `ToggleAutoDrink`
+**Examples:** `PrimaryAction`, `ToggleAutoUse`
 
 ---
 
@@ -213,12 +213,12 @@ No framework (Knit, Flamework, etc.) is used. Instead, a custom `APIService` mod
 local APIService = require(ReplicatedStorage.services.APIService)
 
 -- Fire-and-forget (client → server)
-APIService:CreateEventEndpoint("Drink", function(player: Player, ...)
+APIService:CreateEventEndpoint("UseItem", function(player: Player, ...)
     -- handler
 end)
 
 -- Request-response (client → server → client)
-APIService:CreateFunctionEndpoint("Burp", function(player: Player, ...)
+APIService:CreateFunctionEndpoint("CraftItem", function(player: Player, ...)
     -- handler
     return result
 end)
@@ -230,10 +230,10 @@ end)
 local APIService = require(ReplicatedStorage.services.APIService)
 
 -- Fire event
-APIService.GetEvent("Drink"):FireServer(...)
+APIService.GetEvent("UseItem"):FireServer(...)
 
 -- Invoke function
-local result = APIService.GetFunction("Burp"):InvokeServer(...)
+local result = APIService.GetFunction("CraftItem"):InvokeServer(...)
 ```
 
 ### Endpoint Registration Pattern
@@ -266,7 +266,7 @@ Client actions use BindableFunctions stored on the player instance:
 
 ```lua
 local ActionFireService = require(ReplicatedStorage.local_services.ActionFireService)
-ActionFireService.GetAction("Burp"):Invoke(...)
+ActionFireService.GetAction("PrimaryAction"):Invoke(...)
 ```
 
 ---
@@ -281,13 +281,11 @@ Player data is persisted using the bundled `ProfileService` library, wrapped by 
 
 ```lua
 return {
-    BurpPoints = 0,
     Coins = 0,
     XP = 0,
     Level = 1,
-    Ingredients = {},
-    OwnedDrinks = {{name = "Soda", value = 0}},
-    EquippedDrink = "Soda",
+    Inventory = {},                 -- {name = "ItemName", value = amount}
+    EquippedItems = {},             -- {name = "SlotName", value = "ItemName"}
     TutorialStates = {{name = "Intro", value = false}},
 }
 ```
@@ -327,7 +325,7 @@ Tags are applied to instances in Studio. A `TagManager.server.lua` script auto-l
 
 **Tag handler modules must:**
 
-- Be named exactly as the tag (e.g., tag `"DestructibleByBurp"` → `DestructibleByBurp.lua`)
+- Be named exactly as the tag (e.g., tag `"Interactable"` → `Interactable.lua`)
 - Export a table with an `.Apply(instance: Instance)` function
 
 ---
@@ -337,10 +335,10 @@ Tags are applied to instances in Studio. A `TagManager.server.lua` script auto-l
 Game configs live in `ReplicatedStorage/configs/` as pure data modules returning tables.
 
 ```lua
--- DrinkRecipes.lua
+-- CraftingRecipes.lua
 return {
-    Soda = { ingredients = { apple = 2 } },
-    Juice = { ingredients = { apple = 3, leaf = 1 } },
+    IronSword = { materials = { Iron = 8, Wood = 2 } },
+    HealthPotion = { materials = { HealingHerb = 3, SlimeGel = 1 } },
 }
 ```
 
@@ -402,7 +400,7 @@ return {
 }
 ```
 
-**Built-in signals:** `"click"`, `"drink"`, `"burp"`, `"burpOnItem"`, `"getIngredient"`, or custom strings like `"openPage_DrinkMixingPage"`.
+**Built-in signals:** `"click"`, `"useItem"`, `"primaryAction"`, `"interact"`, `"collectResource"`, or custom strings like `"openPage_CraftingPage"`.
 
 Server-side `TutorialManager.server.lua` orchestrates step progression. Tutorial signals are routed via `ServerStorage.CrossScriptCommunicationBindables`.
 
@@ -462,7 +460,7 @@ local CollectionService = game:GetService("CollectionService")
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
 local Configs = ReplicatedStorage.configs
-local DrinkRecipes = require(Configs.DrinkRecipes)
+local CraftingRecipes = require(Configs.CraftingRecipes)
 ```
 
 ### Debounce pattern
