@@ -124,10 +124,16 @@ function Button:render()
 		if clickSound ~= nil then
 			clickSound:Play()
 		end
+		if self.props.onPressDown ~= nil then
+			self.props.onPressDown()
+		end
 	end
-	
+
 	local function onPressUp(rbxInstance)
 		self:setState({isPressedDown = false})
+		if self.props.onPressUp ~= nil then
+			self.props.onPressUp()
+		end
 	end
 	
 	local function onHoverBegin(rbxInstance)
@@ -174,6 +180,7 @@ function Button:render()
 		AnchorPoint = self.props.AnchorPoint,
 		Position = self.props.Position,
 		SizeConstraint = self.props.SizeConstraint,
+		LayoutOrder = self.props.LayoutOrder,
 		--TextValue = self.props.text,
 		[Roact.Event.Activated] = onClick,
 		[Roact.Event.MouseEnter] = onHoverBegin,

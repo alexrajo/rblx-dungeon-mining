@@ -17,6 +17,7 @@ local CraftEndpoint = require(EndpointFolder.Craft)
 local AttackEndpoint = require(EndpointFolder.Attack)
 local EnterMineEndpoint = require(EndpointFolder.EnterMine)
 local ExitMineEndpoint = require(EndpointFolder.ExitMine)
+local ToolEquipHandler = require(ServerModules.ToolEquipHandler)
 
 -- Cross script communication
 local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
@@ -32,6 +33,12 @@ APIService:CreateFunctionEndpoint("Craft", CraftEndpoint.Call)
 APIService:CreateFunctionEndpoint("Attack", AttackEndpoint.Call)
 APIService:CreateFunctionEndpoint("EnterMine", EnterMineEndpoint.Call)
 APIService:CreateFunctionEndpoint("ExitMine", ExitMineEndpoint.Call)
+
+-- Tool equipping
+ToolEquipHandler.Initialize()
+APIService:CreateEventEndpoint("SelectActiveTool", function(player: Player, actionName: string)
+	ToolEquipHandler.SetActiveSlot(player, actionName)
+end)
 
 -- Tutorial
 function startTutorial(...)

@@ -1,319 +1,109 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Roact = require(ReplicatedStorage.services.Roact)
+local APIService = require(ReplicatedStorage.services.APIService)
 
-local utils = ReplicatedStorage:WaitForChild("utils")
-local StatCalculation = require(utils:WaitForChild("StatCalculation"))
-local NumberFormatter = require(utils:WaitForChild("NumberFormatter"))
+local localServices = ReplicatedStorage:WaitForChild("local_services")
+local ToolSelectionService = require(localServices:WaitForChild("ToolSelectionService"))
 
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
-local TextLabel = require(ModuleIndex.TextLabel)
-local ProgressBar = require(ModuleIndex.ProgressBar)
-
-local StatsContext = require(ModuleIndex.StatsContext)
+local ActionButton = require(ModuleIndex.ActionButton)
+local ScreenContext = require(ModuleIndex.ScreenContext)
 
 local createElement = Roact.createElement
 
+local TOOLS = {
+	{ name = "Mine", imageId = "84216914378212", activeColor = "green", key = Enum.KeyCode.One },
+	{ name = "Attack", imageId = "93381643136380", activeColor = "red", key = Enum.KeyCode.Two },
+}
+
 local Toolbar = Roact.Component:extend("Toolbar")
 
-local toolListeners = {}
-
-function getEquippedToolFromPlayer(player: Player)
-	if player == nil then return end
-	
-	local character = player.Character
-	if character == nil then return end
-	
-	local tool = character:FindFirstChildOfClass("Tool")
-	return tool
-end
-
-function Toolbar:getToolObjectsFromTools(tools: {Tool})
-	local objects = {}
-	
-	return objects
-end
-
-function Toolbar:onToolEquipped(tool: Tool)
-	self:setState(function(state)
-		local toolsList = state.tools
-		for _, toolObj in pairs(toolsList) do
-			if toolObj.tool == tool then
-				toolObj.isEquipped = true
-				return {tools = toolsList}
-			end
-		end
-	end)
-end
-
-function Toolbar:onToolUnequipped(tool: Tool)
-	self:setState(function(state)
-		local toolsList = state.tools
-		for _, toolObj in pairs(toolsList) do
-			if toolObj.tool == tool then
-				toolObj.isEquipped = false
-				return {tools = toolsList}
-			end
-		end
-	end)
-end
-
-function Toolbar:onToolRemoved(tool: Tool)
-	local listeners = toolListeners[tool]
-	if listeners ~= nil then
-		for _, connection in pairs(listeners) do
-			connection:Disconnect()
-		end
-	end
-	toolListeners[tool] = nil
-	
-	self:setState(function(state)
-		local toolsList = state.tools
-		for i, toolObj in pairs(toolsList) do
-			if toolObj.tool == tool then
-				table.remove(toolsList, i)
-				return {tools = toolsList}
-			end
-		end
-	end)
-end
-
 function Toolbar:init()
-	self.state = {
-		tools = {}
-	}
-end
-
-function Toolbar:didMount()
-	-- Ensure LocalPlayer is available
-	self.player = game.Players.LocalPlayer
-	if not self.player then
-		self.player = game.Players.PlayerAdded:Wait()  -- Wait for LocalPlayer if not available
-	end
-	
-	local function listenToTool(tool)
-		local equippedListener = tool.Equipped:Connect(function()
-			self:onToolEquipped(tool)
-		end)
-		local unequippedListener = tool.Unequipped:Connect(function()
-			self:onToolUnequipped(tool)
-		end)
-		local deleteListener = tool:GetPropertyChangedSignal("Parent"):Connect(function()
-			if tool.Parent == nil then
-				self:onToolRemoved(tool)
-			end
-		end)
-		
-		toolListeners[tool] = {equippedListener, unequippedListener, deleteListener}
-	end
-	
-	local function setupToolListeners()
-		local backpack = self.player:WaitForChild("Backpack")
-		local tools = backpack:GetChildren()
-
-		local equippedTool = getEquippedToolFromPlayer(self.player)
-		if equippedTool ~= nil then
-			table.insert(tools, equippedTool)
-		end
-
-		local toolObjects = {}
-		for _, tool: Tool in pairs(tools) do
-			if tool:IsA("Tool") then
-				local isEquipped = tool.Parent == self.player.Character
-				table.insert(toolObjects, {tool=tool, isEquipped=isEquipped})
-				listenToTool(tool)
-			end
-		end
-
-		self:setState({
-			tools = toolObjects
-		})
-		
-		return toolObjects, backpack
-	end
-	
-	local function setupListeners()
-		local toolObjects, backpack = setupToolListeners()
-		
-		-- Listen to backpack updates
-		self.backpackAddConnection = backpack.ChildAdded:Connect(function(child)
-			-- Check if this tool already exists in the toolObjects
-			for _, toolObj in pairs(toolObjects) do
-				if toolObj.tool == child then
-					return
-				end
-			end
-			
-			listenToTool(child)
-			
-			-- Append newToolObject to the state
-			self:setState(function(state)
-				local toolsList = state.tools
-				local newToolObject = {tool=child, isEquipped=false}
-				
-				table.insert(toolsList, newToolObject)
-				
-				return {
-					tools = toolsList
-				}
-			end)
-		end)
-		
-		self.player.CharacterRemoving:Connect(function()
-			self:setState({tools={}})
-		end)
-		
-		self.player.CharacterAdded:Connect(setupToolListeners)
-	end
-	
-	-- Ensure the player has a character (in case this script runs before spawning)
-	if self.player.Character then
-		setupListeners()
-	else
-		-- Wait for the player's character to load if it's not available yet
-		self.player.CharacterAdded:Wait()
-		setupListeners()
-	end
-	
-	UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
-		local character = self.player.Character
-		if not character then return end
-
-		local humanoid: Humanoid = character:WaitForChild("Humanoid")
-		if not humanoid then return end
-		
-		local index = input.KeyCode.Value-48
-		if index > 0 and index <= 9 and index <= #self.state.tools then -- If input is a number and index is within bounds
-			local toolObject = self.state.tools[index]
-			local tool = toolObject.tool
-			if tool then
-				if toolObject.isEquipped then
-					humanoid:UnequipTools()
-					self:onToolUnequipped(tool)
-				else
-					humanoid:EquipTool(tool)
-					self:onToolEquipped(tool)
-				end
-			end
-		end
-	end)
-end
-
---[[
-	
-]]
-function Toolbar:render()
-	
-	local function onClick(toolObject: {tool: Tool, isEquipped: boolean})
-		local character = self.player.Character
-		if not character then return end
-		
-		local humanoid: Humanoid = character:WaitForChild("Humanoid")
-		if not humanoid then return end
-		
-		local tool = toolObject.tool
-		if tool then
-			if toolObject.isEquipped then
-				humanoid:UnequipTools()
-				self:onToolUnequipped(tool)
-			else
-				humanoid:EquipTool(tool)
-				self:onToolEquipped(tool)
-			end
-		end
-	end
-	
-	local toolFrames = {}
-	for i, toolObject in ipairs(self.state.tools) do
-		local tool = toolObject.tool
-		local frame = createElement("TextButton", {
-			Text = "",
-			Size = UDim2.fromScale(1, 1),
-			SizeConstraint = Enum.SizeConstraint.RelativeYY,
-			BorderMode = Enum.BorderMode.Inset,
-			BorderSizePixel = toolObject.isEquipped and 3 or 0,
-			BorderColor3 = Color3.fromRGB(45, 158, 255),
-			[Roact.Event.Activated] = function()
-				onClick(toolObject)
-			end,
-		}, {
-			NumberLabel = createElement(TextLabel, {
-				Size = UDim2.fromOffset(12, 12),
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.new(1, -4, 0, 4),
-				BackgroundTransparency = 1,
-				textSize = 10,
-				Text = i
-			}),
-			NameLabel = createElement(TextLabel, {
-				Size = UDim2.new(1, -8, 1, -8),
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				BackgroundTransparency = 1,
-				textSize = 14,
-				Text = tool.Name
-			})
-		})
-		table.insert(toolFrames, frame)
-	end
-	
-	return createElement(StatsContext.context.Consumer, {
-		render = function(data)
-			local equippedPickaxe = data.EquippedPickaxe or "Wood Pickaxe"
-			local equippedWeapon = data.EquippedWeapon or "Wood Sword"
-
-			return createElement("Frame", {
-				Position = UDim2.new(0.5, 0, 1, -32),
-				Size = UDim2.new(0.7, -200, 0, 80),
-				AnchorPoint = Vector2.new(0.5, 1),
-				BackgroundTransparency = 1,
-			}, {
-				EquipInfo = createElement("Frame", {
-					Size = UDim2.new(0.6, 0, 0, 20),
-					AnchorPoint = Vector2.new(0.5, 0),
-					Position = UDim2.new(0.5, 0, 0, 0),
-					BackgroundTransparency = 1,
-				}, {
-					UIListLayout = createElement("UIListLayout", {
-						FillDirection = Enum.FillDirection.Horizontal,
-						HorizontalAlignment = Enum.HorizontalAlignment.Center,
-						Padding = UDim.new(0, 16),
-					}),
-					PickaxeLabel = createElement(TextLabel, {
-						Text = equippedPickaxe,
-						textSize = 14,
-						Size = UDim2.new(0, 120, 1, 0),
-					}),
-					WeaponLabel = createElement(TextLabel, {
-						Text = equippedWeapon,
-						textSize = 14,
-						Size = UDim2.new(0, 120, 1, 0),
-					}),
-				}),
-				Toolbar = createElement("Frame", {
-					Position = UDim2.new(0, 0, 1, 0),
-					Size = UDim2.new(1, 0, 1, -26),
-					BackgroundTransparency = 1,
-					AnchorPoint = Vector2.new(0, 1)
-				}, {
-					UIListLayout = createElement("UIListLayout", {
-						FillDirection = Enum.FillDirection.Horizontal,
-						ItemLineAlignment = Enum.ItemLineAlignment.Center,
-						Padding = UDim.new(0, 8),
-						HorizontalAlignment = Enum.HorizontalAlignment.Center
-					}),
-					Tools = Roact.createFragment(toolFrames)
-				})
-			})
-		end,
+	self:setState({
+		selectedTool = ToolSelectionService.GetSelectedTool(),
 	})
 end
 
+function Toolbar:didMount()
+	local selectActiveToolEvent = APIService.GetEvent("SelectActiveTool")
+
+	-- Fire initial selection so server knows the active tool on mount
+	selectActiveToolEvent:FireServer(ToolSelectionService.GetSelectedTool())
+
+	self.selectionDisconnect = ToolSelectionService.OnChanged(function(toolName: string)
+		self:setState({ selectedTool = toolName })
+		selectActiveToolEvent:FireServer(toolName)
+	end)
+
+	self.inputConnection = UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
+		if gameProcessedEvent then return end
+		for _, toolDef in ipairs(TOOLS) do
+			if input.KeyCode == toolDef.key then
+				ToolSelectionService.SetSelectedTool(toolDef.name)
+				break
+			end
+		end
+	end)
+end
+
 function Toolbar:willUnmount()
-	if self.backpackAddConnection then
-		self.backpackAddConnection:Disconnect()
+	if self.selectionDisconnect then
+		self.selectionDisconnect()
 	end
+	if self.inputConnection then
+		self.inputConnection:Disconnect()
+	end
+end
+
+function Toolbar:renderToolbar(screenData)
+	local device = screenData.Device
+	if device ~= "computer" then
+		return createElement("Frame", { Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1 })
+	end
+
+	local isAtleast: (string) -> boolean = screenData.IsAtleast
+	local buttonSize = isAtleast("md") and "xl" or "lg"
+
+	local toolButtons = {}
+	for i, toolDef in ipairs(TOOLS) do
+		local isSelected = self.state.selectedTool == toolDef.name
+		toolButtons[toolDef.name] = createElement(ActionButton, {
+			color = isSelected and toolDef.activeColor or "gray",
+			size = buttonSize,
+			imageId = toolDef.imageId,
+			text = toolDef.name .. " (" .. tostring(i) .. ")",
+			textSize = 14,
+			LayoutOrder = i,
+			onClick = function()
+				ToolSelectionService.SetSelectedTool(toolDef.name)
+			end,
+		})
+	end
+
+	return createElement("Frame", {
+		Position = UDim2.new(0.5, 0, 1, -16),
+		Size = UDim2.new(0, 200, 0, 80),
+		AnchorPoint = Vector2.new(0.5, 1),
+		BackgroundTransparency = 1,
+	}, {
+		UIListLayout = createElement("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 12),
+		}),
+		Tools = Roact.createFragment(toolButtons),
+	})
+end
+
+function Toolbar:render()
+	return createElement(ScreenContext.context.Consumer, {
+		render = function(data)
+			return self:renderToolbar(data)
+		end,
+	})
 end
 
 return Toolbar
