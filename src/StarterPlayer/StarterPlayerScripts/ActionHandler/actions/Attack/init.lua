@@ -1,5 +1,4 @@
 local plr = game.Players.LocalPlayer
-local cam = workspace.CurrentCamera
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,6 +8,7 @@ local APIService = require(Services.APIService)
 local globalConfig = require(ReplicatedStorage:WaitForChild("GlobalConfig"))
 
 local HIT_DELAY = 0.2
+local ATTACK_ARC_DOT = 0 -- forward 180° arc
 
 local attackAnim = Instance.new("Animation")
 attackAnim.AnimationId = "rbxassetid://93287550553129"
@@ -47,40 +47,54 @@ function AttackAction.Activate()
 		track:Play()
 	end
 
-	-- Raycast from camera to find an Enemy
-	local mouse = plr:GetMouse()
-	local ray = cam:ScreenPointToRay(mouse.X, mouse.Y)
+	-- Find all enemies within attack range using sphere overlap
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.FilterDescendantsInstances = {character}
 
-	local raycastParams = RaycastParams.new()
-	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-	raycastParams.FilterDescendantsInstances = {character}
+	local parts = workspace:GetPartBoundsInRadius(
+		humanoidRootPart.Position,
+		globalConfig.ATTACK_REACH_DISTANCE,
+		overlapParams
+	)
 
-	local raycastResult = workspace:Raycast(ray.Origin, ray.Direction * globalConfig.ATTACK_REACH_DISTANCE, raycastParams)
+	-- Collect unique enemy models within the forward arc
+	local hitEnemies: {Instance} = {}
+	local seenEnemies: {[Instance]: boolean} = {}
+	local lookVector = humanoidRootPart.CFrame.LookVector
 
-	local hitInstance = raycastResult and raycastResult.Instance
-
-	-- Walk up the hierarchy to find a tagged Enemy
-	local targetEnemy = nil
-	if hitInstance then
-		local current = hitInstance
+	for _, part in ipairs(parts) do
+		local current = part
+		local enemyModel = nil
 		while current and current ~= workspace do
 			if CollectionService:HasTag(current, "Enemy") then
-				targetEnemy = current
+				enemyModel = current
 				break
 			end
 			current = current.Parent
+		end
+
+		if enemyModel and not seenEnemies[enemyModel] then
+			local enemyRoot = enemyModel:FindFirstChild("HumanoidRootPart")
+			if enemyRoot then
+				local toEnemy = enemyRoot.Position - humanoidRootPart.Position
+				if toEnemy.Magnitude > 0 and toEnemy.Unit:Dot(lookVector) >= ATTACK_ARC_DOT then
+					seenEnemies[enemyModel] = true
+					table.insert(hitEnemies, enemyModel)
+				end
+			end
 		end
 	end
 
 	-- Delay hit registration to sync with animation
 	task.wait(HIT_DELAY)
 
-	-- No valid target — return 0 (delay already elapsed)
-	if targetEnemy == nil then return 0 end
+	-- No valid targets — return 0 (delay already elapsed)
+	if #hitEnemies == 0 then return 0 end
 
-	-- Invoke server
+	-- Invoke server with list of hit enemies
 	local func = APIService.GetFunction("Attack")
-	local result = func:InvokeServer(targetEnemy)
+	local result = func:InvokeServer(hitEnemies)
 
 	local cooldown = (result and result.cooldown) or globalConfig.ATTACK_SWING_COOLDOWN
 	return math.max(0, cooldown - HIT_DELAY)

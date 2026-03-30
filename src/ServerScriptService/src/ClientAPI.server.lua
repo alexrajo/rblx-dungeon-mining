@@ -11,6 +11,9 @@ APIService:CreateEventEndpoint("DropItems")
 -- Event that tells the client to visualize mining hit effects
 APIService:CreateEventEndpoint("VisualizeMineHit")
 
+-- Event that tells the client to show damage indicators on hit enemies
+APIService:CreateEventEndpoint("VisualizeAttackHit")
+
 -- Event to send a notification from the server to the client
 APIService:CreateEventEndpoint("SendNotification")
 
