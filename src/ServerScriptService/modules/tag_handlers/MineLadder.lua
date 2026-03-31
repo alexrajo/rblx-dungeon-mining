@@ -1,12 +1,8 @@
 local Players = game:GetService("Players")
-local ServerStorage = game:GetService("ServerStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local MineTransitionService = require(modules.MineTransitionService)
-
-local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
-local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 
 local TagHandler = {}
 
@@ -32,10 +28,7 @@ function TagHandler.Apply(instance: Instance)
 		if debounce[player] then return end
 		debounce[player] = true
 
-		local transitionStarted = MineTransitionService.StartDescendTransition(player)
-		if transitionStarted then
-			signalTutorialEvent:Fire(player, "descend")
-		end
+		MineTransitionService.StartDescendTransition(player)
 
 		task.delay(2, function()
 			debounce[player] = nil

@@ -1,12 +1,16 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local ServerStorage = game:GetService("ServerStorage")
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
 
 local modules = ServerScriptService.modules
 local MineFloorManager = require(modules.MineFloorManager)
+
+local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
+local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 
 local PROTECTION_ATTRIBUTE = "TeleportProtected"
 local TRANSITION_TIMEOUT = 4
@@ -95,6 +99,14 @@ local function runTransitionAction(player: Player, transition): boolean
 	return false
 end
 
+local function signalTransitionTutorialStep(player: Player, transition)
+	if transition.kind == "enter" then
+		signalTutorialEvent:Fire(player, "enterMine")
+	elseif transition.kind == "descend" then
+		signalTutorialEvent:Fire(player, "descend")
+	end
+end
+
 function MineTransitionService.StartEnterTransition(player: Player, startFloor: number?): boolean
 	local sanitizedFloor = 1
 	if type(startFloor) == "number" then
@@ -133,6 +145,8 @@ function MineTransitionService.CompleteTransition(player: Player, transitionId: 
 		clearTransition(player)
 		return { success = false, reason = "teleport_failed" }
 	end
+
+	signalTransitionTutorialStep(player, transition)
 
 	transition.state = "waiting_for_finish"
 	scheduleTimeout(player, transition.transitionId)

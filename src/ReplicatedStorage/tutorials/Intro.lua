@@ -8,7 +8,7 @@ local IntroTutorial = {
 		},
 		{
 			id = "MineEntrance",
-			description = "Head to the mine entrance to begin your adventure!",
+			description = "Head to the cave entrance and enter the mine to begin your adventure!",
 			completeOn = "enterMine"
 		},
 		{
@@ -18,7 +18,7 @@ local IntroTutorial = {
 		},
 		{
 			id = "CollectOre",
-			description = "Great job! Pick up the ore that dropped. You can find it in your inventory.",
+			description = "Great job! Break an ore node to collect its drop and add it to your inventory.",
 			completeOn = "getItem"
 		},
 		{
