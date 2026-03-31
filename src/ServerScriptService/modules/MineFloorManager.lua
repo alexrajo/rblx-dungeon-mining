@@ -21,8 +21,8 @@ local FLOOR_SPACING = 100 -- Distance between floors on Y axis
 -- Hub spawn location (players teleport here when exiting)
 local HUB_SPAWN = Vector3.new(0, 10, 0)
 
--- Floor pool: floorNumber → { folder: Folder, players: {[Player]: true} }
-local floorPool: { [number]: { folder: Folder, players: { [Player]: boolean } } } = {}
+-- Floor pool: floorNumber → { folder: Folder, players: {[Player]: true}, spawnPosition: Vector3 }
+local floorPool: { [number]: { folder: Folder, players: { [Player]: boolean }, spawnPosition: Vector3 } } = {}
 
 -- Track which floor each player is on (nil = not in mine / above ground)
 local playerFloors: { [Player]: number } = {}
@@ -142,7 +142,7 @@ local function cleanupFloorIfEmpty(floorNumber: number)
 	end
 end
 
-function MineFloorManager.SpawnFloor(floorNumber: number): Folder
+function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 	local layerNum, layerData = MineFloorManager.GetLayerForFloor(floorNumber)
 	if layerData == nil then
 		warn("MineFloorManager: No layer data for floor", floorNumber)
@@ -156,7 +156,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 	local floorOrigin = getFloorOrigin(floorNumber)
 
 	-- Generate procedural cave
-	local caveModel, floorPositions = CaveUtil.GenerateCave(floorOrigin)
+	local caveModel, floorPositions, spawnPosition = CaveUtil.GenerateCave(floorOrigin)
 	caveModel.Parent = floorFolder
 
 	-- Shuffle floor positions for random placement
@@ -273,20 +273,24 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 
 	floorFolder.Parent = workspace
 
-	return floorFolder
+	return floorFolder, spawnPosition
 end
 
 --- Get a floor from the pool, or generate it synchronously as fallback.
-local function getOrCreateFloor(floorNumber: number): Folder
+local function getOrCreateFloor(floorNumber: number): Folder?
 	local entry = floorPool[floorNumber]
 	if entry then
 		return entry.folder
 	end
 
 	-- Fallback: generate synchronously
-	local folder = MineFloorManager.SpawnFloor(floorNumber)
-	if folder then
-		floorPool[floorNumber] = { folder = folder, players = {} }
+	local folder, spawnPosition = MineFloorManager.SpawnFloor(floorNumber)
+	if folder and spawnPosition then
+		floorPool[floorNumber] = {
+			folder = folder,
+			players = {},
+			spawnPosition = spawnPosition,
+		}
 	end
 	return folder
 end
@@ -295,9 +299,13 @@ end
 local function preloadFloor(floorNumber: number)
 	if floorPool[floorNumber] then return end
 
-	local folder = MineFloorManager.SpawnFloor(floorNumber)
-	if folder then
-		floorPool[floorNumber] = { folder = folder, players = {} }
+	local folder, spawnPosition = MineFloorManager.SpawnFloor(floorNumber)
+	if folder and spawnPosition then
+		floorPool[floorNumber] = {
+			folder = folder,
+			players = {},
+			spawnPosition = spawnPosition,
+		}
 	end
 end
 
@@ -323,14 +331,31 @@ local function removePlayerFromFloor(player: Player, floorNumber: number)
 	cleanupFloorIfEmpty(floorNumber)
 end
 
+--- Move a player between floors without leaving playerFloors in a transient nil state.
+local function movePlayerToFloor(player: Player, oldFloor: number?, newFloor: number)
+	if oldFloor == newFloor then
+		addPlayerToFloor(player, newFloor)
+		return
+	end
+
+	addPlayerToFloor(player, newFloor)
+
+	if oldFloor ~= nil then
+		removePlayerFromFloor(player, oldFloor)
+	end
+end
+
 --- Teleport a player to a floor's origin.
 local function teleportToFloor(player: Player, floorNumber: number)
 	local character = player.Character
 	if character then
 		local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-		if humanoidRootPart then
-			local floorOrigin = getFloorOrigin(floorNumber)
-			humanoidRootPart.CFrame = CFrame.new(floorOrigin + Vector3.new(0, 5, 0))
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoidRootPart and humanoid then
+			local entry = floorPool[floorNumber]
+			local spawnPosition = if entry then entry.spawnPosition else getFloorOrigin(floorNumber)
+			local rootHeightOffset = humanoid.HipHeight + (humanoidRootPart.Size.Y / 2)
+			humanoidRootPart.CFrame = CFrame.new(spawnPosition + Vector3.new(0, rootHeightOffset, 0))
 		end
 	end
 end
@@ -341,9 +366,6 @@ function MineFloorManager.EnterMine(player: Player, startFloor: number)
 
 	-- Remove from previous floor if re-entering
 	local previousFloor = playerFloors[player]
-	if previousFloor then
-		removePlayerFromFloor(player, previousFloor)
-	end
 
 	-- Freeze player to prevent falling if floor needs sync generation
 	freezePlayer(player)
@@ -356,7 +378,7 @@ function MineFloorManager.EnterMine(player: Player, startFloor: number)
 	end
 
 	-- Add player to floor tracking
-	addPlayerToFloor(player, startFloor)
+	movePlayerToFloor(player, previousFloor, startFloor)
 
 	-- Update player state
 	PlayerDataHandler.SetInMine(player, true)
@@ -412,10 +434,9 @@ function MineFloorManager.DescendFloor(player: Player)
 		return false
 	end
 
-	-- Remove from old floor, add to new
+	-- Move tracking to the new floor before cleaning up the previous one.
 	local oldFloor = currentFloor
-	removePlayerFromFloor(player, oldFloor)
-	addPlayerToFloor(player, nextFloor)
+	movePlayerToFloor(player, oldFloor, nextFloor)
 
 	-- Update player state
 	PlayerDataHandler.SetCurrentFloor(player, nextFloor)

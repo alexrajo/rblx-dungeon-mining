@@ -163,8 +163,8 @@ end
 --- Only surface blocks (those adjacent to at least one air cell) are created,
 --- skipping fully buried interior blocks for performance.
 --- @param position Vector3 - World position for the cave origin (center of baseplate)
---- @return Model
-function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3})
+--- @return Model, {Vector3}, Vector3
+function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 	local seed = tick() * math.random()
 
 	local cave = Instance.new("Model")
@@ -218,6 +218,7 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3})
 
 	local spawnExclusionRadius = SPAWN_CLEAR_RADIUS + BLOCK_SIZE
 	local floorPositions: {Vector3} = {}
+	local spawnPosition = position
 
 	for key, _ in pairs(allCarved) do
 		local xStr, yStr, zStr = string.match(key, "^(-?%d+),(-?%d+),(-?%d+)$")
@@ -239,6 +240,24 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3})
 				end
 			end
 		end
+	end
+
+	-- Spawn players at the center clearing, with the Y coordinate aligned to the
+	-- generated floor surface so the character does not drop after teleporting.
+	if #floorPositions > 0 then
+		local bestSpawnPosition = floorPositions[1]
+		local bestDistance = math.huge
+
+		for _, floorPosition in ipairs(floorPositions) do
+			local offset = floorPosition - position
+			local distance = Vector2.new(offset.X, offset.Z).Magnitude
+			if distance < bestDistance then
+				bestDistance = distance
+				bestSpawnPosition = floorPosition
+			end
+		end
+
+		spawnPosition = Vector3.new(position.X, bestSpawnPosition.Y, position.Z)
 	end
 
 	-- --- Fill the cave volume, surface blocks only ---
@@ -268,7 +287,7 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3})
 		end
 	end
 
-	return cave, floorPositions
+	return cave, floorPositions, spawnPosition
 end
 
 return CaveUtil
