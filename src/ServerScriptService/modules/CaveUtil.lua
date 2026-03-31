@@ -155,6 +155,25 @@ local function runWorm(origin: Vector3, wormIndex: number, seed: number): {[stri
 	return carved
 end
 
+local function createShellPart(
+	parent: Instance,
+	name: string,
+	size: Vector3,
+	position: Vector3
+): Part
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.CFrame = CFrame.new(position)
+	part.Anchored = true
+	part.CanCollide = true
+	part.Material = WALL_MATERIAL
+	part.BrickColor = WALL_COLOR
+	part.Parent = parent
+
+	return part
+end
+
 -- ============================================================
 -- PUBLIC API
 -- ============================================================
@@ -182,23 +201,45 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 	baseplate.BrickColor = BASE_COLOR
 	baseplate.Parent = cave
 
-	-- --- Walls ---
-	for x = -math.ceil(CAVE_SIZE / 2), math.ceil(CAVE_SIZE / 2) do
-		for y = -CAVE_FLOOR_DEPTH, CAVE_ROOF_HEIGHT do
-			local wallPart = Instance.new("Part")
-			wallPart.Size = Vector3.new(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
-			wallPart.CFrame = CFrame.new(position + Vector3.new(x * BLOCK_SIZE, y * BLOCK_SIZE, -baseplateSize / 2))
-			wallPart.Anchored = true
-			wallPart.CanCollide = true
-			wallPart.Material = WALL_MATERIAL
-			wallPart.BrickColor = WALL_COLOR
-			wallPart.Parent = cave
+	local halfSize = math.floor(CAVE_SIZE / 2)
+	local generatedSpan = (halfSize * 2 + 1) * BLOCK_SIZE
+	local shellHeight = (CAVE_ROOF_HEIGHT + CAVE_FLOOR_DEPTH + 2) * BLOCK_SIZE
+	local shellCenterY = ((CAVE_ROOF_HEIGHT - CAVE_FLOOR_DEPTH + 1) * BLOCK_SIZE) / 2
+	local roofY = (CAVE_ROOF_HEIGHT + 1) * BLOCK_SIZE
+	local sideOffset = generatedSpan / 2 + BLOCK_SIZE / 2
 
-			local wallPart2 = wallPart:Clone()
-			wallPart2.CFrame = CFrame.new(position + Vector3.new(x * BLOCK_SIZE, y * BLOCK_SIZE, baseplateSize / 2))
-			wallPart2.Parent = cave
-		end
-	end
+	-- --- Exterior shell ---
+	-- Use large perimeter parts so cracks to the outside are always sealed.
+	createShellPart(
+		cave,
+		"RoofShell",
+		Vector3.new(generatedSpan + BLOCK_SIZE * 2, BLOCK_SIZE, generatedSpan + BLOCK_SIZE * 2),
+		position + Vector3.new(0, roofY, 0)
+	)
+	createShellPart(
+		cave,
+		"NorthWallShell",
+		Vector3.new(generatedSpan, shellHeight, BLOCK_SIZE),
+		position + Vector3.new(0, shellCenterY, -sideOffset)
+	)
+	createShellPart(
+		cave,
+		"SouthWallShell",
+		Vector3.new(generatedSpan, shellHeight, BLOCK_SIZE),
+		position + Vector3.new(0, shellCenterY, sideOffset)
+	)
+	createShellPart(
+		cave,
+		"WestWallShell",
+		Vector3.new(BLOCK_SIZE, shellHeight, generatedSpan),
+		position + Vector3.new(-sideOffset, shellCenterY, 0)
+	)
+	createShellPart(
+		cave,
+		"EastWallShell",
+		Vector3.new(BLOCK_SIZE, shellHeight, generatedSpan),
+		position + Vector3.new(sideOffset, shellCenterY, 0)
+	)
 
 	-- --- Run worms to get carved-out positions ---
 	local allCarved = {}
@@ -210,8 +251,6 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 	end
 
 	-- --- Collect valid floor spawn positions ---
-	local halfSize = math.floor(CAVE_SIZE / 2)
-
 	local function inSpawnZone(x: number, z: number): boolean
 		return Vector2.new(x * BLOCK_SIZE, z * BLOCK_SIZE).Magnitude <= SPAWN_CLEAR_RADIUS
 	end
