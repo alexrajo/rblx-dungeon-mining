@@ -1,5 +1,6 @@
 local ServerScriptService = game:GetService("ServerScriptService")
 local modules = ServerScriptService.modules
+local MineTransitionService = require(modules.MineTransitionService)
 
 local TagHandler = {}
 
@@ -19,12 +20,9 @@ function TagHandler.Apply(instance: Instance)
 		if debounce[player] then return end
 		debounce[player] = true
 
-		-- Lazy require to avoid circular dependency at module load time
-		local MineFloorManager = require(modules.MineFloorManager)
-
 		-- Default to floor 1, or the player can choose a checkpoint via UI
 		local startFloor = instance:GetAttribute("StartFloor") or 1
-		MineFloorManager.EnterMine(player, startFloor)
+		MineTransitionService.StartEnterTransition(player, startFloor)
 
 		task.delay(3, function()
 			debounce[player] = nil

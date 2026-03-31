@@ -1,5 +1,6 @@
 local CollectionService = game:GetService("CollectionService")
 local ServerScriptService = game:GetService("ServerScriptService")
+local Players = game:GetService("Players")
 
 local enemy = script.Parent
 local humanoid: Humanoid = enemy:FindFirstChildOfClass("Humanoid")
@@ -62,6 +63,7 @@ local runningConnection = nil
 
 -- Load EnemyLootHandler for death drops
 local EnemyLootHandler = require(ServerScriptService.modules.EnemyLootHandler)
+local MineTransitionService = require(ServerScriptService.modules.MineTransitionService)
 
 humanoid.Died:Once(function()
 	if runningConnection ~= nil then
@@ -150,6 +152,11 @@ function attack(character)
 	if character == nil then return end
 	local plrHumanoid = character:FindFirstChild("Humanoid")
 	if plrHumanoid == nil or plrHumanoid.Health <= 0 then return end
+
+	local player = Players:GetPlayerFromCharacter(character)
+	if player ~= nil and MineTransitionService.IsPlayerProtected(player) then
+		return
+	end
 
 	if attack1Track and attack2Track then
 		local track = math.random() < 0.5 and attack1Track or attack2Track

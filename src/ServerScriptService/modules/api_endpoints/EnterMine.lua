@@ -1,6 +1,7 @@
 local ServerScriptService = game:GetService("ServerScriptService")
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local MineTransitionService = require(modules.MineTransitionService)
 
 local endpoint = {}
 
@@ -27,10 +28,7 @@ function endpoint.Call(player: Player, startFloor: number)
 		end
 	end
 
-	local MineFloorManager = require(modules.MineFloorManager)
-	MineFloorManager.EnterMine(player, startFloor)
-
-	return { success = true }
+	return { success = MineTransitionService.StartEnterTransition(player, startFloor) }
 end
 
 return endpoint

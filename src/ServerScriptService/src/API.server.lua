@@ -9,6 +9,7 @@ local ServerModules = ServerScriptService.modules
 local PlayerDataHandler = require(ServerModules.PlayerDataHandler)
 
 local MineFloorManager = require(ServerModules.MineFloorManager)
+local MineTransitionService = require(ServerModules.MineTransitionService)
 
 -- Endpoint handlers
 local EndpointFolder = ServerModules.api_endpoints
@@ -35,9 +36,12 @@ APIService:CreateFunctionEndpoint("Craft", CraftEndpoint.Call)
 APIService:CreateFunctionEndpoint("Attack", AttackEndpoint.Call)
 APIService:CreateFunctionEndpoint("EnterMine", EnterMineEndpoint.Call)
 APIService:CreateFunctionEndpoint("ExitMine", ExitMineEndpoint.Call)
+APIService:CreateFunctionEndpoint("CompleteMineTransition", MineTransitionService.CompleteTransition)
+APIService:CreateEventEndpoint("FinishMineTransition", MineTransitionService.FinishTransition)
 
 -- Initialize mine floor preloading
 MineFloorManager.Init()
+MineTransitionService.Init()
 
 -- Tool equipping
 ToolEquipHandler.Initialize()

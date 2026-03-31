@@ -1,5 +1,6 @@
 local ServerScriptService = game:GetService("ServerScriptService")
 local modules = ServerScriptService.modules
+local MineTransitionService = require(modules.MineTransitionService)
 
 local TagHandler = {}
 
@@ -19,9 +20,7 @@ function TagHandler.Apply(instance: Instance)
 		if debounce[player] then return end
 		debounce[player] = true
 
-		-- Lazy require to avoid circular dependency at module load time
-		local MineFloorManager = require(modules.MineFloorManager)
-		MineFloorManager.DescendFloor(player)
+		MineTransitionService.StartDescendTransition(player)
 
 		task.delay(2, function()
 			debounce[player] = nil

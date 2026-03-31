@@ -19,3 +19,6 @@ APIService:CreateEventEndpoint("SendNotification")
 
 -- Event to send the next step of a tutorial to the client
 APIService:CreateEventEndpoint("SendNextTutorialStep")
+
+-- Event to start the client-side mine transition overlay
+APIService:CreateEventEndpoint("StartMineTransition")

@@ -14,6 +14,7 @@ local StatsContext = require(ModuleIndex.StatsContext)
 local ScreenContext = require(ModuleIndex.ScreenContext)
 local ChangeVisualizer = require(ModuleIndex.ChangeVisualizer)
 local NotificationManager = require(ModuleIndex.NotificationManager)
+local MineTransitionOverlay = require(ModuleIndex.MineTransitionOverlay)
 local TutorialManager = require(ModuleIndex.TutorialManager)
 local HealthBar = require(ModuleIndex.HealthBar)
 local FloorIndicator = require(ModuleIndex.FloorIndicator)
@@ -23,29 +24,32 @@ local pageModules = pages:GetChildren()
 local Root = Roact.Component:extend("Root")
 
 function Root:render()
-	return createElement("ScreenGui", {
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		ResetOnSpawn = false,
-		IgnoreGuiInset = false,
-	}, {
-		StatsContextController = createElement(StatsContext.controller, {}, {
-			ScreenContextController = createElement(ScreenContext.controller, {}, {
-				PageManager = createElement(PageManager, {
-					pages = pageModules,
-					Size = UDim2.new(1, 0, 1, 0),
+	return Roact.createFragment({
+		MainGui = createElement("ScreenGui", {
+			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+			ResetOnSpawn = false,
+			IgnoreGuiInset = false,
+		}, {
+			StatsContextController = createElement(StatsContext.controller, {}, {
+				ScreenContextController = createElement(ScreenContext.controller, {}, {
+					PageManager = createElement(PageManager, {
+						pages = pageModules,
+						Size = UDim2.new(1, 0, 1, 0),
+					}),
+					Toolbar = createElement(Toolbar, {}),
+					Controls = createElement(ControlsOverlay, {
+						Size = UDim2.new(1, 0, 1, 0),
+						Position = UDim2.new(0, 0, 0, 0),
+					}),
+					ChangeVisualizer = createElement(ChangeVisualizer),
+					Notifications = createElement(NotificationManager),
+					TutorialManager = createElement(TutorialManager),
+					HealthBar = createElement(HealthBar),
+					FloorIndicator = createElement(FloorIndicator),
 				}),
-				Toolbar = createElement(Toolbar, {}),
-				Controls = createElement(ControlsOverlay, {
-					Size = UDim2.new(1, 0, 1, 0),
-					Position = UDim2.new(0, 0, 0, 0),
-				}),
-				ChangeVisualizer = createElement(ChangeVisualizer),
-				Notifications = createElement(NotificationManager),
-				TutorialManager = createElement(TutorialManager),
-				HealthBar = createElement(HealthBar),
-				FloorIndicator = createElement(FloorIndicator),
 			}),
 		}),
+		MineTransitionOverlay = createElement(MineTransitionOverlay),
 	})
 end
 

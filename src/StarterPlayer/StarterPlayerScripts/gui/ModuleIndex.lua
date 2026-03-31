@@ -18,6 +18,7 @@ local ModuleIndex = {
 	Toolbar = components.Toolbar,
 	ChangeVisualizer = components.ChangeVisualizer,
 	NotificationManager = components.NotificationManager,
+	MineTransitionOverlay = components.MineTransitionOverlay,
 	NotificationPanel = components.NotificationPanel,
 	TutorialManager = components.TutorialManager,
 	ItemCounter = components.ItemCounter,
