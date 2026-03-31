@@ -182,7 +182,8 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 		node.Name = oreType .. "Node_" .. i
 		node.Size = Vector3.new(4, 4, 4)
 		node.Shape = Enum.PartType.Block
-		node.Position = floorPositions[spawnIndex]
+		-- floorPositions is sampled from the walkable air cell above the floor, so ground ore nodes sit lower.
+		node.Position = floorPositions[spawnIndex] - Vector3.new(0, node.Size.Y / 2, 0)
 		node.Anchored = true
 		node.Material = Enum.Material.Rock
 		node.BrickColor = ORE_COLORS[oreType] or BrickColor.new("Medium stone grey")
