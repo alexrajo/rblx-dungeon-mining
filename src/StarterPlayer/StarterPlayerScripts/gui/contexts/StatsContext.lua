@@ -73,13 +73,20 @@ function StatsController:didMount()
 				})
 			end
 
-			dataUpdateMaid:GiveTask(valueRef.ChildAdded:Connect(updateFolderStat))
+			local function connectFolderChild(child)
+				if not child:IsA("ValueBase") then return end
+
+				dataUpdateMaid:GiveTask(child.Changed:Connect(updateFolderStat))
+			end
+
+			dataUpdateMaid:GiveTask(valueRef.ChildAdded:Connect(function(child)
+				connectFolderChild(child)
+				updateFolderStat()
+			end))
 			dataUpdateMaid:GiveTask(valueRef.ChildRemoved:Connect(updateFolderStat))
 
 			for _, child: ValueBase in pairs(valueRef:GetChildren()) do
-				if not child:IsA("ValueBase") then continue end
-
-				dataUpdateMaid:GiveTask(child.Changed:Connect(updateFolderStat))
+				connectFolderChild(child)
 			end
 
 			updateFolderStat()
