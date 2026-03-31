@@ -52,6 +52,7 @@ local ORE_COLORS = {
 
 local NUM_ORE_NODES = 6
 local NUM_LIGHTS = 4
+local EXTRA_LADDER_REVEAL_CHANCE = 0.35
 
 --- Fisher-Yates shuffle in place.
 local function shuffleArray(arr: { any })
@@ -166,6 +167,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 	-- Spawn ore nodes on valid floor positions
 	local primaryOre = layerData.primaryOre
 	local secondaryOre = layerData.secondaryOre
+	local spawnedOreNodes = {}
 
 	for i = 1, NUM_ORE_NODES do
 		local oreType = (i <= 4) and primaryOre or secondaryOre
@@ -194,6 +196,25 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 		CollectionService:AddTag(node, "OreNode")
 
 		node.Parent = floorFolder
+		table.insert(spawnedOreNodes, node)
+	end
+
+	if #spawnedOreNodes > 0 then
+		local revealCandidates = {}
+		for _, node in ipairs(spawnedOreNodes) do
+			table.insert(revealCandidates, node)
+		end
+
+		shuffleArray(revealCandidates)
+
+		local revealCount = 1
+		if #revealCandidates >= 2 and math.random() <= EXTRA_LADDER_REVEAL_CHANCE then
+			revealCount += 1
+		end
+
+		for i = 1, math.min(revealCount, #revealCandidates) do
+			revealCandidates[i]:SetAttribute("RevealsLadder", true)
+		end
 	end
 
 	-- Spawn enemies on floor positions
@@ -226,22 +247,6 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 		CollectionService:AddTag(enemyModel, "Enemy")
 
 		enemyModel.Parent = floorFolder
-	end
-
-	-- Spawn ladder far from spawn to encourage exploration
-	local ladderIndex = math.max(spawnIndex + 1, math.floor(#floorPositions * 0.75))
-	if ladderIndex > #floorPositions then ladderIndex = #floorPositions end
-
-	if ladderIndex >= 1 and ladderIndex <= #floorPositions then
-		local ladder = Instance.new("Part")
-		ladder.Name = "Ladder"
-		ladder.Size = Vector3.new(4, 6, 4)
-		ladder.Position = floorPositions[ladderIndex] + Vector3.new(0, 1, 0)
-		ladder.Anchored = true
-		ladder.Material = Enum.Material.Wood
-		ladder.BrickColor = BrickColor.new("Brown")
-		CollectionService:AddTag(ladder, "MineLadder")
-		ladder.Parent = floorFolder
 	end
 
 	-- Add distributed lighting throughout the cave

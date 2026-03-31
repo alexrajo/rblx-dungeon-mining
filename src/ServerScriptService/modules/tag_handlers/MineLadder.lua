@@ -1,26 +1,41 @@
+local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+
 local modules = ServerScriptService.modules
 local MineTransitionService = require(modules.MineTransitionService)
+
+local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
+local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 
 local TagHandler = {}
 
 local debounce = {}
 
 function TagHandler.Apply(instance: Instance)
-	instance.Touched:Connect(function(hit)
-		local character = hit.Parent
-		if character == nil then return end
+	local existingPrompt = instance:FindFirstChildOfClass("ProximityPrompt")
+	if existingPrompt then
+		existingPrompt:Destroy()
+	end
 
-		local humanoid = character:FindFirstChildOfClass("Humanoid")
-		if humanoid == nil then return end
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = "Descend"
+	prompt.ObjectText = "Ladder"
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = instance
 
-		local player = game.Players:GetPlayerFromCharacter(character)
-		if player == nil then return end
+	prompt.Triggered:Connect(function(player: Player)
+		if Players:GetPlayerFromCharacter(player.Character) ~= player then return end
 
 		if debounce[player] then return end
 		debounce[player] = true
 
-		MineTransitionService.StartDescendTransition(player)
+		local transitionStarted = MineTransitionService.StartDescendTransition(player)
+		if transitionStarted then
+			signalTutorialEvent:Fire(player, "descend")
+		end
 
 		task.delay(2, function()
 			debounce[player] = nil

@@ -1,11 +1,23 @@
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local configs = ReplicatedStorage.configs
 local OreConfig = require(configs.OreConfig)
-local globalConfig = require(ReplicatedStorage.GlobalConfig)
-
-local ORE_NODE_RESPAWN_TIME = globalConfig.ORE_NODE_RESPAWN_TIME
 
 local TagHandler = {}
+
+local function createLadder(position: Vector3, parent: Instance)
+	local ladder = Instance.new("Part")
+	ladder.Name = "Ladder"
+	ladder.Size = Vector3.new(4, 6, 4)
+	ladder.Position = position
+	ladder.Anchored = true
+	ladder.Material = Enum.Material.Wood
+	ladder.BrickColor = BrickColor.new("Brown")
+	CollectionService:AddTag(ladder, "MineLadder")
+	ladder.Parent = parent
+
+	return ladder
+end
 
 function TagHandler.Apply(instance: Instance)
 	-- Read ore type and set defaults from config if needed
@@ -28,10 +40,6 @@ function TagHandler.Apply(instance: Instance)
 	local maxHP = instance:GetAttribute("NodeHP") or 4
 	instance:SetAttribute("CurrentHP", maxHP)
 
-	-- Store a clone for respawning
-	local clone = instance:Clone()
-	local originalParent = instance.Parent
-
 	-- Create a BindableEvent for the server Mine endpoint to signal when the node breaks
 	local breakEvent = Instance.new("BindableEvent")
 	breakEvent.Name = "NodeBreak"
@@ -44,17 +52,14 @@ function TagHandler.Apply(instance: Instance)
 			breakConnection = nil
 		end
 
-		-- Hide/destroy the node
-		instance:Destroy()
+		local originalParent = instance.Parent
+		local revealPosition = instance.Position + Vector3.new(0, 3, 0)
 
-		-- Respawn after timer
-		task.delay(ORE_NODE_RESPAWN_TIME, function()
-			if originalParent and originalParent.Parent then
-				local newNode = clone:Clone()
-				newNode.Parent = originalParent
-				-- The TagManager will re-apply the tag handler to the new clone
-			end
-		end)
+		if instance:GetAttribute("RevealsLadder") and originalParent and originalParent.Parent then
+			createLadder(revealPosition, originalParent)
+		end
+
+		instance:Destroy()
 	end)
 end
 

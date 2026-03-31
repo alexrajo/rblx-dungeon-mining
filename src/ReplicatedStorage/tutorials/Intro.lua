@@ -23,7 +23,7 @@ local IntroTutorial = {
 		},
 		{
 			id = "FindLadder",
-			description = "Now find the ladder on this floor and touch it to descend deeper into the mine!",
+			description = "Mine ore until you reveal a ladder, then use its prompt to descend deeper into the mine!",
 			completeOn = "descend"
 		},
 		{
