@@ -1,10 +1,10 @@
 local CollectionService = game:GetService("CollectionService")
-local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local CaveUtil = require(modules.CaveUtil)
 
 local configs = ReplicatedStorage.configs
 local MineLayerConfig = require(configs.MineLayerConfig)
@@ -36,6 +36,28 @@ function MineFloorManager.GetLayerForFloor(floor: number): (number?, table?)
 	return nil, nil
 end
 
+-- Ore type → BrickColor mapping
+local ORE_COLORS = {
+	Stone = BrickColor.new("Medium stone grey"),
+	Copper = BrickColor.new("Nougat"),
+	Iron = BrickColor.new("Dark stone grey"),
+	Gold = BrickColor.new("Bright yellow"),
+	Diamond = BrickColor.new("Cyan"),
+	Obsidian = BrickColor.new("Really black"),
+	Mythril = BrickColor.new("Bright violet"),
+}
+
+local NUM_ORE_NODES = 6
+local NUM_LIGHTS = 4
+
+--- Fisher-Yates shuffle in place.
+local function shuffleArray(arr: {any})
+	for i = #arr, 2, -1 do
+		local j = math.random(1, i)
+		arr[i], arr[j] = arr[j], arr[i]
+	end
+end
+
 function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 	local layerNum, layerData = MineFloorManager.GetLayerForFloor(floorNumber)
 	if layerData == nil then
@@ -49,82 +71,38 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 
 	local floorOrigin = MINE_ORIGIN + Vector3.new(0, -floorNumber * FLOOR_SPACING, 0)
 
-	-- Create a simple floor platform
-	local platform = Instance.new("Part")
-	platform.Name = "FloorPlatform"
-	platform.Size = Vector3.new(100, 2, 100)
-	platform.Position = floorOrigin
-	platform.Anchored = true
-	platform.Material = Enum.Material.Slate
-	platform.BrickColor = BrickColor.new("Dark stone grey")
-	platform.Parent = floorFolder
+	-- Generate procedural cave
+	local caveModel, floorPositions = CaveUtil.GenerateCave(floorOrigin)
+	caveModel.Parent = floorFolder
 
-	-- Walls
-	local wallPositions = {
-		{ pos = floorOrigin + Vector3.new(50, 15, 0), size = Vector3.new(2, 30, 100) },
-		{ pos = floorOrigin + Vector3.new(-50, 15, 0), size = Vector3.new(2, 30, 100) },
-		{ pos = floorOrigin + Vector3.new(0, 15, 50), size = Vector3.new(100, 30, 2) },
-		{ pos = floorOrigin + Vector3.new(0, 15, -50), size = Vector3.new(100, 30, 2) },
-	}
-	for i, wallData in ipairs(wallPositions) do
-		local wall = Instance.new("Part")
-		wall.Name = "Wall_" .. i
-		wall.Size = wallData.size
-		wall.Position = wallData.pos
-		wall.Anchored = true
-		wall.Material = Enum.Material.Rock
-		wall.BrickColor = BrickColor.new("Dark stone grey")
-		wall.Parent = floorFolder
-	end
+	-- Shuffle floor positions for random placement
+	shuffleArray(floorPositions)
 
-	-- Ceiling
-	local ceiling = Instance.new("Part")
-	ceiling.Name = "Ceiling"
-	ceiling.Size = Vector3.new(100, 2, 100)
-	ceiling.Position = floorOrigin + Vector3.new(0, 30, 0)
-	ceiling.Anchored = true
-	ceiling.Material = Enum.Material.Rock
-	ceiling.BrickColor = BrickColor.new("Really black")
-	ceiling.Parent = floorFolder
+	local spawnIndex = 0
 
-	-- Spawn ore nodes
+	-- Spawn ore nodes on valid floor positions
 	local primaryOre = layerData.primaryOre
 	local secondaryOre = layerData.secondaryOre
-	local NUM_ORE_NODES = 6
 
 	for i = 1, NUM_ORE_NODES do
 		local oreType = (i <= 4) and primaryOre or secondaryOre
 		local oreData = OreConfig.byName[oreType]
 		if oreData == nil then continue end
 
+		spawnIndex = spawnIndex + 1
+		if spawnIndex > #floorPositions then
+			warn("MineFloorManager: Not enough floor positions for ore nodes")
+			break
+		end
+
 		local node = Instance.new("Part")
 		node.Name = oreType .. "Node_" .. i
 		node.Size = Vector3.new(4, 4, 4)
 		node.Shape = Enum.PartType.Block
-		node.Position = floorOrigin + Vector3.new(
-			math.random(-35, 35),
-			3,
-			math.random(-35, 35)
-		)
+		node.Position = floorPositions[spawnIndex]
 		node.Anchored = true
 		node.Material = Enum.Material.Rock
-
-		-- Color based on ore type
-		if oreType == "Stone" then
-			node.BrickColor = BrickColor.new("Medium stone grey")
-		elseif oreType == "Copper" then
-			node.BrickColor = BrickColor.new("Nougat")
-		elseif oreType == "Iron" then
-			node.BrickColor = BrickColor.new("Dark stone grey")
-		elseif oreType == "Gold" then
-			node.BrickColor = BrickColor.new("Bright yellow")
-		elseif oreType == "Diamond" then
-			node.BrickColor = BrickColor.new("Cyan")
-		elseif oreType == "Obsidian" then
-			node.BrickColor = BrickColor.new("Really black")
-		elseif oreType == "Mythril" then
-			node.BrickColor = BrickColor.new("Bright violet")
-		end
+		node.BrickColor = ORE_COLORS[oreType] or BrickColor.new("Medium stone grey")
 
 		node:SetAttribute("OreType", oreType)
 		node:SetAttribute("TierRequired", oreData.minPickaxeTier)
@@ -134,25 +112,23 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 		node.Parent = floorFolder
 	end
 
-	-- Spawn enemies
+	-- Spawn enemies on floor positions
 	local enemyTypes = layerData.enemies
 	local NUM_ENEMIES = math.min(3, #enemyTypes * 2)
 
 	for i = 1, NUM_ENEMIES do
+		spawnIndex = spawnIndex + 1
+		if spawnIndex > #floorPositions then break end
+
 		local enemyType = enemyTypes[math.random(1, #enemyTypes)]
 
-		-- Create a simple enemy model placeholder
 		local enemyModel = Instance.new("Model")
 		enemyModel.Name = enemyType
 
 		local rootPart = Instance.new("Part")
 		rootPart.Name = "HumanoidRootPart"
 		rootPart.Size = Vector3.new(2, 2, 1)
-		rootPart.Position = floorOrigin + Vector3.new(
-			math.random(-30, 30),
-			3,
-			math.random(-30, 30)
-		)
+		rootPart.Position = floorPositions[spawnIndex] + Vector3.new(0, 1, 0)
 		rootPart.Anchored = false
 		rootPart.CanCollide = true
 		rootPart.BrickColor = BrickColor.new("Bright red")
@@ -168,27 +144,43 @@ function MineFloorManager.SpawnFloor(floorNumber: number): Folder
 		enemyModel.Parent = floorFolder
 	end
 
-	-- Spawn ladder to next floor
-	local ladder = Instance.new("Part")
-	ladder.Name = "Ladder"
-	ladder.Size = Vector3.new(4, 6, 4)
-	ladder.Position = floorOrigin + Vector3.new(
-		math.random(-20, 20),
-		4,
-		math.random(-20, 20)
-	)
-	ladder.Anchored = true
-	ladder.Material = Enum.Material.Wood
-	ladder.BrickColor = BrickColor.new("Brown")
-	CollectionService:AddTag(ladder, "MineLadder")
-	ladder.Parent = floorFolder
+	-- Spawn ladder far from spawn to encourage exploration
+	local ladderIndex = math.max(spawnIndex + 1, math.floor(#floorPositions * 0.75))
+	if ladderIndex > #floorPositions then ladderIndex = #floorPositions end
 
-	-- Add lighting
-	local pointLight = Instance.new("PointLight")
-	pointLight.Brightness = 0.5
-	pointLight.Range = 60
-	pointLight.Color = Color3.fromRGB(255, 200, 150)
-	pointLight.Parent = platform
+	if ladderIndex >= 1 and ladderIndex <= #floorPositions then
+		local ladder = Instance.new("Part")
+		ladder.Name = "Ladder"
+		ladder.Size = Vector3.new(4, 6, 4)
+		ladder.Position = floorPositions[ladderIndex] + Vector3.new(0, 1, 0)
+		ladder.Anchored = true
+		ladder.Material = Enum.Material.Wood
+		ladder.BrickColor = BrickColor.new("Brown")
+		CollectionService:AddTag(ladder, "MineLadder")
+		ladder.Parent = floorFolder
+	end
+
+	-- Add distributed lighting throughout the cave
+	local lightSpacing = math.max(1, math.floor(#floorPositions / (NUM_LIGHTS + 1)))
+	for i = 1, NUM_LIGHTS do
+		local lightIndex = i * lightSpacing
+		if lightIndex > #floorPositions then break end
+
+		local lightPart = Instance.new("Part")
+		lightPart.Name = "LightAnchor_" .. i
+		lightPart.Size = Vector3.new(1, 1, 1)
+		lightPart.Position = floorPositions[lightIndex] + Vector3.new(0, 8, 0)
+		lightPart.Anchored = true
+		lightPart.Transparency = 1
+		lightPart.CanCollide = false
+		lightPart.Parent = floorFolder
+
+		local pointLight = Instance.new("PointLight")
+		pointLight.Brightness = 0.5
+		pointLight.Range = 60
+		pointLight.Color = Color3.fromRGB(255, 200, 150)
+		pointLight.Parent = lightPart
+	end
 
 	floorFolder.Parent = workspace
 
