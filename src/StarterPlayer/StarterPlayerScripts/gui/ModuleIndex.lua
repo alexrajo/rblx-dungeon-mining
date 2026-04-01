@@ -29,6 +29,7 @@ local ModuleIndex = {
 
 	InventoryResourcesView = components.InventoryPage.ResourcesView,
 	InventoryGearView = components.InventoryPage.GearView,
+	InventoryLoadoutView = components.InventoryPage.LoadoutView,
 
 	StatsContext = contexts.StatsContext,
 	ScreenContext = contexts.ScreenContext,

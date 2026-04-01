@@ -21,7 +21,7 @@ function StatCalculation.GetCombatDamage(weaponTier: number, level: number): num
 	return baseDamage + weaponDamage
 end
 
-function StatCalculation.GetPlayerDefense(helmetTier: number, chestplateTier: number, bootsTier: number): number
+function StatCalculation.GetPlayerDefense(helmetTier: number, chestplateTier: number, leggingsTier: number, bootsTier: number): number
 	local total = 0
 	if helmetTier > 0 then
 		local stats = GearConfig.GetTierStats(helmetTier)
@@ -29,6 +29,10 @@ function StatCalculation.GetPlayerDefense(helmetTier: number, chestplateTier: nu
 	end
 	if chestplateTier > 0 then
 		local stats = GearConfig.GetTierStats(chestplateTier)
+		if stats then total += stats.armorDefense end
+	end
+	if leggingsTier > 0 then
+		local stats = GearConfig.GetTierStats(leggingsTier)
 		if stats then total += stats.armorDefense end
 	end
 	if bootsTier > 0 then

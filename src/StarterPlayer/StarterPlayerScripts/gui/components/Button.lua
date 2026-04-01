@@ -92,6 +92,7 @@ end
 	@param Position
  	@param onClick
  	@param disabled?
+ 	@param disableHoverScaleTween?
 ]]
 function Button:render()
 	
@@ -100,6 +101,7 @@ function Button:render()
 	
 	local buttonSize = customSize or (size and SIZES[size].container)
 	local isDisabled = self.props.disabled
+	local disableHoverScaleTween = self.props.disableHoverScaleTween == true
 	
 	-- Colors
 	local color: {primary: string, secondary: string, tertiary: string, quaternary: string} = isDisabled and COLORS["gray"] or COLORS[self.props.color]
@@ -138,16 +140,21 @@ function Button:render()
 	local function onHoverBegin(rbxInstance)
 		cancelHoverTweenInPlace()
 		local hoverInstance = self.hoverElementRef:getValue()
-		if buttonSize ~= nil then
-			if hoverInstance ~= nil then
-				local tween = TweenService:Create(hoverInstance, onHoverBeginTweenInfo, {
-					Size = UDim2.fromScale(1, 0.7)
-				})
-				table.insert(self.hoverTweens, tween)
-				tween:Play()
-			end
+		if hoverInstance ~= nil then
+			local tween = TweenService:Create(hoverInstance, onHoverBeginTweenInfo, {
+				Size = UDim2.fromScale(1, 0.7)
+			})
+			table.insert(self.hoverTweens, tween)
+			tween:Play()
+		end
+		if buttonSize ~= nil and not disableHoverScaleTween then
 			local rbxInstanceTween = TweenService:Create(rbxInstance, onHoverBeginTweenInfo, {
-				Size = UDim2.fromOffset(buttonSize.Width.Offset+10, buttonSize.Height.Offset+10)
+				Size = UDim2.new(
+					buttonSize.X.Scale,
+					buttonSize.X.Offset + 10,
+					buttonSize.Y.Scale,
+					buttonSize.Y.Offset + 10
+				)
 			})
 			table.insert(self.hoverTweens, rbxInstanceTween)
 			rbxInstanceTween:Play()
@@ -157,14 +164,14 @@ function Button:render()
 	local function onHoverEnd(rbxInstance)
 		cancelHoverTweenInPlace()
 		local hoverInstance = self.hoverElementRef:getValue()
-		if buttonSize ~= nil then
-			if hoverInstance ~= nil then
-				local tween = TweenService:Create(hoverInstance, onHoverBeginTweenInfo, {
-					Size = UDim2.fromScale(1, 0.5)
-				})
-				table.insert(self.hoverTweens, tween)
-				tween:Play()
-			end
+		if hoverInstance ~= nil then
+			local tween = TweenService:Create(hoverInstance, onHoverBeginTweenInfo, {
+				Size = UDim2.fromScale(1, 0.5)
+			})
+			table.insert(self.hoverTweens, tween)
+			tween:Play()
+		end
+		if buttonSize ~= nil and not disableHoverScaleTween then
 			local rbxInstanceTween = TweenService:Create(rbxInstance, onHoverBeginTweenInfo, {
 				Size = buttonSize
 			})

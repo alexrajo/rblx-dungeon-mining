@@ -1,8 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Roact = require(ReplicatedStorage.services.Roact)
 
-local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
-
 local SelectablePanel = Roact.Component:extend("SelectablePanel")
 
 function SelectablePanel:init()
@@ -51,7 +49,7 @@ function SelectablePanel:render()
 	props.dominantAxis = nil
 	props.selected = nil
 	props.onSelect = nil
-	props[Roact.Event.MouseButton1Click] = onClick
+	props[Roact.Event.Activated] = onClick
 	props[Roact.Event.MouseEnter] = onHoverBegin
 	props[Roact.Event.MouseLeave] = onHoverEnd
 	

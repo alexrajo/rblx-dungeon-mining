@@ -60,6 +60,7 @@ function StatsPage:render()
 
 			local helmetTier = 0
 			local chestplateTier = 0
+			local leggingsTier = 0
 			local bootsTier = 0
 			if data.EquippedHelmet ~= "" then
 				helmetTier = GearConfig.GetTierForItem(data.EquippedHelmet) or 0
@@ -67,13 +68,16 @@ function StatsPage:render()
 			if data.EquippedChestplate ~= "" then
 				chestplateTier = GearConfig.GetTierForItem(data.EquippedChestplate) or 0
 			end
+			if data.EquippedLeggings ~= "" then
+				leggingsTier = GearConfig.GetTierForItem(data.EquippedLeggings) or 0
+			end
 			if data.EquippedBoots ~= "" then
 				bootsTier = GearConfig.GetTierForItem(data.EquippedBoots) or 0
 			end
 
 			local miningPower = StatCalculation.GetMiningDamage(pickaxeTier)
 			local combatDamage = StatCalculation.GetCombatDamage(weaponTier, level)
-			local defense = StatCalculation.GetPlayerDefense(helmetTier, chestplateTier, bootsTier)
+			local defense = StatCalculation.GetPlayerDefense(helmetTier, chestplateTier, leggingsTier, bootsTier)
 			local maxHP = StatCalculation.GetPlayerMaxHealth(level)
 			local maxFloor = data.MaxFloorReached or 0
 

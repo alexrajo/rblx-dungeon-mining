@@ -2,35 +2,29 @@ local Players = game:GetService("Players")
 local ServerStorage = game:GetService("ServerStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
+local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 local PlayerDataHandler = require(ServerScriptService.modules.PlayerDataHandler)
-
-local ACTION_TO_SLOT: {[string]: string} = {
-	Mine = "Pickaxe",
-	Attack = "Weapon",
-}
 
 local SLOT_TO_FOLDER: {[string]: string} = {
 	Pickaxe = "Pickaxes",
 	Weapon = "Weapons",
 }
 
-local SLOT_TO_DATA_FIELD: {[string]: string} = {
-	Pickaxe = "EquippedPickaxe",
-	Weapon = "EquippedWeapon",
-}
-
 type PlayerState = {
-	tools: { Pickaxe: Tool?, Weapon: Tool? },
-	activeSlot: string,
+	tools: {[number]: Tool?},
 }
 
 local playerStates: {[Player]: PlayerState} = {}
 
 local ToolEquipHandler = {}
 
-local function getToolTemplate(slot: string, itemName: string): Tool?
-	local folderName = SLOT_TO_FOLDER[slot]
-	if folderName == nil then return nil end
+local function getToolTemplate(equipmentSlot: string, itemName: string): Tool?
+	local folderName = SLOT_TO_FOLDER[equipmentSlot]
+	if folderName == nil or itemName == "" then
+		return nil
+	end
 
 	local toolsFolder = ServerStorage:FindFirstChild("Tools")
 	if toolsFolder == nil then
@@ -53,83 +47,120 @@ local function getToolTemplate(slot: string, itemName: string): Tool?
 	return template
 end
 
-local function destroyTool(state: PlayerState, slot: string)
-	local tool = state.tools[slot]
+local function destroyTool(state: PlayerState, slotIndex: number)
+	local tool = state.tools[slotIndex]
 	if tool then
 		tool:Destroy()
-		state.tools[slot] = nil
+		state.tools[slotIndex] = nil
 	end
 end
 
-local function cloneToolForSlot(player: Player, state: PlayerState, slot: string)
-	destroyTool(state, slot)
+local function destroyAllTools(state: PlayerState)
+	for slotIndex = 1, HotbarConfig.MAX_SLOTS do
+		destroyTool(state, slotIndex)
+	end
+end
 
-	local dataField = SLOT_TO_DATA_FIELD[slot]
-	if dataField == nil then return end
+local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: number)
+	destroyTool(state, slotIndex)
 
-	local itemName: string
-	if slot == "Pickaxe" then
-		itemName = PlayerDataHandler.GetEquippedPickaxe(player)
-	else
-		itemName = PlayerDataHandler.GetEquippedWeapon(player)
+	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
+	local itemName = hotbarSlots[slotIndex]
+	if itemName == nil or itemName == "" then
+		return
 	end
 
-	local template = getToolTemplate(slot, itemName)
-	if template == nil then return end
+	local actionName = HotbarConfig.GetActionName(itemName)
+	if actionName == nil then
+		return
+	end
+
+	local equipmentSlot = GearConfig.GetSlotForItem(itemName)
+	if equipmentSlot == nil then
+		return
+	end
+
+	local template = getToolTemplate(equipmentSlot, itemName)
+	if template == nil then
+		return
+	end
 
 	local tool = template:Clone()
-	state.tools[slot] = tool
+	tool.CanBeDropped = false
+	tool:SetAttribute("HotbarSlot", slotIndex)
+	tool:SetAttribute("HotbarItemName", itemName)
+	tool:SetAttribute("HotbarActionName", actionName)
 
-	local character = player.Character
-	if slot == state.activeSlot and character then
-		tool.Parent = character
-	end
+	state.tools[slotIndex] = tool
 end
 
-local function giveTools(player: Player)
+local function syncEquippedTool(player: Player)
 	local state = playerStates[player]
-	if state == nil then return end
+	if state == nil then
+		return
+	end
 
-	-- Destroy any existing tools (e.g., from previous character)
-	destroyTool(state, "Pickaxe")
-	destroyTool(state, "Weapon")
+	local backpack = player:FindFirstChildOfClass("Backpack") or player:FindFirstChild("Backpack")
+	local character = player.Character
+	if backpack == nil then
+		return
+	end
 
-	cloneToolForSlot(player, state, "Pickaxe")
-	cloneToolForSlot(player, state, "Weapon")
+	for slotIndex = 1, HotbarConfig.MAX_SLOTS do
+		local tool = state.tools[slotIndex]
+		if tool and tool.Parent ~= backpack then
+			tool.Parent = backpack
+		end
+	end
+
+	if character == nil then
+		return
+	end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil then
+		return
+	end
+
+	local selectedSlot = PlayerDataHandler.GetSelectedHotbarSlot(player)
+	if selectedSlot == 0 then
+		humanoid:UnequipTools()
+		return
+	end
+
+	local selectedTool = state.tools[selectedSlot]
+	if selectedTool == nil then
+		humanoid:UnequipTools()
+		return
+	end
+
+	humanoid:EquipTool(selectedTool)
 end
 
-local function setActiveSlot(player: Player, slot: string)
+local function rebuildTools(player: Player)
 	local state = playerStates[player]
-	if state == nil then return end
-	if state.activeSlot == slot then return end
-
-	local character = player.Character
-
-	-- Unparent current active tool
-	local currentTool = state.tools[state.activeSlot]
-	if currentTool then
-		currentTool.Parent = nil
+	if state == nil then
+		return
 	end
 
-	-- Parent new active tool to character
-	state.activeSlot = slot
-	local newTool = state.tools[slot]
-	if newTool and character then
-		newTool.Parent = character
+	destroyAllTools(state)
+	for slotIndex = 1, HotbarConfig.MAX_SLOTS do
+		cloneToolForSlot(player, state, slotIndex)
 	end
+	syncEquippedTool(player)
 end
 
 local function cleanup(player: Player)
 	local state = playerStates[player]
-	if state == nil then return end
+	if state == nil then
+		return
+	end
 
-	destroyTool(state, "Pickaxe")
-	destroyTool(state, "Weapon")
+	destroyAllTools(state)
 	playerStates[player] = nil
 end
 
 local function onPlayerAdded(player: Player)
-	-- Wait for player data to be ready
 	local maxRetries = 300
 	local n = 0
 	while PlayerDataHandler.GetClient(player) == nil and n < maxRetries do
@@ -144,42 +175,36 @@ local function onPlayerAdded(player: Player)
 
 	playerStates[player] = {
 		tools = {},
-		activeSlot = "Pickaxe",
 	}
 
-	-- Give tools when character spawns
 	player.CharacterAdded:Connect(function()
-		-- Small delay to ensure character is fully loaded
 		task.wait(0.1)
-		giveTools(player)
+		rebuildTools(player)
 	end)
 
-	-- Listen for equipped gear changes
+	PlayerDataHandler.ListenToStatUpdate("HotbarSlots", player, function()
+		rebuildTools(player)
+	end)
+
+	PlayerDataHandler.ListenToStatUpdate("SelectedHotbarSlot", player, function()
+		syncEquippedTool(player)
+	end)
+
 	PlayerDataHandler.ListenToStatUpdate("EquippedPickaxe", player, function()
-		local state = playerStates[player]
-		if state == nil then return end
-		cloneToolForSlot(player, state, "Pickaxe")
+		rebuildTools(player)
 	end)
 
 	PlayerDataHandler.ListenToStatUpdate("EquippedWeapon", player, function()
-		local state = playerStates[player]
-		if state == nil then return end
-		cloneToolForSlot(player, state, "Weapon")
+		rebuildTools(player)
 	end)
 
-	-- If character already exists, give tools now
-	if player.Character then
-		giveTools(player)
-	end
-end
+	PlayerDataHandler.ListenToStatUpdate("Inventory", player, function()
+		rebuildTools(player)
+	end)
 
-function ToolEquipHandler.SetActiveSlot(player: Player, actionName: string)
-	local slot = ACTION_TO_SLOT[actionName]
-	if slot == nil then
-		warn("ToolEquipHandler: Unknown action name '" .. tostring(actionName) .. "'")
-		return
+	if player.Character then
+		rebuildTools(player)
 	end
-	setActiveSlot(player, slot)
 end
 
 function ToolEquipHandler.Initialize()
@@ -189,7 +214,6 @@ function ToolEquipHandler.Initialize()
 
 	Players.PlayerRemoving:Connect(cleanup)
 
-	-- Handle players already in game
 	for _, player in ipairs(Players:GetPlayers()) do
 		task.spawn(onPlayerAdded, player)
 	end

@@ -6,6 +6,7 @@ local ProfileTemplate = require(script.ProfileTemplate)
 local TempStats = require(script.TempStats)
 local ProfileStore = ProfileService.GetProfileStore("PlayerData", ProfileTemplate)
 local APIService = require(Services.APIService)
+local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -15,10 +16,97 @@ PlayerDataFolder.Name = "PlayerData"
 PlayerDataFolder.Parent = ReplicatedStorage
 
 local dbClients = {}
+local PlayerDataHandler = {}
+local getStat
+local setStat
+local migrateHotbarData
 
 local function handleRelease(player, client)
 	dbClients[player] = nil
 	player:Kick()
+end
+
+local function buildStoredHotbarSlots(slotValues: {string})
+	local stored = {}
+	for index = 1, HotbarConfig.MAX_SLOTS do
+		table.insert(stored, {
+			name = tostring(index),
+			value = slotValues[index] or "",
+		})
+	end
+	return stored
+end
+
+local function normalizeHotbarSlots(rawSlots): {string}
+	local normalized = table.create(HotbarConfig.MAX_SLOTS, "")
+
+	if typeof(rawSlots) ~= "table" then
+		return normalized
+	end
+
+	for _, entry in ipairs(rawSlots) do
+		if typeof(entry) ~= "table" then
+			continue
+		end
+
+		local slotIndex = tonumber(entry.name)
+		if slotIndex ~= nil and slotIndex >= 1 and slotIndex <= HotbarConfig.MAX_SLOTS then
+			normalized[slotIndex] = type(entry.value) == "string" and entry.value or ""
+		end
+	end
+
+	return normalized
+end
+
+local function getPlayerDataSnapshot(player: Player)
+	return {
+		Inventory = getStat("Inventory", ProfileTemplate.Inventory, player),
+		EquippedPickaxe = getStat("EquippedPickaxe", ProfileTemplate.EquippedPickaxe, player),
+		EquippedWeapon = getStat("EquippedWeapon", ProfileTemplate.EquippedWeapon, player),
+		EquippedHelmet = getStat("EquippedHelmet", ProfileTemplate.EquippedHelmet, player),
+		EquippedChestplate = getStat("EquippedChestplate", ProfileTemplate.EquippedChestplate, player),
+		EquippedLeggings = getStat("EquippedLeggings", ProfileTemplate.EquippedLeggings, player),
+		EquippedBoots = getStat("EquippedBoots", ProfileTemplate.EquippedBoots, player),
+	}
+end
+
+local function getFirstAvailableHotbarSlot(slotValues: {string}, playerData): number
+	for index, entryId in ipairs(slotValues) do
+		if entryId ~= "" and HotbarConfig.IsEntryAvailable(entryId, playerData) then
+			return index
+		end
+	end
+	return 0
+end
+
+local function sanitizeHotbarData(player: Player)
+	local playerData = getPlayerDataSnapshot(player)
+	local slotValues = normalizeHotbarSlots(getStat("HotbarSlots", ProfileTemplate.HotbarSlots, player))
+	local seenEntries: {[string]: boolean} = {}
+
+	for index, entryId in ipairs(slotValues) do
+		local isValid = entryId ~= ""
+			and HotbarConfig.IsEntryHotbarEligible(entryId)
+			and HotbarConfig.IsEntryAvailable(entryId, playerData)
+			and not seenEntries[entryId]
+
+		if isValid then
+			seenEntries[entryId] = true
+		else
+			slotValues[index] = ""
+		end
+	end
+
+	local selectedSlot = getStat("SelectedHotbarSlot", 0, player)
+	if type(selectedSlot) ~= "number" then
+		selectedSlot = 0
+	end
+	if selectedSlot < 1 or selectedSlot > HotbarConfig.MAX_SLOTS or slotValues[selectedSlot] == "" then
+		selectedSlot = getFirstAvailableHotbarSlot(slotValues, playerData)
+	end
+
+	setStat("HotbarSlots", buildStoredHotbarSlots(slotValues), player)
+	setStat("SelectedHotbarSlot", selectedSlot, player)
 end
 
 local function initializeClient(player: Player)
@@ -32,16 +120,8 @@ local function initializeClient(player: Player)
 	end
 	dbClients[player] = client
 	TempStats:InitializePlayer(player)
+	migrateHotbarData(player)
 end
-
-game.Players.PlayerAdded:Connect(initializeClient)
-
--- Initialize dbClients if not caught by playerAdded event
-for _, player in pairs(game.Players:GetChildren()) do
-	initializeClient(player)
-end
-
-local PlayerDataHandler = {}
 
 function addToStat(statName: string, defaultValue, player: Player, amount: number)
 	local client = dbClients[player]
@@ -70,6 +150,21 @@ end
 function PlayerDataHandler.GetClient(player: Player)
 	return dbClients[player]
 end
+
+function PlayerDataHandler.MigrateHotbarData(player: Player)
+	local version = getStat("HotbarVersion", 0, player)
+	if version < HotbarConfig.CURRENT_VERSION then
+		local snapshot = getPlayerDataSnapshot(player)
+		local defaultSlots = HotbarConfig.GetDefaultSlotsForPlayerData(snapshot)
+		setStat("HotbarSlots", buildStoredHotbarSlots(defaultSlots), player)
+		setStat("SelectedHotbarSlot", getFirstAvailableHotbarSlot(defaultSlots, snapshot), player)
+		setStat("HotbarVersion", HotbarConfig.CURRENT_VERSION, player)
+	end
+
+	sanitizeHotbarData(player)
+end
+
+migrateHotbarData = PlayerDataHandler.MigrateHotbarData
 
 function PlayerDataHandler.ListenToStatUpdate(statName: string, player: Player, callback: (value: any) -> ())
 	local client = dbClients[player]
@@ -168,6 +263,7 @@ end
 function PlayerDataHandler.EquipGear(player: Player, itemName: string, slot: string)
 	local fieldName = "Equipped" .. slot
 	setStat(fieldName, itemName, player)
+	sanitizeHotbarData(player)
 end
 
 function PlayerDataHandler.GetEquippedGear(player: Player)
@@ -176,6 +272,7 @@ function PlayerDataHandler.GetEquippedGear(player: Player)
 		Weapon = getStat("EquippedWeapon", ProfileTemplate.EquippedWeapon, player),
 		Helmet = getStat("EquippedHelmet", ProfileTemplate.EquippedHelmet, player),
 		Chestplate = getStat("EquippedChestplate", ProfileTemplate.EquippedChestplate, player),
+		Leggings = getStat("EquippedLeggings", ProfileTemplate.EquippedLeggings, player),
 		Boots = getStat("EquippedBoots", ProfileTemplate.EquippedBoots, player),
 	}
 end
@@ -186,6 +283,89 @@ end
 
 function PlayerDataHandler.GetEquippedWeapon(player: Player): string
 	return getStat("EquippedWeapon", ProfileTemplate.EquippedWeapon, player)
+end
+
+function PlayerDataHandler.ClearEquippedGear(player: Player, slot: string)
+	local fieldName = "Equipped" .. slot
+	if ProfileTemplate[fieldName] == nil then
+		return false
+	end
+
+	setStat(fieldName, "", player)
+	sanitizeHotbarData(player)
+	return true
+end
+
+function PlayerDataHandler.GetHotbarSlots(player: Player): {string}
+	return normalizeHotbarSlots(getStat("HotbarSlots", ProfileTemplate.HotbarSlots, player))
+end
+
+function PlayerDataHandler.SetHotbarSlots(player: Player, slotValues: {string})
+	setStat("HotbarSlots", buildStoredHotbarSlots(slotValues), player)
+	sanitizeHotbarData(player)
+end
+
+function PlayerDataHandler.AssignHotbarEntry(player: Player, slotIndex: number, entryId: string): boolean
+	if type(slotIndex) ~= "number" or slotIndex < 1 or slotIndex > HotbarConfig.MAX_SLOTS then
+		return false
+	end
+	if type(entryId) ~= "string" or not HotbarConfig.IsEntryHotbarEligible(entryId) then
+		return false
+	end
+
+	local snapshot = getPlayerDataSnapshot(player)
+	if not HotbarConfig.IsEntryAvailable(entryId, snapshot) then
+		return false
+	end
+
+	local slots = PlayerDataHandler.GetHotbarSlots(player)
+	for index, existingEntryId in ipairs(slots) do
+		if existingEntryId == entryId then
+			slots[index] = ""
+		end
+	end
+
+	slots[slotIndex] = entryId
+	PlayerDataHandler.SetHotbarSlots(player, slots)
+	return true
+end
+
+function PlayerDataHandler.ClearHotbarSlot(player: Player, slotIndex: number): boolean
+	if type(slotIndex) ~= "number" or slotIndex < 1 or slotIndex > HotbarConfig.MAX_SLOTS then
+		return false
+	end
+
+	local slots = PlayerDataHandler.GetHotbarSlots(player)
+	slots[slotIndex] = ""
+	PlayerDataHandler.SetHotbarSlots(player, slots)
+	return true
+end
+
+function PlayerDataHandler.GetSelectedHotbarSlot(player: Player): number
+	local value = getStat("SelectedHotbarSlot", 0, player)
+	if type(value) ~= "number" then
+		return 0
+	end
+	return value
+end
+
+function PlayerDataHandler.SetSelectedHotbarSlot(player: Player, slotIndex: number): boolean
+	if type(slotIndex) ~= "number" then
+		return false
+	end
+
+	if slotIndex == 0 then
+		setStat("SelectedHotbarSlot", 0, player)
+		return true
+	end
+
+	local slots = PlayerDataHandler.GetHotbarSlots(player)
+	if slotIndex < 1 or slotIndex > HotbarConfig.MAX_SLOTS or slots[slotIndex] == "" then
+		return false
+	end
+
+	setStat("SelectedHotbarSlot", slotIndex, player)
+	return true
 end
 
 -- Mine progression
@@ -264,6 +444,12 @@ function PlayerDataHandler.CompleteTutorial(player: Player, tutorialName: string
 		end
 	end
 	setStat("TutorialStates", tutorialStates, player)
+end
+
+game.Players.PlayerAdded:Connect(initializeClient)
+
+for _, player in pairs(game.Players:GetChildren()) do
+	initializeClient(player)
 end
 
 return PlayerDataHandler

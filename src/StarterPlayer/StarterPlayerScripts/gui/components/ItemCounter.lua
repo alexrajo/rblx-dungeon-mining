@@ -14,6 +14,7 @@ local ItemCounter = Roact.Component:extend("ItemCounter")
 	@param name
 	@param amount
 	@param amountOwned?
+    @param Size
 ]]
 function ItemCounter:render()
 	local name = self.props.name
@@ -26,7 +27,7 @@ function ItemCounter:render()
 	
 	local imageId = itemConfig.imageId or "76280156712677"
 
-	return createElement(Panel, {}, {
+	return createElement(Panel, {Size = self.props.Size}, {
 		Icon = createElement("ImageLabel", {
 			Image = "rbxassetid://"..imageId,
 			AnchorPoint = Vector2.new(0.5, 0.5),

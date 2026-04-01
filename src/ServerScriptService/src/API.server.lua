@@ -20,6 +20,10 @@ local CraftEndpoint = require(EndpointFolder.Craft)
 local AttackEndpoint = require(EndpointFolder.Attack)
 local EnterMineEndpoint = require(EndpointFolder.EnterMine)
 local ExitMineEndpoint = require(EndpointFolder.ExitMine)
+local AssignHotbarSlotEndpoint = require(EndpointFolder.AssignHotbarSlot)
+local ClearHotbarSlotEndpoint = require(EndpointFolder.ClearHotbarSlot)
+local ClearEquippedGearEndpoint = require(EndpointFolder.ClearEquippedGear)
+local SelectHotbarSlotEndpoint = require(EndpointFolder.SelectHotbarSlot)
 local ToolEquipHandler = require(ServerModules.ToolEquipHandler)
 
 -- Cross script communication
@@ -38,6 +42,10 @@ APIService:CreateFunctionEndpoint("EnterMine", EnterMineEndpoint.Call)
 APIService:CreateFunctionEndpoint("ExitMine", ExitMineEndpoint.Call)
 APIService:CreateFunctionEndpoint("CompleteMineTransition", MineTransitionService.CompleteTransition)
 APIService:CreateEventEndpoint("FinishMineTransition", MineTransitionService.FinishTransition)
+APIService:CreateEventEndpoint("AssignHotbarSlot", AssignHotbarSlotEndpoint.Call)
+APIService:CreateEventEndpoint("ClearHotbarSlot", ClearHotbarSlotEndpoint.Call)
+APIService:CreateEventEndpoint("ClearEquippedGear", ClearEquippedGearEndpoint.Call)
+APIService:CreateEventEndpoint("SelectHotbarSlot", SelectHotbarSlotEndpoint.Call)
 
 -- Initialize mine floor preloading
 MineFloorManager.Init()
@@ -45,9 +53,6 @@ MineTransitionService.Init()
 
 -- Tool equipping
 ToolEquipHandler.Initialize()
-APIService:CreateEventEndpoint("SelectActiveTool", function(player: Player, actionName: string)
-	ToolEquipHandler.SetActiveSlot(player, actionName)
-end)
 
 -- Tutorial
 function startTutorial(...)

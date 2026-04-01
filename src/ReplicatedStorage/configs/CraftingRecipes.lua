@@ -21,6 +21,11 @@ local recipes = {
 		ingredients = { Copper = 10 },
 	},
 	{
+		name = "Copper Leggings",
+		category = "Armor",
+		ingredients = { Copper = 7 },
+	},
+	{
 		name = "Copper Boots",
 		category = "Armor",
 		ingredients = { Copper = 6 },
@@ -46,6 +51,11 @@ local recipes = {
 		name = "Iron Chestplate",
 		category = "Armor",
 		ingredients = { Iron = 14 },
+	},
+	{
+		name = "Iron Leggings",
+		category = "Armor",
+		ingredients = { Iron = 10 },
 	},
 	{
 		name = "Iron Boots",
@@ -75,6 +85,11 @@ local recipes = {
 		ingredients = { Gold = 18 },
 	},
 	{
+		name = "Gold Leggings",
+		category = "Armor",
+		ingredients = { Gold = 12 },
+	},
+	{
 		name = "Gold Boots",
 		category = "Armor",
 		ingredients = { Gold = 10 },
@@ -102,6 +117,11 @@ local recipes = {
 		ingredients = { Diamond = 22 },
 	},
 	{
+		name = "Diamond Leggings",
+		category = "Armor",
+		ingredients = { Diamond = 14 },
+	},
+	{
 		name = "Diamond Boots",
 		category = "Armor",
 		ingredients = { Diamond = 12 },
@@ -127,6 +147,11 @@ local recipes = {
 		name = "Obsidian Chestplate",
 		category = "Armor",
 		ingredients = { Obsidian = 26, ["Fire Essence"] = 2 },
+	},
+	{
+		name = "Obsidian Leggings",
+		category = "Armor",
+		ingredients = { Obsidian = 18, ["Fire Essence"] = 1 },
 	},
 	{
 		name = "Obsidian Boots",

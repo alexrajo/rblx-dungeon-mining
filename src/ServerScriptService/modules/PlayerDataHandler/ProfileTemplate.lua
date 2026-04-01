@@ -9,7 +9,17 @@ return {
 	EquippedWeapon = "Wood Sword",
 	EquippedHelmet = "",
 	EquippedChestplate = "",
+	EquippedLeggings = "",
 	EquippedBoots = "",
+	HotbarVersion = 0,
+	HotbarSlots = {
+		{name = "1", value = ""},
+		{name = "2", value = ""},
+		{name = "3", value = ""},
+		{name = "4", value = ""},
+		{name = "5", value = ""},
+	},
+	SelectedHotbarSlot = 0,
 	UnlockedRecipes = {},
 	TutorialStates = {{name = "Intro", value = false}},
 }
