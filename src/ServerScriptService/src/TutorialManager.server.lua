@@ -19,6 +19,10 @@ local tutorialRefFolder = ReplicatedStorage.tutorials
 local tutorials = ModuleLoader.shallowLoad(tutorialRefFolder)
 
 local playerTutorialStates = {}
+local RECENT_SIGNAL_LIMIT = 10
+local NON_REPLAYABLE_SIGNALS = {
+	click = true,
+}
 
 function getOrCreateTutorialState(player: Player)
 	local state = playerTutorialStates[player]
@@ -26,6 +30,7 @@ function getOrCreateTutorialState(player: Player)
 		state = {
 			currentTutorial = nil,
 			currentStep = 1,
+			recentSignals = {},
 		}
 		playerTutorialStates[player] = state
 	end
@@ -33,10 +38,56 @@ function getOrCreateTutorialState(player: Player)
 end
 
 function preprocessStep(step)
-    -- In place update of step
-    if step["pointToPositionFunction"] ~= nil and type(step["pointToPositionFunction"]) == "function" then
-        step["pointToPosition"] = step["pointToPositionFunction"]()
-    end
+	-- In place update of step
+	if step["pointToPositionFunction"] ~= nil and type(step["pointToPositionFunction"]) == "function" then
+		step["pointToPosition"] = step["pointToPositionFunction"]()
+	end
+end
+
+function recordRecentSignal(playerState, signal: string)
+	local recentSignals = playerState.recentSignals
+	local existingIndex = table.find(recentSignals, signal)
+	if existingIndex ~= nil then
+		table.remove(recentSignals, existingIndex)
+	end
+
+	table.insert(recentSignals, signal)
+
+	while #recentSignals > RECENT_SIGNAL_LIMIT do
+		table.remove(recentSignals, 1)
+	end
+end
+
+function stepWasCompletedRecently(playerState, step): boolean
+	local completeOn = step.completeOn
+	if completeOn == nil or NON_REPLAYABLE_SIGNALS[completeOn] then
+		return false
+	end
+
+	return table.find(playerState.recentSignals, completeOn) ~= nil
+end
+
+function activateTutorialStep(player: Player, tutorialName: string, stepIndex: number)
+	local playerState = getOrCreateTutorialState(player)
+	local tutorial = tutorials[tutorialName]
+	local tutorialSteps = tutorial.steps
+	local stepToActivate = stepIndex
+
+	while stepToActivate <= #tutorialSteps do
+		local tutorialStep = tutorialSteps[stepToActivate]
+		if not stepWasCompletedRecently(playerState, tutorialStep) then
+			playerState.currentStep = stepToActivate
+
+			preprocessStep(tutorialStep)
+			sendNextStepClientEvent:FireClient(player, tutorialStep, tutorialName)
+			return
+		end
+
+		stepToActivate += 1
+	end
+
+	completeTutorial(player)
+	sendNextStepClientEvent:FireClient(player, { id = "Completed" }, tutorialName)
 end
 
 function playerRemoving(player: Player)
@@ -51,18 +102,17 @@ function startTutorial(player: Player, tutorialName: string)
 	playerState.currentTutorial = tutorialName
 	playerState.currentStep = 1
 
-	local tutorial = tutorials[tutorialName]
-	local steps = tutorial.steps
-    local stepToSend = steps[1]
-    preprocessStep(stepToSend)
-	sendNextStepClientEvent:FireClient(player, stepToSend, tutorialName)
+	activateTutorialStep(player, tutorialName, 1)
 end
 
 function signalReceived(player: Player, signal: string)
-	local playerState = playerTutorialStates[player]
+	local playerState = getOrCreateTutorialState(player)
+	recordRecentSignal(playerState, signal)
+
 	if playerState.currentTutorial == nil then
 		return
 	end
+
 	-- Do validation (check if the step completeOn matches the signal)
 	local tutorial = tutorials[playerState.currentTutorial]
 	local tutorialStep = tutorial.steps[playerState.currentStep]
@@ -70,19 +120,9 @@ function signalReceived(player: Player, signal: string)
 	if signal ~= completeOn then
 		return
 	end
+
 	local newStep = playerState.currentStep + 1
-	playerState.currentStep = newStep
-	if playerState.currentStep > #tutorial.steps then
-		-- Tutorial is finished
-		completeTutorial(player)
-		-- Fire event to client to notify of completed tutorial
-		sendNextStepClientEvent:FireClient(player, { id = "Completed" }, playerState.currentTutorial)
-		return
-	end
-	-- Fire event to client with new step information
-    local stepToSend = tutorial.steps[newStep]
-    preprocessStep(stepToSend)
-	sendNextStepClientEvent:FireClient(player, stepToSend, playerState.currentTutorial)
+	activateTutorialStep(player, playerState.currentTutorial, newStep)
 end
 
 function skipTutorial(player: Player)
