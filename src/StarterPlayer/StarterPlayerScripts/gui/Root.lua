@@ -17,7 +17,6 @@ local NotificationManager = require(ModuleIndex.NotificationManager)
 local MineTransitionOverlay = require(ModuleIndex.MineTransitionOverlay)
 local TutorialManager = require(ModuleIndex.TutorialManager)
 local HealthBar = require(ModuleIndex.HealthBar)
-local FloorIndicator = require(ModuleIndex.FloorIndicator)
 
 local pageModules = pages:GetChildren()
 
@@ -45,7 +44,6 @@ function Root:render()
 					Notifications = createElement(NotificationManager),
 					TutorialManager = createElement(TutorialManager),
 					HealthBar = createElement(HealthBar),
-					FloorIndicator = createElement(FloorIndicator),
 				}),
 			}),
 		}),
