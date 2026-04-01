@@ -74,70 +74,74 @@ function Toolbar:renderToolbar(screenData)
 	local selectedSlot = self.state.hotbar.selectedSlot or 0
 
 	local slotButtons = {}
+	local visibleSlotCount = 0
 	for i = 1, HotbarConfig.MAX_SLOTS do
 		local itemName = hotbarSlots[i] or ""
-		local displayName = itemName ~= "" and itemName or "Empty"
-		local imageId = HotbarConfig.GetImageId(itemName)
-		local isSelected = selectedSlot == i
+		if itemName ~= "" then
+			local imageId = HotbarConfig.GetImageId(itemName)
+			local isSelected = selectedSlot == i
+			visibleSlotCount += 1
 
-		slotButtons["Slot" .. tostring(i)] = createElement(SelectablePanel, {
-			selected = isSelected,
-			Size = UDim2.fromOffset(slotSize, slotSize),
-			aspectRatio = 1,
-			LayoutOrder = i,
-			onSelect = function()
-				if itemName ~= "" then
+			slotButtons["Slot" .. tostring(i)] = createElement(SelectablePanel, {
+				selected = isSelected,
+				Size = UDim2.fromOffset(slotSize, slotSize),
+				aspectRatio = 1,
+				LayoutOrder = i,
+				onSelect = function()
 					HotbarService.SelectSlot(i)
-				end
-			end,
-		}, {
-			SlotNumber = createElement(TextLabel, {
-				Text = tostring(i),
-				textSize = 14,
-				Size = UDim2.new(0, 18, 0, 18),
-				Position = UDim2.new(0, 10, 0, 10),
-				AnchorPoint = Vector2.zero,
-				textProps = {
-					TextScaled = true,
-					TextXAlignment = Enum.TextXAlignment.Left,
-				},
-			}),
-			Icon = createElement("ImageLabel", {
-				Image = "rbxassetid://" .. imageId,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.45),
-				Size = UDim2.fromScale(0.5, 0.5),
-				BackgroundTransparency = 1,
-				ImageTransparency = itemName == "" and 0.65 or 0,
-			}),
-			Name = createElement(TextLabel, {
-				Text = displayName,
-				textSize = 12,
-				Size = UDim2.new(1, -8, 0, 20),
-				Position = UDim2.new(0.5, 0, 1, -14),
-				AnchorPoint = Vector2.new(0.5, 1),
-				textProps = {
-					TextScaled = true,
-					TextWrapped = true,
-				},
-			}),
-			SelectionTint = isSelected and createElement("Frame", {
-				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-				BackgroundTransparency = 0.85,
-				Size = UDim2.new(1, -8, 1, -8),
-				Position = UDim2.fromOffset(4, 4),
-				ZIndex = 4,
+				end,
 			}, {
-				UICorner = createElement("UICorner", {
-					CornerRadius = UDim.new(0, 6),
+				SlotNumber = createElement(TextLabel, {
+					Text = tostring(i),
+					textSize = 14,
+					Size = UDim2.new(0, 18, 0, 18),
+					Position = UDim2.new(0, 10, 0, 10),
+					AnchorPoint = Vector2.zero,
+					textProps = {
+						TextScaled = true,
+						TextXAlignment = Enum.TextXAlignment.Left,
+					},
 				}),
-			}),
-		})
+				Icon = createElement("ImageLabel", {
+					Image = "rbxassetid://" .. imageId,
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 0.45),
+					Size = UDim2.fromScale(0.5, 0.5),
+					BackgroundTransparency = 1,
+				}),
+				Name = createElement(TextLabel, {
+					Text = itemName,
+					textSize = 12,
+					Size = UDim2.new(1, -8, 0, 20),
+					Position = UDim2.new(0.5, 0, 1, -14),
+					AnchorPoint = Vector2.new(0.5, 1),
+					textProps = {
+						TextScaled = true,
+						TextWrapped = true,
+					},
+				}),
+				SelectionTint = isSelected and createElement("Frame", {
+					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+					BackgroundTransparency = 0.85,
+					Size = UDim2.new(1, -8, 1, -8),
+					Position = UDim2.fromOffset(4, 4),
+					ZIndex = 4,
+				}, {
+					UICorner = createElement("UICorner", {
+						CornerRadius = UDim.new(0, 6),
+					}),
+				}),
+			})
+		end
+	end
+
+	if visibleSlotCount == 0 then
+		return nil
 	end
 
 	return createElement("Frame", {
 		Position = screenData.Device == "mobile" and UDim2.new(0.5, 0, 1, -18) or UDim2.new(0.5, 0, 1, -20),
-		Size = UDim2.new(0, HotbarConfig.MAX_SLOTS * slotSize + (HotbarConfig.MAX_SLOTS - 1) * padding, 0, slotSize),
+		Size = UDim2.new(0, visibleSlotCount * slotSize + (visibleSlotCount - 1) * padding, 0, slotSize),
 		AnchorPoint = Vector2.new(0.5, 1),
 		BackgroundTransparency = 1,
 	}, {
