@@ -12,6 +12,44 @@ local BILLBOARD_MAX_DISTANCE = 120
 local CHILD_WAIT_TIMEOUT = 5
 
 local mountedBillboards: {[Model]: {billboardGui: BillboardGui, handle: any}} = {}
+local playerDataFolder = ReplicatedStorage:WaitForChild("PlayerData"):WaitForChild(game.Players.LocalPlayer.Name)
+local currentFloorValue = playerDataFolder:WaitForChild("CurrentFloor")
+
+local function getFloorNumberForInstance(instance: Instance?): number?
+	local current = instance
+	while current ~= nil do
+		local floorNumber = current:GetAttribute("FloorNumber")
+		if type(floorNumber) == "number" then
+			return floorNumber
+		end
+
+		current = current.Parent
+	end
+
+	return nil
+end
+
+local function isEnemyBillboardVisible(enemyModel: Model): boolean
+	local enemyFloor = getFloorNumberForInstance(enemyModel)
+	if enemyFloor == nil then
+		return true
+	end
+
+	return currentFloorValue.Value == enemyFloor
+end
+
+local function updateEnemyBillboardVisibility(enemyModel: Model)
+	local mounted = mountedBillboards[enemyModel]
+	if mounted == nil then return end
+
+	mounted.billboardGui.Enabled = isEnemyBillboardVisible(enemyModel)
+end
+
+local function updateAllEnemyBillboardVisibility()
+	for enemyModel in pairs(mountedBillboards) do
+		updateEnemyBillboardVisibility(enemyModel)
+	end
+end
 
 local function cleanupEnemyBillboard(enemyModel: Model)
 	local mounted = mountedBillboards[enemyModel]
@@ -55,6 +93,8 @@ local function attachEnemyBillboard(enemyModel: Model)
 		billboardGui = billboardGui,
 		handle = handle,
 	}
+
+	updateEnemyBillboardVisibility(enemyModel)
 end
 
 for _, enemyModel in ipairs(CollectionService:GetTagged("Enemy")) do
@@ -68,3 +108,5 @@ end)
 CollectionService:GetInstanceRemovedSignal("Enemy"):Connect(function(enemyModel)
 	cleanupEnemyBillboard(enemyModel)
 end)
+
+currentFloorValue.Changed:Connect(updateAllEnemyBillboardVisibility)

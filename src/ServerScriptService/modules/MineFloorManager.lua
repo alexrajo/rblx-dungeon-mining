@@ -152,6 +152,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 	-- Create a folder to hold all floor content
 	local floorFolder = Instance.new("Folder")
 	floorFolder.Name = "MineFloor_" .. floorNumber
+	floorFolder:SetAttribute("FloorNumber", floorNumber)
 
 	local floorOrigin = getFloorOrigin(floorNumber)
 
@@ -190,6 +191,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		node.Material = Enum.Material.Rock
 		node.BrickColor = ORE_COLORS[oreType] or BrickColor.new("Medium stone grey")
 
+		node:SetAttribute("FloorNumber", floorNumber)
 		node:SetAttribute("OreType", oreType)
 		node:SetAttribute("TierRequired", oreData.minPickaxeTier)
 		node:SetAttribute("NodeHP", oreData.nodeHP)
@@ -243,6 +245,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		humanoid.Parent = enemyModel
 
 		enemyModel.PrimaryPart = rootPart
+		enemyModel:SetAttribute("FloorNumber", floorNumber)
 		enemyModel:SetAttribute("EnemyType", enemyType)
 		CollectionService:AddTag(enemyModel, "Enemy")
 

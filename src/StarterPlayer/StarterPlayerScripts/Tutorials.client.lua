@@ -24,6 +24,8 @@ local Tutorials = {
 
 local positionIndicator: Part? = nil
 local activeIndicatorToken = 0
+local playerDataFolder = ReplicatedStorage:WaitForChild("PlayerData"):WaitForChild(plr.Name)
+local currentFloorValue = playerDataFolder:WaitForChild("CurrentFloor")
 
 local INDICATOR_REFRESH_INTERVAL = 0.25
 
@@ -72,11 +74,31 @@ local function getInstancePosition(instance: Instance): Vector3?
 	return nil
 end
 
+local function getCurrentFloor(): number
+	return currentFloorValue.Value
+end
+
+local function getMineFloorForInstance(instance: Instance): number?
+	local current: Instance? = instance
+	while current ~= nil do
+		local floorNumber = current:GetAttribute("FloorNumber")
+		if type(floorNumber) == "number" then
+			return floorNumber
+		end
+
+		current = current.Parent
+	end
+
+	return nil
+end
+
 local function getClosestTaggedPosition(tagName: string): Vector3?
 	local playerPosition = getPlayerPosition()
 	if playerPosition == nil then
 		return nil
 	end
+
+	local currentFloor = getCurrentFloor()
 
 	local closestPosition = nil
 	local closestDistance = math.huge
@@ -88,6 +110,11 @@ local function getClosestTaggedPosition(tagName: string): Vector3?
 
 		local instancePosition = getInstancePosition(instance)
 		if instancePosition == nil then
+			continue
+		end
+
+		local instanceFloor = getMineFloorForInstance(instance)
+		if instanceFloor ~= nil and instanceFloor ~= currentFloor then
 			continue
 		end
 
@@ -133,9 +160,32 @@ local function destroyPositionIndicator()
 	end
 end
 
-function createPositionIndicator(targetPoint: Vector3)
+local function getPlayerRootAttachment(): Attachment?
+	local currentCharacter = plr.Character
+	if currentCharacter == nil then
+		return nil
+	end
+
+	local humanoidRootPart = currentCharacter:FindFirstChild("HumanoidRootPart")
+	if humanoidRootPart == nil or not humanoidRootPart:IsA("BasePart") then
+		return nil
+	end
+
+	local rootAttachment = humanoidRootPart:FindFirstChild("RootAttachment")
+	if rootAttachment == nil or not rootAttachment:IsA("Attachment") then
+		return nil
+	end
+
+	return rootAttachment
+end
+
+function createPositionIndicator(targetPoint: Vector3): Part?
 	-- Creates a straight beam with arrows from the player's root attachment to an attachment at the target point.
-	local playerAttachment = character:WaitForChild("HumanoidRootPart"):WaitForChild("RootAttachment")
+	local playerAttachment = getPlayerRootAttachment()
+	if playerAttachment == nil then
+		return nil
+	end
+
 	local targetPointPVInstance = Instance.new("Part")
 	targetPointPVInstance.Anchored = true
 	targetPointPVInstance.CanCollide = false
@@ -254,5 +304,8 @@ end
 
 UserInputService.InputBegan:Connect(handleScreenTapOrClick)
 plr.CharacterAdded:Connect(characterAdded)
+if plr.Character then
+	characterAdded(plr.Character)
+end
 nextTutorialStepEvent.OnClientEvent:Connect(onReceiveNextStep)
 main()

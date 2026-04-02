@@ -5,7 +5,7 @@ local OreConfig = require(configs.OreConfig)
 
 local TagHandler = {}
 
-local function createLadder(position: Vector3, parent: Instance)
+local function createLadder(position: Vector3, parent: Instance, floorNumber: number?)
 	local ladder = Instance.new("Part")
 	ladder.Name = "Ladder"
 	ladder.Size = Vector3.new(4, 6, 4)
@@ -13,6 +13,9 @@ local function createLadder(position: Vector3, parent: Instance)
 	ladder.Anchored = true
 	ladder.Material = Enum.Material.Wood
 	ladder.BrickColor = BrickColor.new("Brown")
+	if floorNumber ~= nil then
+		ladder:SetAttribute("FloorNumber", floorNumber)
+	end
 	CollectionService:AddTag(ladder, "MineLadder")
 	ladder.Parent = parent
 
@@ -54,9 +57,10 @@ function TagHandler.Apply(instance: Instance)
 
 		local originalParent = instance.Parent
 		local revealPosition = instance.Position + Vector3.new(0, 3, 0)
+		local floorNumber = instance:GetAttribute("FloorNumber")
 
 		if instance:GetAttribute("RevealsLadder") and originalParent and originalParent.Parent then
-			createLadder(revealPosition, originalParent)
+			createLadder(revealPosition, originalParent, floorNumber)
 		end
 
 		instance:Destroy()
