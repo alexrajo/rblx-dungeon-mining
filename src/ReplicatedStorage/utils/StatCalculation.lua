@@ -3,6 +3,21 @@ local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 
 local StatCalculation = {}
 
+local function getWeaponDamage(weapon: any): number
+	if type(weapon) == "string" then
+		return GearConfig.GetWeaponCombatStats(weapon).damage
+	end
+
+	if type(weapon) == "number" then
+		local tierStats = GearConfig.GetTierStats(weapon)
+		if tierStats and type(tierStats.material) == "string" then
+			return GearConfig.GetWeaponCombatStats(tierStats.material .. " Sword").damage
+		end
+	end
+
+	return GearConfig.GetWeaponCombatStats(nil).damage
+end
+
 function StatCalculation.GetMiningDamage(pickaxeTier: number): number
 	local tierStats = GearConfig.GetTierStats(pickaxeTier)
 	if tierStats then
@@ -11,13 +26,9 @@ function StatCalculation.GetMiningDamage(pickaxeTier: number): number
 	return 1
 end
 
-function StatCalculation.GetCombatDamage(weaponTier: number, level: number): number
+function StatCalculation.GetCombatDamage(weapon: any, level: number): number
 	local baseDamage = 2 + (level - 1)
-	local tierStats = GearConfig.GetTierStats(weaponTier)
-	local weaponDamage = 0
-	if tierStats then
-		weaponDamage = tierStats.weaponDamage
-	end
+	local weaponDamage = getWeaponDamage(weapon)
 	return baseDamage + weaponDamage
 end
 

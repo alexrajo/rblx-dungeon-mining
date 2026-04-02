@@ -6,8 +6,10 @@ local APIService = require(ReplicatedStorage.services.APIService)
 local RISE_START_Y = 1.5
 local RISE_END_Y = 4.5
 local X_SPREAD = 1.5
+local NORMAL_DAMAGE_COLOR = Color3.fromRGB(255, 60, 60)
+local CRITICAL_DAMAGE_COLOR = Color3.fromRGB(255, 215, 80)
 
-local function spawnIndicator(enemyModel: Model, damage: number)
+local function spawnIndicator(enemyModel: Model, damage: number, isCritical: boolean)
 	local hrp = enemyModel:FindFirstChild("HumanoidRootPart")
 	if hrp == nil then return end
 
@@ -45,7 +47,7 @@ local function spawnIndicator(enemyModel: Model, damage: number)
 	local mainLabel = Instance.new("TextLabel")
 	mainLabel.Text = damageText
 	mainLabel.Font = Enum.Font.LuckiestGuy
-	mainLabel.TextColor3 = Color3.fromRGB(255, 60, 60)
+	mainLabel.TextColor3 = isCritical and CRITICAL_DAMAGE_COLOR or NORMAL_DAMAGE_COLOR
 	mainLabel.TextScaled = true
 	mainLabel.BackgroundTransparency = 1
 	mainLabel.Size = UDim2.fromScale(1, 1)
@@ -82,8 +84,8 @@ local function spawnIndicator(enemyModel: Model, damage: number)
 	end
 end
 
-APIService.GetEvent("VisualizeAttackHit").OnClientEvent:Connect(function(hitData: {{enemy: Model, damage: number}})
+APIService.GetEvent("VisualizeAttackHit").OnClientEvent:Connect(function(hitData: {{enemy: Model, damage: number, isCritical: boolean?}})
 	for _, hit in ipairs(hitData) do
-		task.spawn(spawnIndicator, hit.enemy, hit.damage)
+		task.spawn(spawnIndicator, hit.enemy, hit.damage, hit.isCritical == true)
 	end
 end)

@@ -76,7 +76,7 @@ local function attachEnemyBillboard(enemyModel: Model)
 
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Name = BILLBOARD_NAME
-	billboardGui.AlwaysOnTop = false
+	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 0
 	billboardGui.MaxDistance = BILLBOARD_MAX_DISTANCE
 	billboardGui.Size = BILLBOARD_SIZE

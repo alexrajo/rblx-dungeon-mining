@@ -89,10 +89,7 @@ function AttackAction.Activate()
 	-- Delay hit registration to sync with animation
 	task.wait(HIT_DELAY)
 
-	-- No valid targets — return 0 (delay already elapsed)
-	if #hitEnemies == 0 then return 0 end
-
-	-- Invoke server with list of hit enemies
+	-- Invoke server with list of hit enemies, even on a miss, so cooldown is authoritative
 	local func = APIService.GetFunction("Attack")
 	local result = func:InvokeServer(hitEnemies)
 

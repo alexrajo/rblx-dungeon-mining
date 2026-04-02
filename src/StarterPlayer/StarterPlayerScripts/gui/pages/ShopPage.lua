@@ -32,7 +32,7 @@ local SLOT_STAT_INFO: {[string]: {label: string, field: string}} = {
 	},
 	Weapon = {
 		label = "Damage",
-		field = "weaponDamage",
+		field = "damage",
 	},
 	Helmet = {
 		label = "Defense",
@@ -99,6 +99,32 @@ local function getGearStatComparison(itemName: string, statsData)
 		return nil
 	end
 
+	local equippedFieldName = GearConfig.slotToField[gearInfo.slot]
+	local equippedItemName = equippedFieldName and statsData[equippedFieldName] or ""
+	local equippedStatValue = 0
+
+	if gearInfo.slot == "Weapon" then
+		local newWeaponStats = GearConfig.GetWeaponCombatStats(itemName)
+		local newStatValue = newWeaponStats.damage
+		if type(equippedItemName) == "string" and equippedItemName ~= "" then
+			equippedStatValue = GearConfig.GetWeaponCombatStats(equippedItemName).damage
+		end
+
+		local delta = newStatValue - equippedStatValue
+		local deltaText = ""
+		if delta > 0 then
+			deltaText = string.format(' <font color="#64FF64">(+%d)</font>', delta)
+		elseif delta < 0 then
+			deltaText = string.format(' <font color="#FF6464">(%d)</font>', delta)
+		end
+
+		local equippedText = equippedItemName ~= "" and equippedItemName or "None"
+		return {
+			statText = string.format("%s: %d%s", statInfo.label, newStatValue, deltaText),
+			equippedText = string.format("Equipped: %s", equippedText),
+		}
+	end
+
 	local tierStats = GearConfig.tiers[gearInfo.tier]
 	if tierStats == nil then
 		return nil
@@ -108,10 +134,6 @@ local function getGearStatComparison(itemName: string, statsData)
 	if type(newStatValue) ~= "number" then
 		return nil
 	end
-
-	local equippedFieldName = GearConfig.slotToField[gearInfo.slot]
-	local equippedItemName = equippedFieldName and statsData[equippedFieldName] or ""
-	local equippedStatValue = 0
 
 	if type(equippedItemName) == "string" and equippedItemName ~= "" then
 		local equippedGearInfo = GearConfig.items[equippedItemName]
@@ -130,10 +152,7 @@ local function getGearStatComparison(itemName: string, statsData)
 		deltaText = string.format(' <font color="#FF6464">(%d)</font>', delta)
 	end
 
-	local equippedText = "None"
-	if type(equippedItemName) == "string" and equippedItemName ~= "" then
-		equippedText = equippedItemName
-	end
+	local equippedText = equippedItemName ~= "" and equippedItemName or "None"
 
 	return {
 		statText = string.format("%s: %d%s", statInfo.label, newStatValue, deltaText),
