@@ -72,7 +72,7 @@ function createPositionIndicator(targetPoint: Vector3)
 end
 
 function startTutorial(tutorialName: string)
-	local ref = tutorialsRefFolder:WaitForChild(tutorialName)
+	tutorialsRefFolder:WaitForChild(tutorialName)
 	startTutorialEvent:FireServer(tutorialName)
 end
 
@@ -90,15 +90,19 @@ function characterAdded(newCharacter)
 
     if positionIndicator ~= nil then
         positionIndicator:Destroy()
+		positionIndicator = nil
     end
 end
 
 function onReceiveNextStep(tutorialStep, tutorialName)
-	-- TODO: Implement this
-	print(tutorialStep, tutorialName)
     if positionIndicator ~= nil then
         positionIndicator:Destroy()
+		positionIndicator = nil
     end
+
+	if tutorialStep.completed then
+		return
+	end
 
     local pointToPosition = tutorialStep["pointToPosition"]
     if pointToPosition ~= nil then

@@ -1,5 +1,7 @@
 local IntroTutorial = {
-	rewards = {},
+	rewards = {
+		Coins = 25,
+	},
 	steps = {
 		{
 			id = "Welcome",

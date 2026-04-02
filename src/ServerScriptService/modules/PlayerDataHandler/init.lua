@@ -436,14 +436,30 @@ end
 
 function PlayerDataHandler.CompleteTutorial(player: Player, tutorialName: string, tutorialRewards)
 	local tutorialStates = getStat("TutorialStates", ProfileTemplate.TutorialStates, player)
+	local foundTutorialState = false
 	for i, entry in pairs(tutorialStates) do
 		local name = entry.name
 		if name == tutorialName then
 			tutorialStates[i] = {name = tutorialName, value = true}
+			foundTutorialState = true
 			break
 		end
 	end
+
+	if not foundTutorialState then
+		table.insert(tutorialStates, {name = tutorialName, value = true})
+	end
+
 	setStat("TutorialStates", tutorialStates, player)
+
+	if tutorialRewards == nil then
+		return
+	end
+
+	local coinReward = tutorialRewards.Coins
+	if type(coinReward) == "number" and coinReward > 0 then
+		PlayerDataHandler.GiveCoins(player, coinReward)
+	end
 end
 
 game.Players.PlayerAdded:Connect(initializeClient)

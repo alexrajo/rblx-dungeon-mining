@@ -23,6 +23,10 @@ local RECENT_SIGNAL_LIMIT = 10
 local NON_REPLAYABLE_SIGNALS = {
 	click = true,
 }
+local COMPLETED_STEP = {
+	id = "Completed",
+	completed = true,
+}
 
 function getOrCreateTutorialState(player: Player)
 	local state = playerTutorialStates[player]
@@ -86,8 +90,8 @@ function activateTutorialStep(player: Player, tutorialName: string, stepIndex: n
 		stepToActivate += 1
 	end
 
-	completeTutorial(player)
-	sendNextStepClientEvent:FireClient(player, { id = "Completed" }, tutorialName)
+	completeTutorial(player, tutorialName)
+	sendNextStepClientEvent:FireClient(player, COMPLETED_STEP, tutorialName)
 end
 
 function playerRemoving(player: Player)
@@ -127,35 +131,35 @@ end
 
 function skipTutorial(player: Player)
 	local playerState = playerTutorialStates[player]
-	if playerState.currentTutorial == nil then
+	if playerState == nil or playerState.currentTutorial == nil then
 		return
 	end
 
-	local playerHasCompletedTutorialBefore =
-		PlayerDataHandler.GetTutorialIsCompleted(player, playerState.currentTutorial)
-	if not playerHasCompletedTutorialBefore then
-		PlayerDataHandler.CompleteTutorial(player)
-	end
+	sendNextStepClientEvent:FireClient(player, COMPLETED_STEP, playerState.currentTutorial)
 
 	playerState.currentTutorial = nil
 	playerState.currentStep = 0
 end
 
-function completeTutorial(player: Player)
+function completeTutorial(player: Player, tutorialName: string?)
 	local playerState = playerTutorialStates[player]
-	if playerState.currentTutorial == nil then
+	if playerState == nil or playerState.currentTutorial == nil then
 		return
 	end
 
-	local tutorial = tutorials[playerState.currentTutorial]
+	local activeTutorialName = tutorialName or playerState.currentTutorial
+	if activeTutorialName == nil then
+		return
+	end
+
+	local tutorial = tutorials[activeTutorialName]
 	local tutorialSteps = tutorial.steps
-	local playerIsAtLastStep = #tutorialSteps
+	local playerIsAtLastStep = playerState.currentStep >= #tutorialSteps
 	local playerHasCompletedTutorialBefore =
-		PlayerDataHandler.GetTutorialIsCompleted(player, playerState.currentTutorial)
+		PlayerDataHandler.GetTutorialIsCompleted(player, activeTutorialName)
 
 	if playerIsAtLastStep and not playerHasCompletedTutorialBefore then
-		-- Give reward and save tutorial completion to player data
-		PlayerDataHandler.CompleteTutorial(player, playerState.currentTutorial, tutorial.rewards)
+		PlayerDataHandler.CompleteTutorial(player, activeTutorialName, tutorial.rewards)
 	end
 
 	playerState.currentTutorial = nil
