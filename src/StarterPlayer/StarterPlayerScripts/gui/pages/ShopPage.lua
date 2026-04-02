@@ -21,36 +21,10 @@ local TextLabel = require(ModuleIndex.TextLabel)
 local Window = require(ModuleIndex.Window)
 
 local StatsContext = require(ModuleIndex.StatsContext)
+local GearDetailUtils = require(script.Parent.Parent.components.InventoryPage.GearDetailUtils)
 
 local COIN_ICON_ID = "11953783945"
 local DEFAULT_IMAGE_ID = GearConfig.DEFAULT_IMAGE_ID
-
-local SLOT_STAT_INFO: {[string]: {label: string, field: string}} = {
-	Pickaxe = {
-		label = "Mining Power",
-		field = "pickaxePower",
-	},
-	Weapon = {
-		label = "Damage",
-		field = "damage",
-	},
-	Helmet = {
-		label = "Defense",
-		field = "armorDefense",
-	},
-	Chestplate = {
-		label = "Defense",
-		field = "armorDefense",
-	},
-	Leggings = {
-		label = "Defense",
-		field = "armorDefense",
-	},
-	Boots = {
-		label = "Defense",
-		field = "armorDefense",
-	},
-}
 
 local ShopPage = Roact.Component:extend("ShopPage")
 
@@ -89,75 +63,7 @@ local function getEffectiveBuyQuantity(selectedPrice: number, requestedQuantity:
 end
 
 local function getGearStatComparison(itemName: string, statsData)
-	local gearInfo = GearConfig.items[itemName]
-	if gearInfo == nil then
-		return nil
-	end
-
-	local statInfo = SLOT_STAT_INFO[gearInfo.slot]
-	if statInfo == nil then
-		return nil
-	end
-
-	local equippedFieldName = GearConfig.slotToField[gearInfo.slot]
-	local equippedItemName = equippedFieldName and statsData[equippedFieldName] or ""
-	local equippedStatValue = 0
-
-	if gearInfo.slot == "Weapon" then
-		local newWeaponStats = GearConfig.GetWeaponCombatStats(itemName)
-		local newStatValue = newWeaponStats.damage
-		if type(equippedItemName) == "string" and equippedItemName ~= "" then
-			equippedStatValue = GearConfig.GetWeaponCombatStats(equippedItemName).damage
-		end
-
-		local delta = newStatValue - equippedStatValue
-		local deltaText = ""
-		if delta > 0 then
-			deltaText = string.format(' <font color="#64FF64">(+%d)</font>', delta)
-		elseif delta < 0 then
-			deltaText = string.format(' <font color="#FF6464">(%d)</font>', delta)
-		end
-
-		local equippedText = equippedItemName ~= "" and equippedItemName or "None"
-		return {
-			statText = string.format("%s: %d%s", statInfo.label, newStatValue, deltaText),
-			equippedText = string.format("Equipped: %s", equippedText),
-		}
-	end
-
-	local tierStats = GearConfig.tiers[gearInfo.tier]
-	if tierStats == nil then
-		return nil
-	end
-
-	local newStatValue = tierStats[statInfo.field]
-	if type(newStatValue) ~= "number" then
-		return nil
-	end
-
-	if type(equippedItemName) == "string" and equippedItemName ~= "" then
-		local equippedGearInfo = GearConfig.items[equippedItemName]
-		local equippedTierStats = equippedGearInfo and GearConfig.tiers[equippedGearInfo.tier]
-		local equippedValue = equippedTierStats and equippedTierStats[statInfo.field]
-		if type(equippedValue) == "number" then
-			equippedStatValue = equippedValue
-		end
-	end
-
-	local delta = newStatValue - equippedStatValue
-	local deltaText = ""
-	if delta > 0 then
-		deltaText = string.format(' <font color="#64FF64">(+%d)</font>', delta)
-	elseif delta < 0 then
-		deltaText = string.format(' <font color="#FF6464">(%d)</font>', delta)
-	end
-
-	local equippedText = equippedItemName ~= "" and equippedItemName or "None"
-
-	return {
-		statText = string.format("%s: %d%s", statInfo.label, newStatValue, deltaText),
-		equippedText = string.format("Equipped: %s", equippedText),
-	}
+	return GearDetailUtils.GetPrimaryComparison(itemName, statsData)
 end
 
 function ShopPage:init()

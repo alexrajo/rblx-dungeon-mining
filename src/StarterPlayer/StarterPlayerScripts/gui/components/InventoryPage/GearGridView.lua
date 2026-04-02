@@ -10,6 +10,52 @@ local TextLabel = require(ModuleIndex.TextLabel)
 
 local GearGridView = Roact.Component:extend("GearGridView")
 
+function GearGridView:init()
+	self.scrollRef = Roact.createRef()
+	self.cellRefs = {}
+end
+
+function GearGridView:_getCellRef(itemName: string)
+	if self.cellRefs[itemName] == nil then
+		self.cellRefs[itemName] = Roact.createRef()
+	end
+
+	return self.cellRefs[itemName]
+end
+
+function GearGridView:_reportSelectedCellLayout()
+	local onSelectedCellLayoutChanged = self.props.onSelectedCellLayoutChanged
+	if onSelectedCellLayoutChanged == nil then
+		return
+	end
+
+	local selectedItemName = self.props.selectedItemName
+	if type(selectedItemName) ~= "string" or selectedItemName == "" then
+		onSelectedCellLayoutChanged(nil)
+		return
+	end
+
+	local selectedCellRef = self.cellRefs[selectedItemName]
+	local selectedCell = selectedCellRef and selectedCellRef:getValue()
+	if selectedCell == nil then
+		return
+	end
+
+	onSelectedCellLayoutChanged({
+		itemName = selectedItemName,
+		absolutePosition = selectedCell.AbsolutePosition,
+		absoluteSize = selectedCell.AbsoluteSize,
+	})
+end
+
+function GearGridView:didMount()
+	self:_reportSelectedCellLayout()
+end
+
+function GearGridView:didUpdate()
+	self:_reportSelectedCellLayout()
+end
+
 local function createGearCellContent(gearEntry)
 	return createElement("Frame", {
 		BackgroundTransparency = 1,
@@ -46,23 +92,31 @@ function GearGridView:render()
 	for _, gearEntry in ipairs(gearEntries) do
 		local elementKey = gearEntry.name
 		local content = createGearCellContent(gearEntry)
+		local cellRef = self:_getCellRef(elementKey)
 
 		if interactive then
-			itemElements[elementKey] = createElement(SelectablePanel, {
+			itemElements[elementKey] = createElement("Frame", {
+				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
-				selected = selectedItemName == gearEntry.name,
-				onSelect = function()
-					if self.props.onItemSelected then
-						self.props.onItemSelected(gearEntry.name)
-					end
-				end,
+				[Roact.Ref] = cellRef,
 			}, {
-				Content = content,
+				Cell = createElement(SelectablePanel, {
+					Size = UDim2.fromScale(1, 1),
+					selected = selectedItemName == gearEntry.name,
+					onSelect = function()
+						if self.props.onItemSelected then
+							self.props.onItemSelected(gearEntry.name)
+						end
+					end,
+				}, {
+					Content = content,
+				}),
 			})
 		else
 			itemElements[elementKey] = createElement("Frame", {
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
+				[Roact.Ref] = cellRef,
 			}, {
 				Content = content,
 			})
@@ -79,6 +133,12 @@ function GearGridView:render()
 		ScrollBarThickness = 0,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		Visible = self.props.Visible,
+		[Roact.Ref] = self.scrollRef,
+		[Roact.Change.CanvasPosition] = function()
+			if self.props.onScroll then
+				self.props.onScroll()
+			end
+		end,
 	}, {
 		UIGridLayout = createElement("UIGridLayout", {
 			CellSize = UDim2.new(1 / itemsPerRow, -math.ceil(paddingPixels * (itemsPerRow - 1) / itemsPerRow), 1, 0),
