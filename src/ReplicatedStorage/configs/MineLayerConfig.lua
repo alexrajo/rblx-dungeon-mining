@@ -2,7 +2,7 @@ local MineLayerConfig = {
 	[1] = {
 		name = "Shallow Mines",
 		theme = "shallow_mines",
-		floors = { min = 1, max = 15 },
+		floors = { min = 1, max = 5 },
 		minGearTier = 1,
 		primaryOre = "Copper",
 		secondaryOre = "Stone",
@@ -13,7 +13,7 @@ local MineLayerConfig = {
 	[2] = {
 		name = "Copper Caves",
 		theme = "copper_caves",
-		floors = { min = 16, max = 30 },
+		floors = { min = 6, max = 30 },
 		minGearTier = 2,
 		primaryOre = "Iron",
 		secondaryOre = "Copper",

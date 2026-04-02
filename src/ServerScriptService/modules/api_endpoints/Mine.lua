@@ -64,7 +64,13 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 
 	if pickaxeTier < oreData.minPickaxeTier then
 		-- Pickaxe too weak — bounce off feedback
-		return { success = false, cooldown = 0.5, reason = "tier_too_low" }
+		return {
+			success = false,
+			cooldown = 0.5,
+			reason = "tier_too_low",
+			requiredTier = oreData.minPickaxeTier,
+			pickaxeTier = pickaxeTier,
+		}
 	end
 
 	-- Apply cooldown
