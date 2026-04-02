@@ -41,10 +41,11 @@ function getOrCreateTutorialState(player: Player)
 	return state
 end
 
-function preprocessStep(step)
-	-- In place update of step
+function preprocessStep(player: Player, step)
+	step["pointToPosition"] = nil
+
 	if step["pointToPositionFunction"] ~= nil and type(step["pointToPositionFunction"]) == "function" then
-		step["pointToPosition"] = step["pointToPositionFunction"]()
+		step["pointToPosition"] = step["pointToPositionFunction"](player)
 	end
 end
 
@@ -82,7 +83,7 @@ function activateTutorialStep(player: Player, tutorialName: string, stepIndex: n
 		if not stepWasCompletedRecently(playerState, tutorialStep) then
 			playerState.currentStep = stepToActivate
 
-			preprocessStep(tutorialStep)
+			preprocessStep(player, tutorialStep)
 			sendNextStepClientEvent:FireClient(player, tutorialStep, tutorialName)
 			return
 		end
