@@ -31,7 +31,7 @@ function Sidebar:renderContent(screenData)
 		or UDim2.new(0.15, 0, 0.5, 0)
 	
 	local itemsPerRow = isAtleast("md") and 4 or 2
-	local numItems = 4
+	local numItems = 3
 	local numRows = math.ceil(numItems/itemsPerRow)
 	local paddingPixels = 12
 	
@@ -102,27 +102,7 @@ function Sidebar:renderContent(screenData)
 					ZIndex = 2
 				})
 			}),
-			["1_ShopPageToggle"] = createElement(Button, {
-				color = "green",
-				onClick = function()
-					togglePage("Shop")
-				end
-			}, {
-				Icon = createElement("ImageLabel", {
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					Position = UDim2.fromScale(0.5, 0.5),
-					Size = UDim2.new(0.75, 0, 0.75, 0),
-					BackgroundTransparency = 1,
-					Image = "rbxassetid://123265243903080"
-				}),
-				TextLabel = createElement(TextLabel, {
-					Text = "Shop",
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					Position = UDim2.fromScale(0.5, 1),
-					ZIndex = 2
-				})
-			}),
-			["2_Inventory"] = createElement(Button, {
+			["1_Inventory"] = createElement(Button, {
 				color = "green",
 				onClick = function()
 					togglePage("Inventory")
@@ -142,7 +122,7 @@ function Sidebar:renderContent(screenData)
 					ZIndex = 2
 				})
 			}),
-			["3_Crafting"] = createElement(Button, {
+			["2_Crafting"] = createElement(Button, {
 				color = "green",
 				onClick = function()
 					togglePage("CraftingPage")

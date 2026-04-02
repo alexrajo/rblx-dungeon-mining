@@ -15,6 +15,7 @@ local MineTransitionService = require(ServerModules.MineTransitionService)
 local EndpointFolder = ServerModules.api_endpoints
 local MineEndpoint = require(EndpointFolder.Mine)
 local SellOreEndpoint = require(EndpointFolder.SellOre)
+local SellItemsEndpoint = require(EndpointFolder.SellItems)
 local EquipGearEndpoint = require(EndpointFolder.EquipGear)
 local CraftEndpoint = require(EndpointFolder.Craft)
 local AttackEndpoint = require(EndpointFolder.Attack)
@@ -35,6 +36,7 @@ local skipTutorialEvent = crossScriptCommunicationBindables.SkipTutorial
 -- Game endpoints
 APIService:CreateFunctionEndpoint("Mine", MineEndpoint.Call)
 APIService:CreateFunctionEndpoint("SellOre", SellOreEndpoint.Call)
+APIService:CreateFunctionEndpoint("SellItems", SellItemsEndpoint.Call)
 APIService:CreateEventEndpoint("EquipGear", EquipGearEndpoint.Call)
 APIService:CreateFunctionEndpoint("Craft", CraftEndpoint.Call)
 APIService:CreateFunctionEndpoint("Attack", AttackEndpoint.Call)

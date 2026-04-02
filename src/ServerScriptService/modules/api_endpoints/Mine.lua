@@ -85,7 +85,6 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 
 	if currentHP <= 0 then
 		-- Node is broken — award resources
-		local coinReward = oreData.baseValue
 		local xpReward = math.max(5, oreData.baseValue)
 
 		-- Determine drops
@@ -111,9 +110,6 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 		end
 
 		-- Visualize drops
-		if RE_CoinDrop then
-			RE_CoinDrop:FireClient(player, coinReward, nodePosition)
-		end
 		if RE_ItemDrop then
 			for itemName, amount in pairs(itemRewards) do
 				local itemDefinition = dropsConfig.itemDefinitions[itemName]
@@ -124,7 +120,6 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 		end
 
 		-- Award rewards
-		PlayerDataHandler.GiveCoins(player, coinReward)
 		PlayerDataHandler.GiveXP(player, xpReward)
 		PlayerDataHandler.GiveItems(player, itemRewards)
 

@@ -37,31 +37,18 @@ function EnemyLootHandler.HandleDeath(enemyModel: Model)
 
 	-- Process drops
 	local itemRewards = {}
-	local coinReward = 0
 
 	for _, drop in ipairs(enemyData.drops) do
-		if drop.name == "Coins" then
-			local minAmt = drop.minAmount or 1
-			local maxAmt = drop.maxAmount or minAmt
-			coinReward += math.random(minAmt, maxAmt)
-		else
-			local chance = drop.chance or 1.0
-			if math.random() <= chance then
-				local amount = drop.amount or 1
-				if itemRewards[drop.name] then
-					itemRewards[drop.name] += amount
-				else
-					itemRewards[drop.name] = amount
-				end
-			end
-		end
-	end
+		if drop.name == "Coins" then continue end
 
-	-- Award coins
-	if coinReward > 0 then
-		PlayerDataHandler.GiveCoins(player, coinReward)
-		if RE_CoinDrop then
-			RE_CoinDrop:FireClient(player, coinReward, dropPosition)
+		local chance = drop.chance or 1.0
+		if math.random() <= chance then
+			local amount = drop.amount or 1
+			if itemRewards[drop.name] then
+				itemRewards[drop.name] += amount
+			else
+				itemRewards[drop.name] = amount
+			end
 		end
 	end
 
