@@ -5,39 +5,159 @@ local APIService = require(Services.APIService)
 local ItemLookupService = require(Services.ItemLookupService)
 
 local configs = ReplicatedStorage.configs
-local SellPriceConfig = require(configs.SellPriceConfig)
+local GearConfig = require(configs.GearConfig)
+local ShopConfig = require(configs.ShopConfig)
 
-local RF_SellItems = APIService.GetFunction("SellItems")
+local RF_BuyItems = APIService.GetFunction("BuyItems")
 
 local createElement = Roact.createElement
 
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
-local PageWrapper = require(ModuleIndex.PageWrapper)
-local Window = require(ModuleIndex.Window)
 local Button = require(ModuleIndex.Button)
+local PageWrapper = require(ModuleIndex.PageWrapper)
+local SelectablePanel = require(ModuleIndex.SelectablePanel)
 local TextButton = require(ModuleIndex.TextButton)
 local TextLabel = require(ModuleIndex.TextLabel)
-local Panel = require(ModuleIndex.Panel)
-local SelectablePanel = require(ModuleIndex.SelectablePanel)
+local Window = require(ModuleIndex.Window)
 
 local StatsContext = require(ModuleIndex.StatsContext)
 
 local COIN_ICON_ID = "11953783945"
+local DEFAULT_IMAGE_ID = GearConfig.DEFAULT_IMAGE_ID
+
+local SLOT_STAT_INFO: {[string]: {label: string, field: string}} = {
+	Pickaxe = {
+		label = "Mining Power",
+		field = "pickaxePower",
+	},
+	Weapon = {
+		label = "Damage",
+		field = "weaponDamage",
+	},
+	Helmet = {
+		label = "Defense",
+		field = "armorDefense",
+	},
+	Chestplate = {
+		label = "Defense",
+		field = "armorDefense",
+	},
+	Leggings = {
+		label = "Defense",
+		field = "armorDefense",
+	},
+	Boots = {
+		label = "Defense",
+		field = "armorDefense",
+	},
+}
 
 local ShopPage = Roact.Component:extend("ShopPage")
+
+local function getItemImageId(itemName: string): string
+	local itemDefinition = ItemLookupService.GetItemDefinitionFromName(itemName) or {}
+	return itemDefinition.imageId or DEFAULT_IMAGE_ID
+end
+
+local function getShopItems(shopDef): {{name: string, price: number}}
+	local shopItems = {}
+	for itemName, price in pairs(shopDef.items) do
+		table.insert(shopItems, {
+			name = itemName,
+			price = price,
+		})
+	end
+
+	table.sort(shopItems, function(a, b)
+		return a.name < b.name
+	end)
+
+	return shopItems
+end
+
+local function getEffectiveBuyQuantity(selectedPrice: number, requestedQuantity: number, coins: number): (number, number)
+	if selectedPrice <= 0 then
+		return 0, 0
+	end
+
+	local maxAffordable = math.floor(coins / selectedPrice)
+	if maxAffordable <= 0 then
+		return 0, 0
+	end
+
+	return math.clamp(requestedQuantity, 1, maxAffordable), maxAffordable
+end
+
+local function getGearStatComparison(itemName: string, statsData)
+	local gearInfo = GearConfig.items[itemName]
+	if gearInfo == nil then
+		return nil
+	end
+
+	local statInfo = SLOT_STAT_INFO[gearInfo.slot]
+	if statInfo == nil then
+		return nil
+	end
+
+	local tierStats = GearConfig.tiers[gearInfo.tier]
+	if tierStats == nil then
+		return nil
+	end
+
+	local newStatValue = tierStats[statInfo.field]
+	if type(newStatValue) ~= "number" then
+		return nil
+	end
+
+	local equippedFieldName = GearConfig.slotToField[gearInfo.slot]
+	local equippedItemName = equippedFieldName and statsData[equippedFieldName] or ""
+	local equippedStatValue = 0
+
+	if type(equippedItemName) == "string" and equippedItemName ~= "" then
+		local equippedGearInfo = GearConfig.items[equippedItemName]
+		local equippedTierStats = equippedGearInfo and GearConfig.tiers[equippedGearInfo.tier]
+		local equippedValue = equippedTierStats and equippedTierStats[statInfo.field]
+		if type(equippedValue) == "number" then
+			equippedStatValue = equippedValue
+		end
+	end
+
+	local delta = newStatValue - equippedStatValue
+	local deltaText = ""
+	if delta > 0 then
+		deltaText = string.format(' <font color="#64FF64">(+%d)</font>', delta)
+	elseif delta < 0 then
+		deltaText = string.format(' <font color="#FF6464">(%d)</font>', delta)
+	end
+
+	local equippedText = "None"
+	if type(equippedItemName) == "string" and equippedItemName ~= "" then
+		equippedText = equippedItemName
+	end
+
+	return {
+		statText = string.format("%s: %d%s", statInfo.label, newStatValue, deltaText),
+		equippedText = string.format("Equipped: %s", equippedText),
+	}
+end
 
 function ShopPage:init()
 	self:setState({
 		selectedItem = nil,
-		sellQuantity = 1,
+		buyQuantity = 1,
 	})
 end
 
-function ShopPage:_renderItemCell(itemName: string, ownedAmount: number, isSelected: boolean)
-	local itemConfig = ItemLookupService.GetItemDefinitionFromName(itemName) or {}
-	local imageId = itemConfig.imageId or "76280156712677"
-	local price = SellPriceConfig[itemName]
+function ShopPage:didUpdate(previousProps)
+	if previousProps.currentShopId ~= self.props.currentShopId then
+		self:setState({
+			selectedItem = nil,
+			buyQuantity = 1,
+		})
+	end
+end
 
+function ShopPage:_renderItemCell(itemName: string, price: number, isSelected: boolean)
 	return createElement(SelectablePanel, {
 		selected = isSelected,
 		aspectRatio = 1,
@@ -45,12 +165,12 @@ function ShopPage:_renderItemCell(itemName: string, ownedAmount: number, isSelec
 		onSelect = function()
 			self:setState({
 				selectedItem = itemName,
-				sellQuantity = 1,
+				buyQuantity = 1,
 			})
 		end,
 	}, {
 		Icon = createElement("ImageLabel", {
-			Image = "rbxassetid://" .. imageId,
+			Image = "rbxassetid://" .. getItemImageId(itemName),
 			AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.fromScale(0.5, 0.02),
 			Size = UDim2.fromScale(0.6, 0.6),
@@ -58,18 +178,22 @@ function ShopPage:_renderItemCell(itemName: string, ownedAmount: number, isSelec
 			ScaleType = Enum.ScaleType.Fit,
 			ZIndex = 3,
 		}),
-		QuantityLabel = createElement(TextLabel, {
-			Text = tostring(ownedAmount),
-			Size = UDim2.fromScale(0.9, 0.2),
+		NameLabel = createElement(TextLabel, {
+			Text = itemName,
+			Size = UDim2.fromScale(0.92, 0.22),
 			AnchorPoint = Vector2.new(0.5, 1),
-			Position = UDim2.fromScale(0.5, 0.72),
+			Position = UDim2.fromScale(0.5, 0.74),
 			ZIndex = 3,
+			textSize = 12,
+			textProps = {
+				TextWrapped = true,
+			},
 		}),
 		PriceRow = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.fromScale(0.9, 0.2),
+			Size = UDim2.fromScale(0.9, 0.18),
 			AnchorPoint = Vector2.new(0.5, 1),
-			Position = UDim2.fromScale(0.5, 0.95),
+			Position = UDim2.fromScale(0.5, 0.96),
 			ZIndex = 3,
 		}, {
 			UIListLayout = createElement("UIListLayout", {
@@ -87,8 +211,9 @@ function ShopPage:_renderItemCell(itemName: string, ownedAmount: number, isSelec
 			}),
 			PriceLabel = createElement(TextLabel, {
 				Text = tostring(price),
-				Size = UDim2.fromOffset(30, 14),
+				Size = UDim2.fromOffset(36, 14),
 				LayoutOrder = 2,
+				textSize = 12,
 			}),
 		}),
 	})
@@ -98,61 +223,61 @@ function ShopPage:_renderContent(statsData)
 	local closeAllPages = self.props.closeAllPages
 	local currentPageBinding = self.props.currentPageBinding
 	local currentPage = currentPageBinding:getValue()
+	local shopId = self.props.currentShopId
 
 	local function onExit()
 		closeAllPages()
 	end
 
-	local inventory = statsData.Inventory or {}
+	local shopDef = shopId and ShopConfig[shopId]
+	if shopDef == nil then
+		return createElement(PageWrapper, { isOpen = (currentPage == "Shop") }, {
+			Window = createElement(Window, {
+				title = "SHOP",
+				Position = UDim2.fromScale(0.5, 0.5),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				onExit = onExit,
+			}, {
+				EmptyLabel = createElement(TextLabel, {
+					Text = "This shop is unavailable",
+					Size = UDim2.fromScale(0.7, 0.15),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 0.5),
+					textSize = 22,
+				}),
+			}),
+		})
+	end
+
+	local coins = statsData.Coins or 0
+	local shopItems = getShopItems(shopDef)
+
 	local selectedItem = self.state.selectedItem
-	local sellQuantity = self.state.sellQuantity
-
-	-- Build lookup of owned items
-	local ownedMap = {}
-	for _, entry in ipairs(inventory) do
-		ownedMap[entry.name] = entry.value
+	local selectedPrice = selectedItem and shopDef.items[selectedItem] or nil
+	if type(selectedPrice) ~= "number" then
+		selectedItem = nil
+		selectedPrice = 0
 	end
 
-	-- Build sellable item list (items in SellPriceConfig with quantity > 0)
-	local sellableItems = {}
-	for itemName, _ in pairs(SellPriceConfig) do
-		local owned = ownedMap[itemName] or 0
-		if owned > 0 then
-			table.insert(sellableItems, { name = itemName, owned = owned })
-		end
-	end
-	table.sort(sellableItems, function(a, b)
-		return a.name < b.name
-	end)
+	local effectiveBuyQuantity, maxAffordable = getEffectiveBuyQuantity(selectedPrice, self.state.buyQuantity, coins)
+	local totalCost = selectedPrice * effectiveBuyQuantity
+	local canAfford = effectiveBuyQuantity > 0 and totalCost <= coins
 
-	-- Clamp sell quantity
-	local selectedOwned = 0
-	local selectedPrice = 0
-	if selectedItem then
-		selectedOwned = ownedMap[selectedItem] or 0
-		selectedPrice = SellPriceConfig[selectedItem] or 0
-		if selectedOwned <= 0 then
-			selectedItem = nil
-		elseif sellQuantity > selectedOwned then
-			sellQuantity = selectedOwned
-		end
-	end
-
-	local totalValue = selectedPrice * sellQuantity
-
-	-- Build grid cells
 	local itemsPerRow = 6
 	local paddingPixels = 4
+
 	local gridChildren = {}
-	for _, itemData in ipairs(sellableItems) do
-		gridChildren[itemData.name] = self:_renderItemCell(itemData.name, itemData.owned, selectedItem == itemData.name)
+	for _, itemData in ipairs(shopItems) do
+		gridChildren[itemData.name] = self:_renderItemCell(itemData.name, itemData.price, selectedItem == itemData.name)
 	end
 
-	-- Build detail panel content
 	local detailChildren = {}
-	if selectedItem and selectedOwned > 0 then
-		local itemConfig = ItemLookupService.GetItemDefinitionFromName(selectedItem) or {}
-		local imageId = itemConfig.imageId or "76280156712677"
+	if selectedItem ~= nil then
+		local imageId = getItemImageId(selectedItem)
+		local gearComparison = shopDef.type == "gear" and getGearStatComparison(selectedItem, statsData) or nil
+		local priceSectionY = gearComparison and 0.49 or 0.40
+		local quantitySectionY = priceSectionY + 0.11
+		local totalSectionY = quantitySectionY + 0.12
 
 		detailChildren.ItemName = createElement(TextLabel, {
 			Text = selectedItem,
@@ -160,22 +285,46 @@ function ShopPage:_renderContent(statsData)
 			AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.fromScale(0.5, 0.02),
 			textSize = 18,
+			textProps = {
+				TextWrapped = true,
+			},
 		})
 
 		detailChildren.ItemIcon = createElement("ImageLabel", {
 			Image = "rbxassetid://" .. imageId,
 			AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.fromScale(0.5, 0.12),
-			Size = UDim2.fromScale(0.4, 0.25),
+			Size = UDim2.fromScale(0.42, 0.25),
 			BackgroundTransparency = 1,
 			ScaleType = Enum.ScaleType.Fit,
 		})
+
+		if gearComparison ~= nil then
+			detailChildren.StatComparison = createElement(TextLabel, {
+				Text = gearComparison.statText,
+				Size = UDim2.new(0.9, 0, 0, 20),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.fromScale(0.5, 0.39),
+				textSize = 16,
+			})
+
+			detailChildren.EquippedItem = createElement(TextLabel, {
+				Text = gearComparison.equippedText,
+				Size = UDim2.new(0.9, 0, 0, 18),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.fromScale(0.5, 0.445),
+				textSize = 13,
+				textProps = {
+					TextTransparency = 0.15,
+				},
+			})
+		end
 
 		detailChildren.PricePerUnit = createElement("Frame", {
 			BackgroundTransparency = 1,
 			Size = UDim2.new(0.9, 0, 0, 20),
 			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, 0.40),
+			Position = UDim2.fromScale(0.5, priceSectionY),
 		}, {
 			UIListLayout = createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -184,7 +333,7 @@ function ShopPage:_renderContent(statsData)
 				Padding = UDim.new(0, 4),
 			}),
 			Label = createElement(TextLabel, {
-				Text = "Price: ",
+				Text = "Price:",
 				Size = UDim2.fromOffset(50, 20),
 				LayoutOrder = 1,
 			}),
@@ -197,17 +346,16 @@ function ShopPage:_renderContent(statsData)
 			}),
 			PriceValue = createElement(TextLabel, {
 				Text = tostring(selectedPrice),
-				Size = UDim2.fromOffset(40, 20),
+				Size = UDim2.fromOffset(44, 20),
 				LayoutOrder = 3,
 			}),
 		})
 
-		-- Quantity selector
 		detailChildren.QuantitySelector = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.new(0.9, 0, 0, 30),
+			Size = UDim2.new(0.95, 0, 0, 34),
 			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, 0.50),
+			Position = UDim2.fromScale(0.5, quantitySectionY),
 		}, {
 			UIListLayout = createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -219,9 +367,11 @@ function ShopPage:_renderContent(statsData)
 				color = "red",
 				customSize = UDim2.fromOffset(30, 30),
 				disableHoverScaleTween = true,
+				disabled = effectiveBuyQuantity <= 1,
 				onClick = function()
-					local newQty = math.max(1, sellQuantity - 1)
-					self:setState({ sellQuantity = newQty })
+					self:setState({
+						buyQuantity = math.max(1, effectiveBuyQuantity - 1),
+					})
 				end,
 				LayoutOrder = 1,
 			}, {
@@ -233,17 +383,19 @@ function ShopPage:_renderContent(statsData)
 				}),
 			}),
 			QuantityDisplay = createElement(TextLabel, {
-				Text = tostring(sellQuantity) .. " / " .. tostring(selectedOwned),
-				Size = UDim2.fromOffset(80, 30),
+				Text = string.format("%d / %d", effectiveBuyQuantity, maxAffordable),
+				Size = UDim2.fromOffset(88, 30),
 				LayoutOrder = 2,
 			}),
 			PlusButton = createElement(Button, {
 				color = "green",
 				customSize = UDim2.fromOffset(30, 30),
 				disableHoverScaleTween = true,
+				disabled = effectiveBuyQuantity <= 0 or effectiveBuyQuantity >= maxAffordable,
 				onClick = function()
-					local newQty = math.min(selectedOwned, sellQuantity + 1)
-					self:setState({ sellQuantity = newQty })
+					self:setState({
+						buyQuantity = math.max(1, effectiveBuyQuantity + 1),
+					})
 				end,
 				LayoutOrder = 3,
 			}, {
@@ -256,12 +408,11 @@ function ShopPage:_renderContent(statsData)
 			}),
 		})
 
-		-- Total value display
-		detailChildren.TotalValue = createElement("Frame", {
+		detailChildren.TotalCost = createElement("Frame", {
 			BackgroundTransparency = 1,
 			Size = UDim2.new(0.9, 0, 0, 20),
 			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, 0.62),
+			Position = UDim2.fromScale(0.5, totalSectionY),
 		}, {
 			UIListLayout = createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -270,7 +421,7 @@ function ShopPage:_renderContent(statsData)
 				Padding = UDim.new(0, 4),
 			}),
 			Label = createElement(TextLabel, {
-				Text = "Total: ",
+				Text = "Total:",
 				Size = UDim2.fromOffset(50, 20),
 				LayoutOrder = 1,
 			}),
@@ -282,34 +433,52 @@ function ShopPage:_renderContent(statsData)
 				LayoutOrder = 2,
 			}),
 			TotalText = createElement(TextLabel, {
-				Text = tostring(totalValue),
+				Text = tostring(totalCost),
 				Size = UDim2.fromOffset(60, 20),
 				LayoutOrder = 3,
 			}),
 		})
 
-		-- Sell button
-		detailChildren.SellButton = createElement(TextButton, {
-			text = "SELL",
+		detailChildren.CoinStatus = createElement(TextLabel, {
+			Text = string.format("Coins: %d", coins),
+			Size = UDim2.new(0.9, 0, 0, 18),
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.fromScale(0.5, totalSectionY + 0.08),
+			textSize = 13,
+			textProps = {
+				TextTransparency = 0.15,
+			},
+		})
+
+		detailChildren.BuyButton = createElement(TextButton, {
+			text = "BUY",
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			size = "sm",
 			Position = UDim2.new(0.5, 0, 1, -28),
-			color = "yellow",
-			disabled = sellQuantity <= 0 or selectedOwned <= 0,
+			color = "green",
+			disabled = not canAfford,
 			onClick = function()
-				if selectedItem and sellQuantity > 0 then
-					RF_SellItems:InvokeServer({
-						{ name = selectedItem, quantity = sellQuantity },
-					})
-					self:setState({ sellQuantity = 1 })
+				if not canAfford then
+					return
 				end
+
+				RF_BuyItems:InvokeServer(shopId, {
+					{
+						name = selectedItem,
+						quantity = effectiveBuyQuantity,
+					},
+				})
+
+				self:setState({
+					buyQuantity = 1,
+				})
 			end,
 		})
 	end
 
 	return createElement(PageWrapper, { isOpen = (currentPage == "Shop") }, {
 		Window = createElement(Window, {
-			title = "SHOP",
+			title = shopDef.displayName,
 			Position = UDim2.fromScale(0.5, 0.5),
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			onExit = onExit,
@@ -321,7 +490,7 @@ function ShopPage:_renderContent(statsData)
 				BackgroundTransparency = 1,
 			}, {
 				TitleLabel = createElement(TextLabel, {
-					Text = "Your Items",
+					Text = "Items",
 					Size = UDim2.new(1, 0, 0, 20),
 					textSize = 20,
 				}),
@@ -355,8 +524,8 @@ function ShopPage:_renderContent(statsData)
 				BorderSizePixel = 0,
 			}, {
 				UICorner = createElement("UICorner"),
-				EmptyLabel = (not selectedItem or selectedOwned <= 0) and createElement(TextLabel, {
-					Text = "Select an item to sell",
+				EmptyLabel = (selectedItem == nil) and createElement(TextLabel, {
+					Text = "Select an item to purchase",
 					Size = UDim2.fromScale(0.8, 0.2),
 					AnchorPoint = Vector2.new(0.5, 0.5),
 					Position = UDim2.fromScale(0.5, 0.5),

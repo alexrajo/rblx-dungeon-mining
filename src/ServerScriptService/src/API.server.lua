@@ -25,6 +25,7 @@ local AssignHotbarSlotEndpoint = require(EndpointFolder.AssignHotbarSlot)
 local ClearHotbarSlotEndpoint = require(EndpointFolder.ClearHotbarSlot)
 local ClearEquippedGearEndpoint = require(EndpointFolder.ClearEquippedGear)
 local SelectHotbarSlotEndpoint = require(EndpointFolder.SelectHotbarSlot)
+local BuyItemsEndpoint = require(EndpointFolder.BuyItems)
 local ToolEquipHandler = require(ServerModules.ToolEquipHandler)
 
 -- Cross script communication
@@ -37,6 +38,7 @@ local skipTutorialEvent = crossScriptCommunicationBindables.SkipTutorial
 APIService:CreateFunctionEndpoint("Mine", MineEndpoint.Call)
 APIService:CreateFunctionEndpoint("SellOre", SellOreEndpoint.Call)
 APIService:CreateFunctionEndpoint("SellItems", SellItemsEndpoint.Call)
+APIService:CreateFunctionEndpoint("BuyItems", BuyItemsEndpoint.Call)
 APIService:CreateEventEndpoint("EquipGear", EquipGearEndpoint.Call)
 APIService:CreateFunctionEndpoint("Craft", CraftEndpoint.Call)
 APIService:CreateFunctionEndpoint("Attack", AttackEndpoint.Call)

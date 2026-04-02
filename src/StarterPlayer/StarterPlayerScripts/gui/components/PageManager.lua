@@ -52,17 +52,19 @@ end
 
 function PageManager:closeAllPages()
 	self:setState({
-		currentPage = ""
+		currentPage = "",
+		currentShopId = Roact.None,
 	})
 end
 
-function PageManager:openPage(pageName: string)
+function PageManager:openPage(pageName: string, shopId: string?)
 	if self.state.currentPage == pageName then return end
 
     signalTutorialEvent:FireServer("openPage_"..pageName)
-	
+
 	self:setState({
-		currentPage = pageName
+		currentPage = pageName,
+		currentShopId = shopId or Roact.None,
 	})
 end
 
@@ -81,6 +83,7 @@ end
 function PageManager:init()
 	self:setState({
 		currentPage = "None",
+		currentShopId = Roact.None,
 	})
 end
 
@@ -98,7 +101,8 @@ function PageManager:render()
 				closeAllPages = function()
 					self:closeAllPages()
 				end,
-				currentPageBinding = currentPageBinding
+				currentPageBinding = currentPageBinding,
+				currentShopId = self.state.currentShopId,
 			})
 		end)
 		if success then
@@ -143,7 +147,8 @@ function PageManager:didMount()
 					if self.currentlyActivePageCircle == activationCircle then break end
 					
 					self.currentlyActivePageCircle = activationCircle
-					self:openPage(pageName)
+					local shopId = activationCircle:GetAttribute("shopId")
+					self:openPage(pageName, shopId)
 					break
 				elseif self.currentlyActivePageCircle == activationCircle then
 					self:closePage(pageName)

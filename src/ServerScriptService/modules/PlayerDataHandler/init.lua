@@ -185,6 +185,14 @@ function PlayerDataHandler.GiveCoins(player: Player, amount: number)
 	addToStat("Coins", 0, player, amount)
 end
 
+function PlayerDataHandler.TakeCoins(player: Player, amount: number)
+	addToStat("Coins", 0, player, -amount)
+end
+
+function PlayerDataHandler.GetCoins(player: Player): number
+	return getStat("Coins", 0, player)
+end
+
 -- XP & Leveling
 function PlayerDataHandler.GiveXP(player: Player, amount: number)
 	local xp = getStat("XP", 0, player)
