@@ -19,6 +19,11 @@ local COLORS = {
 		foregroundBottomBegin = Color3.fromRGB(224, 118, 43),
 		foregroundBottomEnd = Color3.fromRGB(224, 134, 64),
 	},
+	red = {
+		foregroundTop = Color3.fromRGB(255, 102, 102),
+		foregroundBottomBegin = Color3.fromRGB(219, 61, 61),
+		foregroundBottomEnd = Color3.fromRGB(235, 85, 85),
+	},
 	blue = {
 		foregroundTop = Color3.fromRGB(46, 185, 254),
 		foregroundBottomBegin = Color3.fromRGB(33, 127, 254),
@@ -66,6 +71,7 @@ end
 	@param Position: Udim2 - position of the component
 	@param AnchorPoint: Vector2 - anchor point of the component
 	@param doAnimation?: boolean - whether to use tweens when updating progress (default false)
+    @param autoScaleText?: boolean - whether to scale text automatically
 ]]
 function ProgressBar:render()
 	local width = self.props.width
@@ -112,8 +118,9 @@ function ProgressBar:render()
 				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 				BackgroundTransparency = 1,
 				Position = UDim2.fromScale(0.5, 0.5),
-				Size = UDim2.fromScale(1, 1),
+				Size = UDim2.fromScale(1, 0.8),
 				ZIndex = 2,
+                TextScaled = self.props.autoScaleText,
 			}, {
 				uIStroke = Roact.createElement("UIStroke"),
 
@@ -131,7 +138,8 @@ function ProgressBar:render()
 				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 				BackgroundTransparency = 1,
 				Position = UDim2.new(0.5, 0, 0.5, 3),
-				Size = UDim2.fromScale(1, 1),
+				Size = UDim2.fromScale(1, 0.8),
+                TextScaled = self.props.autoScaleText,
 			}, {
 				uITextSizeConstraint1 = Roact.createElement("UITextSizeConstraint", {
 					MinTextSize = 9,
@@ -340,7 +348,7 @@ function ProgressBar:render()
 			BackgroundTransparency = 1,
 			BorderSizePixel = 0,
 			Size = UDim2.fromScale(1, 1),
-			ZIndex = 2,
+			ZIndex = 3,
 		}, {
 			bar = Roact.createElement("Frame", {
 				BackgroundColor3 = Color3.fromRGB(255, 255, 255),

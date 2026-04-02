@@ -26,6 +26,7 @@ local ModuleIndex = {
 	Clickable = components.Clickable,
 	HealthBar = components.HealthBar,
 	FloorIndicator = components.FloorIndicator,
+	EnemyBillboard = components.EnemyBillboard,
 
 	InventoryResourcesView = components.InventoryPage.ResourcesView,
 	InventoryGearView = components.InventoryPage.GearView,

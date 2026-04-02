@@ -64,7 +64,6 @@ function HealthBar:render()
 				Health = createElement(ProgressBar, {
 					progress = progress,
 					text = "HP: " .. health .. "/" .. maxHealth,
-					colorName = "red",
 					width = UDim.new(0, 200),
 					Size = UDim2.new(0, 200, 0, 25),
 				}),
