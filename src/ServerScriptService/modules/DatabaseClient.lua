@@ -32,6 +32,19 @@ function updatePlayerDataFolder(playerDataFolder: Folder, dbProfile)
 		if valueRef:IsA("ValueBase") then
 			valueRef.Value = value
 		elseif valueRef:IsA("Folder") then
+			local expectedEntries = {}
+			for _, entry in pairs(value) do
+				if typeof(entry) == "table" and type(entry.name) == "string" then
+					expectedEntries[entry.name] = true
+				end
+			end
+
+			for _, child in ipairs(valueRef:GetChildren()) do
+				if not expectedEntries[child.Name] then
+					child:Destroy()
+				end
+			end
+
 			for i, entry in pairs(value) do
 				local success, err = pcall(function()
 					local entryValue = entry.value
