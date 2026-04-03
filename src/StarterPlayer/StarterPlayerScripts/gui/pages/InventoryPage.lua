@@ -10,14 +10,13 @@ local PageWrapper = require(ModuleIndex.PageWrapper)
 local Window = require(ModuleIndex.Window)
 local ResourcesView = require(ModuleIndex.InventoryResourcesView)
 local GearView = require(ModuleIndex.InventoryGearView)
-local LoadoutView = require(ModuleIndex.InventoryLoadoutView)
 local Tab = require(ModuleIndex.Tab)
 
 local StatsContext = require(ModuleIndex.StatsContext)
 
 local InventoryPage = Roact.Component:extend("InventoryPage")
 
-local TAB_NAMES = {"Resources", "Gears", "Loadout"}
+local TAB_NAMES = {"Resources", "Gears"}
 
 function InventoryPage:init()
 	self:setState({
@@ -73,7 +72,6 @@ function InventoryPage:render()
 		Window = createElement(Window, {title = "Inventory", Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.6, 0.7), AnchorPoint = Vector2.new(0.5, 0.5), onExit = onExit}, {
 			ResourcesView = createElement(ResourcesView, {Visible = currentView == "Resources"}),
 			GearView = createElement(GearView, {Visible = currentView == "Gears"}),
-			LoadoutView = createElement(LoadoutView, {Visible = currentView == "Loadout"}),
 		})
 	})
 end

@@ -1,33 +1,199 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = ReplicatedStorage.services
-local APIService = require(Services.APIService)
 local Roact = require(Services.Roact)
 
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 
-local assignHotbarSlotEvent = APIService.GetEvent("AssignHotbarSlot")
-local clearHotbarSlotEvent = APIService.GetEvent("ClearHotbarSlot")
-local clearEquippedGearEvent = APIService.GetEvent("ClearEquippedGear")
-local equipGearEvent = APIService.GetEvent("EquipGear")
-
 local createElement = Roact.createElement
 
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
-local Button = require(ModuleIndex.Button)
-local SelectablePanel = require(ModuleIndex.SelectablePanel)
 local TextLabel = require(ModuleIndex.TextLabel)
-local StatsContext = require(ModuleIndex.StatsContext)
-local GearGridView = require(script.Parent.GearGridView)
-local GearUtils = require(script.Parent.GearUtils)
 
-local LoadoutView = Roact.Component:extend("LoadoutView")
+local LoadoutSlotCard = Roact.Component:extend("LoadoutSlotCard")
+local LoadoutView = Roact.PureComponent:extend("LoadoutView")
 
-local ARMOR_SLOTS = { "Helmet", "Chestplate", "Leggings", "Boots" }
+local HOTBAR_SLOT_DEFINITIONS = {
+	{ slotIndex = 1, badgeText = "1" },
+	{ slotIndex = 2, badgeText = "2" },
+	{ slotIndex = 3, badgeText = "3" },
+	{ slotIndex = 4, badgeText = "4" },
+	{ slotIndex = 5, badgeText = "5" },
+}
 
-function LoadoutView:init()
+local ARMOR_SLOT_DEFINITIONS = {
+	{ slotName = "Helmet", placeholderImageId = "ASSET_ID_HERE" },
+	{ slotName = "Chestplate", placeholderImageId = "ASSET_ID_HERE" },
+	{ slotName = "Leggings", placeholderImageId = "ASSET_ID_HERE" },
+	{ slotName = "Boots", placeholderImageId = "ASSET_ID_HERE" },
+}
+
+local PANEL_PADDING = 10
+local PANEL_HEADER_HEIGHT = 30
+local PANEL_HEADER_GAP = 10
+local COLUMN_PADDING = 8
+local HOTBAR_SLOT_COUNT = #HOTBAR_SLOT_DEFINITIONS
+local ARMOR_SLOT_COUNT = #ARMOR_SLOT_DEFINITIONS
+
+local function getSquareSlotSize(columnWidth: number, availableHeight: number, slotCount: number): number
+	if slotCount <= 0 then
+		return 0
+	end
+
+	local heightLimitedSize = math.floor((availableHeight - COLUMN_PADDING * (slotCount - 1)) / slotCount)
+	local widthLimitedSize = math.floor(columnWidth)
+	return math.max(0, math.min(widthLimitedSize, heightLimitedSize))
+end
+
+function LoadoutSlotCard:init()
 	self:setState({
-		selectorTarget = nil,
+		hovering = false,
+	})
+end
+
+function LoadoutSlotCard:render()
+	local itemName = self.props.itemName or ""
+	local imageId = itemName ~= "" and GearConfig.GetImageIdForItem(itemName) or ""
+	local hovering = self.state.hovering
+	local hasItem = itemName ~= ""
+	local zIndex = self.props.ZIndex or 1
+	local showName = self.props.showName == true
+	local numberInset = 10
+
+	return createElement("Frame", {
+		BackgroundColor3 = Color3.fromRGB(16, 121, 191),
+		Size = self.props.Size,
+		LayoutOrder = self.props.LayoutOrder,
+		ZIndex = zIndex,
+	}, {
+		UICorner = createElement("UICorner", {
+			CornerRadius = UDim.new(0, 8),
+		}),
+		UIStroke = createElement("UIStroke", {
+			Color = Color3.fromRGB(0, 43, 106),
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Thickness = 2,
+		}),
+		Shadow = createElement("Frame", {
+			Size = UDim2.new(1, 0, 1, 5),
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 0.82,
+			ZIndex = zIndex - 1,
+		}, {
+			UICorner = createElement("UICorner", {
+				CornerRadius = UDim.new(0, 8),
+			}),
+		}),
+		Inner = createElement("Frame", {
+			BackgroundColor3 = Color3.fromRGB(22, 151, 230),
+			Position = UDim2.fromOffset(4, 4),
+			Size = UDim2.new(1, -8, 1, -8),
+			ZIndex = zIndex + 1,
+			ClipsDescendants = true,
+		}, {
+			UICorner = createElement("UICorner", {
+				CornerRadius = UDim.new(0, 6),
+			}),
+			Placeholder = self.props.placeholderImageId and createElement("ImageLabel", {
+				Image = "rbxassetid://" .. self.props.placeholderImageId,
+				Size = UDim2.new(1, -12, 1, -24),
+				Position = UDim2.new(0.5, 0, 0.5, -4),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundTransparency = 1,
+				ImageTransparency = hasItem and 0.82 or 0.55,
+				ScaleType = Enum.ScaleType.Fit,
+				ZIndex = zIndex + 1,
+			}) or nil,
+			ItemImage = hasItem and createElement("ImageLabel", {
+				Image = "rbxassetid://" .. imageId,
+				Size = UDim2.new(0.62, 0, 0.62, 0),
+				Position = UDim2.new(0.5, 0, 0.44, 0),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundTransparency = 1,
+				ScaleType = Enum.ScaleType.Fit,
+				ZIndex = zIndex + 2,
+			}) or nil,
+			Badge = self.props.badgeText and createElement("Frame", {
+				BackgroundColor3 = Color3.fromRGB(0, 43, 106),
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -numberInset, 0, numberInset),
+				Size = UDim2.fromOffset(18, 18),
+				ZIndex = zIndex + 3,
+			}, {
+				UICorner = createElement("UICorner", {
+					CornerRadius = UDim.new(1, 0),
+				}),
+				Text = createElement(TextLabel, {
+					Text = self.props.badgeText,
+					textSize = 11,
+					Size = UDim2.fromScale(1, 1),
+					ZIndex = zIndex + 4,
+					textProps = {
+						TextScaled = true,
+					},
+				}),
+			}) or nil,
+			ItemLabel = showName and hasItem and createElement(TextLabel, {
+				Text = itemName,
+				textSize = 12,
+				Size = UDim2.new(1, -12, 0, 26),
+				Position = UDim2.new(0.5, 0, 1, -6),
+				AnchorPoint = Vector2.new(0.5, 1),
+				ZIndex = zIndex + 3,
+				textProps = {
+					TextScaled = true,
+					TextWrapped = true,
+				},
+			}) or nil,
+			RemoveButton = hasItem and hovering and createElement("TextButton", {
+				Text = "",
+				BackgroundColor3 = Color3.fromRGB(185, 22, 22),
+				BorderSizePixel = 0,
+				AutoButtonColor = true,
+				Size = UDim2.fromOffset(24, 24),
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -6, 0, 6),
+				ZIndex = zIndex + 4,
+				[Roact.Event.Activated] = self.props.onRemove,
+			}, {
+				UICorner = createElement("UICorner", {
+					CornerRadius = UDim.new(1, 0),
+				}),
+				UIStroke = createElement("UIStroke", {
+					Color = Color3.fromRGB(0, 0, 0),
+					Thickness = 1,
+				}),
+				Text = createElement(TextLabel, {
+					Text = "X",
+					textSize = 12,
+					Size = UDim2.new(1, -4, 1, -4),
+					Position = UDim2.fromScale(0.5, 0.5),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					ZIndex = zIndex + 5,
+					textProps = {
+						TextScaled = true,
+					},
+				}),
+			}) or nil,
+			HoverCatcher = createElement("TextButton", {
+				Text = "",
+				BackgroundTransparency = hovering and 0.92 or 1,
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				Size = UDim2.fromScale(1, 1),
+				ZIndex = zIndex + 3,
+				AutoButtonColor = false,
+				[Roact.Event.MouseEnter] = function()
+					self:setState({
+						hovering = true,
+					})
+				end,
+				[Roact.Event.MouseLeave] = function()
+					self:setState({
+						hovering = false,
+					})
+				end,
+			}),
+		}),
 	})
 end
 
@@ -35,266 +201,182 @@ function LoadoutView:getCurrentArmorName(data, slotName: string): string
 	return data["Equipped" .. slotName] or ""
 end
 
-function LoadoutView:openSelector(target)
+function LoadoutView:init()
+	self.rootRef = Roact.createRef()
 	self:setState({
-		selectorTarget = target,
+		absoluteSize = Vector2.zero,
 	})
 end
 
-function LoadoutView:closeSelector()
+function LoadoutView:updateAbsoluteSize()
+	local root = self.rootRef:getValue()
+	if root == nil then
+		return
+	end
+
+	local absoluteSize = root.AbsoluteSize
+	local currentSize = self.state.absoluteSize
+	if currentSize.X == absoluteSize.X and currentSize.Y == absoluteSize.Y then
+		return
+	end
+
 	self:setState({
-		selectorTarget = Roact.None,
+		absoluteSize = absoluteSize,
 	})
 end
 
-function LoadoutView:renderSlotCard(layoutOrder: number, label: string, itemName: string, onSelect)
-	return createElement(SelectablePanel, {
-		Size = UDim2.fromOffset(96, 96),
-		aspectRatio = 1,
-		selected = false,
-		LayoutOrder = layoutOrder,
-		onSelect = onSelect,
-	}, {
-		Label = createElement(TextLabel, {
-			Text = label,
-			textSize = 14,
-			Size = UDim2.new(1, -8, 0, 18),
-			Position = UDim2.new(0.5, 0, 0, 8),
-			AnchorPoint = Vector2.new(0.5, 0),
-			textProps = {
-				TextScaled = true,
-			},
-		}),
-		Icon = createElement("ImageLabel", {
-			Image = "rbxassetid://" .. GearConfig.GetImageIdForItem(itemName ~= "" and itemName or ""),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.45),
-			Size = UDim2.fromScale(0.5, 0.5),
-			BackgroundTransparency = 1,
-			ImageTransparency = itemName == "" and 0.65 or 0,
-		}),
-		Name = createElement(TextLabel, {
-			Text = itemName ~= "" and itemName or "Empty",
-			textSize = 12,
-			Size = UDim2.new(1, -8, 0, 24),
-			Position = UDim2.new(0.5, 0, 1, -8),
-			AnchorPoint = Vector2.new(0.5, 1),
-			textProps = {
-				TextScaled = true,
-				TextWrapped = true,
-			},
-		}),
-	})
+function LoadoutView:didMount()
+	self:updateAbsoluteSize()
 end
 
-function LoadoutView:renderOverview(data)
+function LoadoutView:didUpdate()
+	self:updateAbsoluteSize()
+end
+
+function LoadoutView:getLayoutMetrics()
+	local absoluteSize = self.state.absoluteSize
+	local widthOffset = absoluteSize.X
+	local heightOffset = absoluteSize.Y
+
+	local contentWidth = math.max(0, widthOffset - PANEL_PADDING * 2)
+	local contentHeight = math.max(0, heightOffset - PANEL_PADDING * 2 - PANEL_HEADER_HEIGHT - PANEL_HEADER_GAP)
+	local columnWidth = math.max(0, (contentWidth - COLUMN_PADDING) / 2)
+
+	return {
+		contentHeight = contentHeight,
+		columnWidth = columnWidth,
+		hotbarSlotSize = getSquareSlotSize(columnWidth, contentHeight, HOTBAR_SLOT_COUNT),
+		armorSlotSize = getSquareSlotSize(columnWidth, contentHeight, ARMOR_SLOT_COUNT),
+	}
+end
+
+function LoadoutView:renderHotbarColumn(data, layoutMetrics)
 	local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
-	local hotbarCards = {}
-	local armorCards = {}
+	local cards = {}
 
-	for index = 1, HotbarConfig.MAX_SLOTS do
-		local itemName = hotbarSlots[index] or ""
-		hotbarCards["Hotbar" .. tostring(index)] = self:renderSlotCard(index, "Slot " .. tostring(index), itemName, function()
-			self:openSelector({
-				kind = "hotbar",
-				slotIndex = index,
-				title = "Select gear for slot " .. tostring(index),
-			})
-		end)
-	end
-
-	for index, slotName in ipairs(ARMOR_SLOTS) do
-		local itemName = self:getCurrentArmorName(data, slotName)
-		armorCards["Armor" .. slotName] = self:renderSlotCard(index, slotName, itemName, function()
-			self:openSelector({
-				kind = "armor",
-				slotName = slotName,
-				title = "Select gear for " .. slotName,
-			})
-		end)
+	for _, slotInfo in ipairs(HOTBAR_SLOT_DEFINITIONS) do
+		cards["Hotbar" .. tostring(slotInfo.slotIndex)] = createElement(LoadoutSlotCard, {
+			LayoutOrder = slotInfo.slotIndex,
+			Size = UDim2.fromOffset(layoutMetrics.hotbarSlotSize, layoutMetrics.hotbarSlotSize),
+			badgeText = slotInfo.badgeText,
+			itemName = hotbarSlots[slotInfo.slotIndex] or "",
+			onRemove = function()
+				if self.props.onClearHotbarSlot ~= nil then
+					self.props.onClearHotbarSlot(slotInfo.slotIndex)
+				end
+			end,
+			ZIndex = 5,
+		})
 	end
 
 	return createElement("Frame", {
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(0.48, 0, 1, 0),
+		Position = UDim2.fromScale(0, 0),
 	}, {
-		HotbarLabel = createElement(TextLabel, {
-			Text = "Hotbar",
-			textSize = 26,
-			Size = UDim2.new(1, 0, 0, 30),
-			Position = UDim2.new(0, 0, 0, 0),
-			AnchorPoint = Vector2.zero,
-			textProps = {
-				TextScaled = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			},
-		}),
-		HotbarRow = createElement("Frame", {
+		List = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 0, 104),
-			Position = UDim2.new(0, 0, 0, 38),
+			Size = UDim2.new(1, 0, 1, 0),
 		}, {
 			UIListLayout = createElement("UIListLayout", {
-				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, 8),
+				FillDirection = Enum.FillDirection.Vertical,
+				Padding = UDim.new(0, COLUMN_PADDING),
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
-			Slots = Roact.createFragment(hotbarCards),
-		}),
-		ArmorLabel = createElement(TextLabel, {
-			Text = "Armor",
-			textSize = 26,
-			Size = UDim2.new(1, 0, 0, 30),
-			Position = UDim2.new(0, 0, 0, 154),
-			AnchorPoint = Vector2.zero,
-			textProps = {
-				TextScaled = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			},
-		}),
-		ArmorRow = createElement("Frame", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 0, 104),
-			Position = UDim2.new(0, 0, 0, 192),
-		}, {
-			UIListLayout = createElement("UIListLayout", {
-				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, 8),
-				SortOrder = Enum.SortOrder.LayoutOrder,
-			}),
-			Slots = Roact.createFragment(armorCards),
+			Cards = Roact.createFragment(cards),
 		}),
 	})
 end
 
-function LoadoutView:renderSelector(data)
-	local target = self.state.selectorTarget
-	local selectedItemName = nil
-	local gearEntries
+function LoadoutView:renderArmorColumn(data, layoutMetrics)
+	local cards = {}
 
-	if target.kind == "hotbar" then
-		local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
-		selectedItemName = hotbarSlots[target.slotIndex] or ""
-		gearEntries = GearUtils.GetOwnedGearEntries(data, function(itemName)
-			return HotbarConfig.IsEntryHotbarEligible(itemName)
-		end)
-	else
-		selectedItemName = self:getCurrentArmorName(data, target.slotName)
-		gearEntries = GearUtils.GetOwnedGearEntries(data, function(itemName, itemData)
-			return itemData.slot == target.slotName
-		end)
+	for index, slotInfo in ipairs(ARMOR_SLOT_DEFINITIONS) do
+		cards["Armor" .. slotInfo.slotName] = createElement(LoadoutSlotCard, {
+			LayoutOrder = index,
+			Size = UDim2.fromOffset(layoutMetrics.armorSlotSize, layoutMetrics.armorSlotSize),
+			itemName = self:getCurrentArmorName(data, slotInfo.slotName),
+			placeholderImageId = slotInfo.placeholderImageId,
+			onRemove = function()
+				if self.props.onClearArmorSlot ~= nil then
+					self.props.onClearArmorSlot(slotInfo.slotName)
+				end
+			end,
+			ZIndex = 5,
+		})
 	end
 
 	return createElement("Frame", {
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2.new(0.48, 0, 1, 0),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
 	}, {
-		Title = createElement(TextLabel, {
-			Text = target.title,
-			textSize = 26,
-			Size = UDim2.new(1, 0, 0, 30),
-			Position = UDim2.new(0, 0, 0, 0),
-			AnchorPoint = Vector2.zero,
-			textProps = {
-				TextScaled = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			},
-		}),
-		ActionRow = createElement("Frame", {
+		List = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 0, 60),
-			Position = UDim2.new(0, 0, 0, 38),
+			Size = UDim2.new(1, 0, 1, 0),
 		}, {
 			UIListLayout = createElement("UIListLayout", {
-				FillDirection = Enum.FillDirection.Horizontal,
-				Padding = UDim.new(0, 8),
+				FillDirection = Enum.FillDirection.Vertical,
+				Padding = UDim.new(0, COLUMN_PADDING),
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
-			Back = createElement(Button, {
-				customSize = UDim2.new(0.33, -6, 1, 0),
-				LayoutOrder = 1,
-				color = "yellow",
-				disableHoverScaleTween = true,
-				onClick = function()
-					self:closeSelector()
-				end,
-			}, {
-				Text = createElement(TextLabel, {
-					Text = "Back",
-					textSize = 16,
-					Size = UDim2.fromScale(0.9, 0.9),
-					Position = UDim2.fromScale(0.5, 0.5),
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					textProps = { TextScaled = true },
-				}),
-			}),
-			Wipe = createElement(Button, {
-				customSize = UDim2.new(0.33, -6, 1, 0),
-				LayoutOrder = 2,
-				color = "red",
-				disableHoverScaleTween = true,
-				onClick = function()
-					if target.kind == "hotbar" then
-						clearHotbarSlotEvent:FireServer(target.slotIndex)
-					else
-						clearEquippedGearEvent:FireServer(target.slotName)
-					end
-					self:closeSelector()
-				end,
-			}, {
-				Text = createElement(TextLabel, {
-					Text = "Wipe Slot",
-					textSize = 16,
-					Size = UDim2.fromScale(0.9, 0.9),
-					Position = UDim2.fromScale(0.5, 0.5),
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					textProps = { TextScaled = true },
-				}),
-			}),
-			Hint = createElement(TextLabel, {
-				Text = "Select a gear item below",
-				textSize = 16,
-				Size = UDim2.new(0.34, -4, 1, 0),
-				LayoutOrder = 3,
-				textProps = {
-					TextScaled = true,
-					TextWrapped = true,
-				},
-			}),
-		}),
-		Grid = createElement(GearGridView, {
-			Visible = true,
-			interactive = true,
-			selectedItemName = selectedItemName,
-			Size = UDim2.new(1, -20, 1, -114),
-			Position = UDim2.new(0.5, 0, 0, 114),
-			AnchorPoint = Vector2.new(0.5, 0),
-			gearEntries = gearEntries,
-			onItemSelected = function(itemName: string)
-				if target.kind == "hotbar" then
-					assignHotbarSlotEvent:FireServer(target.slotIndex, itemName)
-				else
-					equipGearEvent:FireServer(itemName)
-				end
-				self:closeSelector()
-			end,
+			Cards = Roact.createFragment(cards),
 		}),
 	})
 end
 
 function LoadoutView:render()
-	return createElement(StatsContext.context.Consumer, {
-		render = function(data)
-			if not self.props.Visible then
-				return nil
-			end
+	if not self.props.Visible then
+		return nil
+	end
 
-			if self.state.selectorTarget ~= nil then
-				return self:renderSelector(data)
-			end
+	local data = self.props.data or {}
+	local layoutMetrics = self:getLayoutMetrics()
 
-			return self:renderOverview(data)
+	return createElement("Frame", {
+		BackgroundColor3 = Color3.fromRGB(11, 95, 150),
+		BackgroundTransparency = 0.08,
+		Size = self.props.Size or UDim2.fromScale(1, 1),
+		Position = self.props.Position,
+		AnchorPoint = self.props.AnchorPoint,
+		[Roact.Ref] = self.rootRef,
+		[Roact.Change.AbsoluteSize] = function()
+			self:updateAbsoluteSize()
 		end,
+	}, {
+		UICorner = createElement("UICorner", {
+			CornerRadius = UDim.new(0, 10),
+		}),
+		UIStroke = createElement("UIStroke", {
+			Color = Color3.fromRGB(0, 43, 106),
+			Thickness = 2,
+		}),
+		Padding = createElement("UIPadding", {
+			PaddingTop = UDim.new(0, PANEL_PADDING),
+			PaddingBottom = UDim.new(0, PANEL_PADDING),
+			PaddingLeft = UDim.new(0, PANEL_PADDING),
+			PaddingRight = UDim.new(0, PANEL_PADDING),
+		}),
+		Title = createElement(TextLabel, {
+			Text = "Loadout",
+			textSize = 26,
+			Size = UDim2.new(1, 0, 0, PANEL_HEADER_HEIGHT),
+			textProps = {
+				TextScaled = true,
+				TextXAlignment = Enum.TextXAlignment.Left,
+			},
+		}),
+		Columns = createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 1, -(PANEL_HEADER_HEIGHT + PANEL_HEADER_GAP)),
+			Position = UDim2.fromOffset(0, PANEL_HEADER_HEIGHT + PANEL_HEADER_GAP),
+		}, {
+			HotbarColumn = self:renderHotbarColumn(data, layoutMetrics),
+			ArmorColumn = self:renderArmorColumn(data, layoutMetrics),
+		}),
 	})
 end
 

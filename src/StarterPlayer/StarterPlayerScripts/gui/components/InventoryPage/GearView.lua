@@ -1,5 +1,15 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Roact = require(ReplicatedStorage.services.Roact)
+local Services = ReplicatedStorage.services
+local APIService = require(Services.APIService)
+local Roact = require(Services.Roact)
+
+local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
+local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+
+local equipGearEvent = APIService.GetEvent("EquipGear")
+local assignHotbarSlotEvent = APIService.GetEvent("AssignHotbarSlot")
+local clearHotbarSlotEvent = APIService.GetEvent("ClearHotbarSlot")
+local clearEquippedGearEvent = APIService.GetEvent("ClearEquippedGear")
 
 local createElement = Roact.createElement
 
@@ -9,10 +19,11 @@ local GearGridView = require(script.Parent.GearGridView)
 local GearDetailPopup = require(script.Parent.GearDetailPopup)
 local GearDetailUtils = require(script.Parent.GearDetailUtils)
 local GearUtils = require(script.Parent.GearUtils)
+local LoadoutView = require(script.Parent.LoadoutView)
 
 local GearView = Roact.Component:extend("GearView")
 
-local POPUP_SIZE = Vector2.new(260, 200)
+local POPUP_SIZE = Vector2.new(260, 236)
 local POPUP_MARGIN = 8
 
 function GearView:init()
@@ -77,13 +88,125 @@ function GearView:didUpdate(prevProps)
 	end
 end
 
+function GearView:_isItemVisibleInEntries(itemName: string?, gearEntries): boolean
+	if type(itemName) ~= "string" or itemName == "" then
+		return false
+	end
+
+	for _, gearEntry in ipairs(gearEntries) do
+		if gearEntry.name == itemName then
+			return true
+		end
+	end
+
+	return false
+end
+
+function GearView:getFirstAvailableHotbarSlot(data): number?
+	local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
+	for index = 1, HotbarConfig.MAX_SLOTS do
+		if hotbarSlots[index] == "" then
+			return index
+		end
+	end
+
+	return nil
+end
+
+function GearView:getAssignedHotbarSlot(itemName: string, data): number?
+	local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
+	for index = 1, HotbarConfig.MAX_SLOTS do
+		if hotbarSlots[index] == itemName then
+			return index
+		end
+	end
+
+	return nil
+end
+
+function GearView:getEquipActionState(itemName: string?, data)
+	if type(itemName) ~= "string" or itemName == "" then
+		return nil
+	end
+
+	local itemData = GearConfig.GetItemData(itemName)
+	if itemData == nil then
+		return nil
+	end
+
+	if HotbarConfig.IsEntryHotbarEligible(itemName) then
+		local assignedSlot = self:getAssignedHotbarSlot(itemName, data)
+		if assignedSlot ~= nil then
+			return {
+				buttonText = "Equip",
+				disabled = true,
+				hintText = "Already equipped in hotbar slot " .. tostring(assignedSlot) .. ".",
+			}
+		end
+
+		local nextSlot = self:getFirstAvailableHotbarSlot(data)
+		if nextSlot == nil then
+			return {
+				buttonText = "Equip",
+				disabled = true,
+				hintText = "All hotbar slots are full.",
+			}
+		end
+
+		return {
+			buttonText = "Equip",
+			disabled = false,
+			hintText = "Equips to hotbar slot " .. tostring(nextSlot) .. ".",
+			slotIndex = nextSlot,
+			mode = "hotbar",
+		}
+	end
+
+	local equippedField = GearConfig.slotToField[itemData.slot]
+	local equippedItemName = equippedField and data[equippedField] or ""
+	return {
+		buttonText = "Equip",
+		disabled = equippedItemName == itemName,
+		hintText = equippedItemName == itemName
+			and ("Already equipped as " .. itemData.slot .. ".")
+			or ("Equips to your " .. string.lower(itemData.slot) .. " slot."),
+		mode = "gear",
+	}
+end
+
+function GearView:equipSelectedItem(data)
+	local selectedItemName = self.state.selectedItemName
+	local actionState = self:getEquipActionState(selectedItemName, data)
+	if actionState == nil or actionState.disabled then
+		return
+	end
+
+	if actionState.mode == "hotbar" and actionState.slotIndex ~= nil then
+		equipGearEvent:FireServer(selectedItemName)
+		assignHotbarSlotEvent:FireServer(actionState.slotIndex, selectedItemName)
+	else
+		equipGearEvent:FireServer(selectedItemName)
+	end
+
+	self:closePopup()
+end
+
 function GearView:render()
 	return createElement(StatsContext.context.Consumer, {
 		render = function(data)
 			local gearEntries = GearUtils.GetOwnedGearEntries(data)
+			if self.state.selectedItemName ~= nil and not self:_isItemVisibleInEntries(self.state.selectedItemName, gearEntries) then
+				task.defer(function()
+					if self.state.selectedItemName ~= nil and not self:_isItemVisibleInEntries(self.state.selectedItemName, gearEntries) then
+						self:closePopup()
+					end
+				end)
+			end
 			local popupDetails = nil
+			local equipActionState = nil
 			if self.state.selectedItemName ~= nil then
 				popupDetails = GearDetailUtils.GetPopupDetails(self.state.selectedItemName, data)
+				equipActionState = self:getEquipActionState(self.state.selectedItemName, data)
 			end
 
 			return createElement("Frame", {
@@ -92,30 +215,57 @@ function GearView:render()
 				Visible = self.props.Visible,
 				[Roact.Ref] = self.rootRef,
 			}, {
-				GearGrid = createElement(GearGridView, {
-					Visible = self.props.Visible,
-					gearEntries = gearEntries,
-					itemsPerRow = 8,
-					interactive = true,
-					selectedItemName = self.state.selectedItemName,
-					onItemSelected = function(itemName)
-						self:setState({
-							selectedItemName = itemName,
-							popupAnchor = Roact.None,
-						})
-					end,
-					onSelectedCellLayoutChanged = function(cellLayout)
-						self:updatePopupPosition(cellLayout)
-					end,
-					onScroll = function()
-						self:closePopup()
-					end,
+				Content = createElement("Frame", {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(1, 0, 1, 0),
+				}, {
+					GearGrid = createElement(GearGridView, {
+						Visible = self.props.Visible,
+						gearEntries = gearEntries,
+						itemsPerRow = 5,
+						interactive = true,
+						selectedItemName = self.state.selectedItemName,
+						Size = UDim2.new(0.66, -8, 1, 0),
+						Position = UDim2.fromScale(0, 0),
+						AnchorPoint = Vector2.zero,
+						onItemSelected = function(itemName)
+							self:setState({
+								selectedItemName = itemName,
+								popupAnchor = Roact.None,
+							})
+						end,
+						onSelectedCellLayoutChanged = function(cellLayout)
+							self:updatePopupPosition(cellLayout)
+						end,
+						onScroll = function()
+							self:closePopup()
+						end,
+					}),
+					Loadout = createElement(LoadoutView, {
+						Visible = self.props.Visible,
+						data = data,
+						Size = UDim2.new(0.34, 0, 1, 0),
+						Position = UDim2.fromScale(1, 0),
+						AnchorPoint = Vector2.new(1, 0),
+						onClearHotbarSlot = function(slotIndex)
+							clearHotbarSlotEvent:FireServer(slotIndex)
+						end,
+						onClearArmorSlot = function(slotName)
+							clearEquippedGearEvent:FireServer(slotName)
+						end,
+					}),
 				}),
 				Popup = popupDetails ~= nil and self.state.popupAnchor ~= nil and createElement(GearDetailPopup, {
 					Position = UDim2.fromOffset(self.state.popupAnchor.x, self.state.popupAnchor.y),
 					Size = UDim2.fromOffset(POPUP_SIZE.X, POPUP_SIZE.Y),
 					details = popupDetails,
 					ZIndex = 20,
+					primaryButtonText = equipActionState and equipActionState.buttonText or nil,
+					primaryButtonDisabled = equipActionState and equipActionState.disabled or false,
+					actionHintText = equipActionState and equipActionState.hintText or nil,
+					onPrimaryAction = equipActionState and function()
+						self:equipSelectedItem(data)
+					end or nil,
 					onClose = function()
 						self:closePopup()
 					end,

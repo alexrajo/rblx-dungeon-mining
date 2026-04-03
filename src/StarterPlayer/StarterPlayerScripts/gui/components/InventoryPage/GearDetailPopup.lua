@@ -32,10 +32,14 @@ function GearDetailPopup:render()
 		})
 	end
 
+	local hasPrimaryAction = self.props.onPrimaryAction ~= nil and self.props.primaryButtonText ~= nil
+	local actionHintText = self.props.actionHintText
+	local statsBottomInset = hasPrimaryAction and 134 or 86
+
 	return createElement("Frame", {
 		AnchorPoint = self.props.AnchorPoint or Vector2.new(0.5, 0),
 		Position = self.props.Position,
-		Size = self.props.Size or UDim2.fromOffset(260, 200),
+		Size = self.props.Size or UDim2.fromOffset(260, 236),
 		BackgroundTransparency = 1,
 		ZIndex = zIndex,
 	}, {
@@ -138,7 +142,7 @@ function GearDetailPopup:render()
 					},
 				}) or nil,
 				Stats = createElement("Frame", {
-					Size = UDim2.new(1, 0, 1, -86),
+					Size = UDim2.new(1, 0, 1, -statsBottomInset),
 					Position = UDim2.fromOffset(0, 84),
 					BackgroundTransparency = 1,
 					ZIndex = zIndex + 2,
@@ -151,6 +155,41 @@ function GearDetailPopup:render()
 					}),
 					Lines = Roact.createFragment(detailElements),
 				}),
+				ActionHint = hasPrimaryAction and actionHintText and createElement(TextLabel, {
+					Text = actionHintText,
+					textSize = 11,
+					Size = UDim2.new(1, 0, 0, 28),
+					Position = UDim2.new(0, 0, 1, -62),
+					AnchorPoint = Vector2.new(0, 0),
+					ZIndex = zIndex + 4,
+					textProps = {
+						TextScaled = true,
+						TextWrapped = true,
+						TextXAlignment = Enum.TextXAlignment.Left,
+					},
+				}) or nil,
+				PrimaryAction = hasPrimaryAction and createElement(Button, {
+					color = "green",
+					customSize = UDim2.new(1, 0, 0, 42),
+					Position = UDim2.new(0, 0, 1, -42),
+					AnchorPoint = Vector2.new(0, 0),
+					ZIndex = zIndex + 4,
+					disabled = self.props.primaryButtonDisabled == true,
+					disableHoverScaleTween = true,
+					onClick = self.props.onPrimaryAction,
+				}, {
+					Text = createElement(TextLabel, {
+						Text = self.props.primaryButtonText,
+						textSize = 16,
+						Size = UDim2.fromScale(0.9, 0.9),
+						Position = UDim2.fromScale(0.5, 0.5),
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						ZIndex = zIndex + 5,
+						textProps = {
+							TextScaled = true,
+						},
+					}),
+				}) or nil,
 			}),
 		}),
 	})

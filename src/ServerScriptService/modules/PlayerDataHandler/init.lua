@@ -7,6 +7,7 @@ local TempStats = require(script.TempStats)
 local ProfileStore = ProfileService.GetProfileStore("PlayerData", ProfileTemplate)
 local APIService = require(Services.APIService)
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
+local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -344,8 +345,16 @@ function PlayerDataHandler.ClearHotbarSlot(player: Player, slotIndex: number): b
 	end
 
 	local slots = PlayerDataHandler.GetHotbarSlots(player)
+	local entryId = slots[slotIndex] or ""
 	slots[slotIndex] = ""
 	PlayerDataHandler.SetHotbarSlots(player, slots)
+
+	local equipmentSlot = GearConfig.GetSlotForItem(entryId)
+	local fieldName = equipmentSlot and ("Equipped" .. equipmentSlot) or nil
+	if fieldName ~= nil and getStat(fieldName, "", player) == entryId then
+		setStat(fieldName, "", player)
+	end
+
 	return true
 end
 
