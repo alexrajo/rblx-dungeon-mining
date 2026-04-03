@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local CollectionService = game:GetService("CollectionService")
 local Roact = require(ReplicatedStorage.services.Roact)
 
 local createElement = Roact.createElement
@@ -18,9 +19,30 @@ local utils = ReplicatedStorage.utils
 local NumberFormatter = require(utils.NumberFormatter)
 
 local Sidebar = Roact.Component:extend("Sidebar")
+local INVENTORY_BUTTON_TAG = "TutorialInventoryButton"
 
 function Sidebar:init()
-	
+	self.inventoryButtonRef = Roact.createRef()
+	self.taggedInventoryButton = nil
+end
+
+function Sidebar:_syncInventoryTutorialTag()
+	local inventoryButton = self.inventoryButtonRef:getValue()
+
+	if self.taggedInventoryButton ~= nil and self.taggedInventoryButton ~= inventoryButton then
+		CollectionService:RemoveTag(self.taggedInventoryButton, INVENTORY_BUTTON_TAG)
+		self.taggedInventoryButton = nil
+	end
+
+	if inventoryButton == nil then
+		return
+	end
+
+	if not CollectionService:HasTag(inventoryButton, INVENTORY_BUTTON_TAG) then
+		CollectionService:AddTag(inventoryButton, INVENTORY_BUTTON_TAG)
+	end
+
+	self.taggedInventoryButton = inventoryButton
 end
 
 function Sidebar:renderContent(screenData)
@@ -104,6 +126,7 @@ function Sidebar:renderContent(screenData)
 			}),
 			["1_Inventory"] = createElement(Button, {
 				color = "green",
+				hostRef = self.inventoryButtonRef,
 				onClick = function()
 					togglePage("Inventory")
 				end
@@ -155,6 +178,22 @@ function Sidebar:render()
 			return self:renderContent(data)
 		end,
 	})
+end
+
+function Sidebar:didMount()
+	self:_syncInventoryTutorialTag()
+end
+
+function Sidebar:didUpdate()
+	self:_syncInventoryTutorialTag()
+end
+
+function Sidebar:willUnmount()
+	if self.taggedInventoryButton ~= nil and CollectionService:HasTag(self.taggedInventoryButton, INVENTORY_BUTTON_TAG) then
+		CollectionService:RemoveTag(self.taggedInventoryButton, INVENTORY_BUTTON_TAG)
+	end
+
+	self.taggedInventoryButton = nil
 end
 
 return Sidebar

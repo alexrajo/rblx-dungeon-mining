@@ -184,6 +184,7 @@ function Button:render()
 		Size = buttonSize,
 		AnchorPoint = self.props.AnchorPoint,
 		Position = self.props.Position,
+		[Roact.Ref] = self.props.hostRef,
 		--TextValue = self.props.text,
 		[Roact.Event.Activated] = (not isDisabled) and onClick or nil,
 		[Roact.Event.MouseEnter] = (not isDisabled) and onHoverBegin or nil,

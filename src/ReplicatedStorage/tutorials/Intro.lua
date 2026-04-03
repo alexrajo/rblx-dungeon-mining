@@ -89,6 +89,12 @@ local IntroTutorial = {
 			completeOn = "click"
 		},
 		{
+			id = "OpenInventory",
+			description = "Open your inventory to see the items and gear you collect.",
+			completeOn = "openPage_Inventory",
+			outlineTags = {"TutorialInventoryButton"},
+		},
+		{
 			id = "MineEntrance",
 			description = "Head to the cave entrance and enter the mine to begin your adventure!",
 			completeOn = "enterMine",
