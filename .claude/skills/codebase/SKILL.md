@@ -85,15 +85,15 @@ The `default.project.json` maps each top-level folder in `src/` to its correspon
 
 ## Naming Conventions
 
-| Element         | Convention                                     | Example                                                              |
-| --------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
-| Files / Modules | PascalCase                                     | `DatabaseClient.lua`, `StatCalculation.lua`                          |
+| Element         | Convention                                     | Example                                                                  |
+| --------------- | ---------------------------------------------- | ------------------------------------------------------------------------ |
+| Files / Modules | PascalCase                                     | `DatabaseClient.lua`, `StatCalculation.lua`                              |
 | Functions       | camelCase (local), PascalCase (module methods) | `local function swingPickaxe()`, `StatCalculation.GetDamageMultiplier()` |
 | Variables       | camelCase                                      | `local playerDataFolder`, `local chargeAmount`                           |
-| Constants       | UPPER_SNAKE_CASE                               | `local RESPAWN_TIME = 10`, `local DATASTORE_PREFIX = "PlayerData1_"` |
-| Class names     | PascalCase                                     | `DatabaseClient`, `TagHandler`                                       |
-| Private members | Prefixed with `_`                              | `self._connections`, `self._profile`                                 |
-| Roblox services | Declared at top of file                        | `local ReplicatedStorage = game:GetService("ReplicatedStorage")`     |
+| Constants       | UPPER_SNAKE_CASE                               | `local RESPAWN_TIME = 10`, `local DATASTORE_PREFIX = "PlayerData1_"`     |
+| Class names     | PascalCase                                     | `DatabaseClient`, `TagHandler`                                           |
+| Private members | Prefixed with `_`                              | `self._connections`, `self._profile`                                     |
+| Roblox services | Declared at top of file                        | `local ReplicatedStorage = game:GetService("ReplicatedStorage")`         |
 
 ---
 
@@ -379,6 +379,8 @@ local modules = ModuleLoader.deepLoad(someFolder, maxDepth)
 - **Roact** (bundled): React-like declarative UI library
 - **Epic UI Pack**: Custom extended classes for common UI components (`ExtendBarClass`, `ExtendGuiButtonClass`, `ExtendGuiObjectClass`, `ExtendTextLabelClass`)
 - UI scripts live in `StarterPlayer/StarterPlayerScripts/gui/`
+
+Note: when developing gui, use the ModuleIndex setup where applicable, as script hierarchies aren't necessarily dependable when the gui is rendered as components when mounted
 
 ---
 
