@@ -61,6 +61,39 @@ local function getClosestTaggedPosition(player: Player, tagName: string): Vector
 	return closestPosition
 end
 
+local function getClosestDescendLadderPosition(player: Player): Vector3?
+	local playerPosition = getPlayerPosition(player)
+	if playerPosition == nil then
+		return nil
+	end
+
+	local closestPosition = nil
+	local closestDistance = math.huge
+
+	for _, instance in ipairs(CollectionService:GetTagged("MineLadder")) do
+		if instance.Parent == nil or not instance:IsDescendantOf(workspace) then
+			continue
+		end
+
+		if instance:GetAttribute("LadderAction") ~= "descend" then
+			continue
+		end
+
+		local instancePosition = getInstancePosition(instance)
+		if instancePosition == nil then
+			continue
+		end
+
+		local distance = (instancePosition - playerPosition).Magnitude
+		if distance < closestDistance then
+			closestDistance = distance
+			closestPosition = instancePosition
+		end
+	end
+
+	return closestPosition
+end
+
 local function getClosestMineEntrancePosition(player: Player): Vector3?
 	return getClosestTaggedPosition(player, "MineEntrance")
 end
@@ -70,7 +103,7 @@ local function getClosestOreNodePosition(player: Player): Vector3?
 end
 
 local function getClosestLadderOrOrePosition(player: Player): Vector3?
-	local ladderPosition = getClosestTaggedPosition(player, "MineLadder")
+	local ladderPosition = getClosestDescendLadderPosition(player)
 	if ladderPosition ~= nil then
 		return ladderPosition
 	end

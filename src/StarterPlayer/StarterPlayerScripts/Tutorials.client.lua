@@ -128,7 +128,55 @@ local function getClosestTaggedPosition(tagName: string): Vector3?
 	return closestPosition
 end
 
+local function getClosestDescendLadderPosition(): Vector3?
+	local playerPosition = getPlayerPosition()
+	if playerPosition == nil then
+		return nil
+	end
+
+	local currentFloor = getCurrentFloor()
+	local closestPosition = nil
+	local closestDistance = math.huge
+
+	for _, instance in ipairs(CollectionService:GetTagged("MineLadder")) do
+		if instance.Parent == nil or not instance:IsDescendantOf(workspace) then
+			continue
+		end
+
+		if instance:GetAttribute("LadderAction") ~= "descend" then
+			continue
+		end
+
+		local instancePosition = getInstancePosition(instance)
+		if instancePosition == nil then
+			continue
+		end
+
+		local instanceFloor = getMineFloorForInstance(instance)
+		if instanceFloor ~= nil and instanceFloor ~= currentFloor then
+			continue
+		end
+
+		local distance = (instancePosition - playerPosition).Magnitude
+		if distance < closestDistance then
+			closestDistance = distance
+			closestPosition = instancePosition
+		end
+	end
+
+	return closestPosition
+end
+
 local function resolveStepTargetPosition(tutorialStep): Vector3?
+	if tutorialStep["id"] == "FindLadder" then
+		local ladderPosition = getClosestDescendLadderPosition()
+		if ladderPosition ~= nil then
+			return ladderPosition
+		end
+
+		return getClosestTaggedPosition("OreNode")
+	end
+
 	local pointToTags = tutorialStep["pointToTags"]
 	if type(pointToTags) == "table" then
 		for _, tagName in ipairs(pointToTags) do

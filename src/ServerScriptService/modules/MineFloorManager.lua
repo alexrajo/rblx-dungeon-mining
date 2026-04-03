@@ -20,6 +20,7 @@ local FLOOR_SPACING = 100 -- Distance between floors on Y axis
 
 -- Hub spawn location (players teleport here when exiting)
 local HUB_SPAWN = Vector3.new(0, 10, 0)
+local MINE_EXIT_OFFSET = 8
 
 -- Floor pool: floorNumber → { folder: Folder, players: {[Player]: true}, spawnPosition: Vector3 }
 local floorPool: { [number]: { folder: Folder, players: { [Player]: boolean }, spawnPosition: Vector3 } } = {}
@@ -53,6 +54,64 @@ local ORE_COLORS = {
 local NUM_ORE_NODES = 6
 local NUM_LIGHTS = 4
 local EXTRA_LADDER_REVEAL_CHANCE = 0.35
+local ASCENDING_LADDER_OFFSET = Vector3.new(0, 3, 12)
+
+local function createAscendingLadder(position: Vector3, parent: Instance, floorNumber: number)
+	local ladderModel = Instance.new("Model")
+	ladderModel.Name = "SurfaceLadder"
+	ladderModel:SetAttribute("FloorNumber", floorNumber)
+	ladderModel:SetAttribute("LadderAction", "exit")
+	ladderModel:SetAttribute("LadderVariant", "ascending")
+
+	local platform = Instance.new("Part")
+	platform.Name = "Platform"
+	platform.Size = Vector3.new(7, 1, 7)
+	platform.CFrame = CFrame.new(position)
+	platform.Anchored = true
+	platform.Material = Enum.Material.Slate
+	platform.BrickColor = BrickColor.new("Dark stone grey")
+	platform.Parent = ladderModel
+
+	local leftRail = Instance.new("Part")
+	leftRail.Name = "LeftRail"
+	leftRail.Size = Vector3.new(0.6, 7, 0.6)
+	leftRail.CFrame = CFrame.new(position + Vector3.new(-1.8, 4, 0))
+	leftRail.Anchored = true
+	leftRail.Material = Enum.Material.Metal
+	leftRail.BrickColor = BrickColor.new("Black")
+	leftRail.Parent = ladderModel
+
+	local rightRail = leftRail:Clone()
+	rightRail.Name = "RightRail"
+	rightRail.CFrame = CFrame.new(position + Vector3.new(1.8, 4, 0))
+	rightRail.Parent = ladderModel
+
+	for rungIndex = 1, 4 do
+		local rung = Instance.new("Part")
+		rung.Name = "Rung_" .. rungIndex
+		rung.Size = Vector3.new(4.2, 0.35, 0.45)
+		rung.CFrame = CFrame.new(position + Vector3.new(0, 1.4 + rungIndex * 1.2, 0))
+		rung.Anchored = true
+		rung.Material = Enum.Material.WoodPlanks
+		rung.BrickColor = BrickColor.new("Reddish brown")
+		rung.Parent = ladderModel
+	end
+
+	local topMarker = Instance.new("Part")
+	topMarker.Name = "TopMarker"
+	topMarker.Size = Vector3.new(5, 0.8, 1.6)
+	topMarker.CFrame = CFrame.new(position + Vector3.new(0, 7.3, 0))
+	topMarker.Anchored = true
+	topMarker.Material = Enum.Material.Neon
+	topMarker.Color = Color3.fromRGB(255, 235, 140)
+	topMarker.Parent = ladderModel
+
+	ladderModel.PrimaryPart = platform
+	CollectionService:AddTag(ladderModel, "MineLadder")
+	ladderModel.Parent = parent
+
+	return ladderModel
+end
 
 --- Fisher-Yates shuffle in place.
 local function shuffleArray(arr: { any })
@@ -87,6 +146,26 @@ end
 --- Get the floor origin position for a given floor number.
 local function getFloorOrigin(floorNumber: number): Vector3
 	return MINE_ORIGIN + Vector3.new(0, -floorNumber * FLOOR_SPACING, 0)
+end
+
+local function getEntranceTeleportPosition(): Vector3
+	local mineEntrances = CollectionService:GetTagged("MineEntrance")
+	local entrance = mineEntrances[1]
+	if entrance == nil then
+		return HUB_SPAWN
+	end
+
+	if entrance:IsA("Model") then
+		local pivot = entrance:GetPivot()
+		return pivot.Position + (pivot.LookVector * MINE_EXIT_OFFSET)
+	end
+
+	if entrance:IsA("BasePart") then
+		local part = entrance :: BasePart
+		return part.Position + (part.CFrame.LookVector * MINE_EXIT_OFFSET)
+	end
+
+	return HUB_SPAWN
 end
 
 --- Count players on a given floor.
@@ -159,6 +238,8 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 	-- Generate procedural cave
 	local caveModel, floorPositions, spawnPosition = CaveUtil.GenerateCave(floorOrigin)
 	caveModel.Parent = floorFolder
+
+	createAscendingLadder(spawnPosition + ASCENDING_LADDER_OFFSET, floorFolder, floorNumber)
 
 	-- Shuffle floor positions for random placement
 	shuffleArray(floorPositions)
@@ -473,7 +554,7 @@ function MineFloorManager.ExitMine(player: Player)
 	if character then
 		local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 		if humanoidRootPart then
-			humanoidRootPart.CFrame = CFrame.new(HUB_SPAWN)
+			humanoidRootPart.CFrame = CFrame.new(getEntranceTeleportPosition())
 		end
 	end
 
