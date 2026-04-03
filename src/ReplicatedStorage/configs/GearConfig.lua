@@ -64,6 +64,11 @@ GearConfig.items = {
 	["Obsidian Chestplate"] = { slot = "Chestplate", tier = 6 },
 	["Obsidian Leggings"]   = { slot = "Leggings", tier = 6 },
 	["Obsidian Boots"]      = { slot = "Boots", tier = 6 },
+
+	-- Bombs
+	["Mini Bomb"] = { slot = "Bomb", tier = 1 },
+	["Big Bomb"] = { slot = "Bomb", tier = 1 },
+	["Mega Bomb"] = { slot = "Bomb", tier = 1 },
 }
 
 -- Map slot names to ProfileTemplate field names

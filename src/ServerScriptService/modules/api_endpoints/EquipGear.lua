@@ -17,6 +17,9 @@ function endpoint.Call(player: Player, itemName: string)
 
 	local slot = itemData.slot
 	local tier = itemData.tier
+	if GearConfig.slotToField[slot] == nil then
+		return false
+	end
 
 	-- Tier 1 (Wood) items are always available as starting gear
 	if tier > 1 then

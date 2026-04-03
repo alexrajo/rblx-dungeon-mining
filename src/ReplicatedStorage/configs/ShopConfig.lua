@@ -14,12 +14,9 @@ local ShopConfig = {
 		displayName = "Blacksmith",
 		type = "gear",
 		items = {
-			["Copper Pickaxe"] = 50,
-			["Copper Sword"] = 40,
-			["Copper Helmet"] = 30,
-			["Copper Chestplate"] = 60,
-			["Copper Leggings"] = 40,
-			["Copper Boots"] = 35,
+			["Mini Bomb"] = 5,
+            ["Big Bomb"] = 15,
+            ["Mega Bomb"] = 20,
 		},
 	},
 }

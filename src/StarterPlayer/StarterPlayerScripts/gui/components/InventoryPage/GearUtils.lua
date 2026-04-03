@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
+local InventoryUtils = require(ModuleIndex.InventoryUtils)
 
 local GearUtils = {}
 
@@ -29,12 +31,19 @@ function GearUtils.GetOwnedGearEntries(data, slotFilter: ((string, {slot: string
 
 	local gearEntries = {}
 	for itemName, itemData in pairs(GearConfig.items) do
-		local isOwned = itemData.tier <= 1 or (inventoryCounts[itemName] or 0) > 0
+		local isInventoryBacked = itemData.slot == "Bomb"
+		local isOwned = (isInventoryBacked and (inventoryCounts[itemName] or 0) > 0)
+			or (not isInventoryBacked and (itemData.tier <= 1 or (inventoryCounts[itemName] or 0) > 0))
 		local isVisible = not equippedItems[itemName]
 		if isOwned and isVisible and (slotFilter == nil or slotFilter(itemName, itemData)) then
+			local amount = InventoryUtils.GetInventoryCount(data, itemName)
+			if not isInventoryBacked then
+				amount = math.max(amount, itemData.tier <= 1 and 1 or 0)
+			end
+
 			table.insert(gearEntries, {
 				name = itemName,
-				amount = math.max(inventoryCounts[itemName] or 0, itemData.tier <= 1 and 1 or 0),
+				amount = amount,
 				slot = itemData.slot,
 				tier = itemData.tier,
 			})

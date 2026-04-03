@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 
 local GearDetailUtils = {}
 
@@ -59,6 +60,22 @@ local function getPrimaryStatData(itemName: string, statsData)
 	end
 
 	local statInfo = SLOT_STAT_INFO[gearInfo.slot]
+	if BombConfig.IsBombItem(itemName) then
+		local bombData = BombConfig.GetBombData(itemName)
+		if bombData == nil then
+			return nil
+		end
+
+		return {
+			label = "Damage",
+			value = bombData.enemyDamage,
+			equippedItemName = "Hotbar",
+			delta = 0,
+			statText = string.format("Damage: %d", bombData.enemyDamage),
+			equippedText = "Use from hotbar",
+		}
+	end
+
 	if statInfo == nil then
 		return nil
 	end
@@ -135,9 +152,18 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 	local detailLines = {}
 
 	table.insert(detailLines, string.format("Slot: %s", gearInfo.slot))
-	table.insert(detailLines, getTierLabel(gearInfo.tier))
+	if BombConfig.IsBombItem(itemName) then
+		local bombData = BombConfig.GetBombData(itemName)
+		if bombData == nil then
+			return nil
+		end
 
-	if gearInfo.slot == "Weapon" then
+		table.insert(detailLines, "Consumable")
+		table.insert(detailLines, string.format("Radius: %d", bombData.radius))
+		table.insert(detailLines, string.format("Max Damage: %d", bombData.enemyDamage))
+		table.insert(detailLines, string.format("Fuse Time: %.1fs", bombData.fuseTime))
+	elseif gearInfo.slot == "Weapon" then
+		table.insert(detailLines, getTierLabel(gearInfo.tier))
 		local weaponStats = GearConfig.GetWeaponCombatStats(itemName)
 		table.insert(detailLines, string.format("Damage: %d", weaponStats.damage))
 		table.insert(detailLines, string.format("Cooldown: %.2fs", weaponStats.attackCooldown))
@@ -145,11 +171,13 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 		table.insert(detailLines, string.format("Crit Damage: %.2fx", weaponStats.criticalHitDamage))
 		table.insert(detailLines, string.format("Knockback: %d", weaponStats.knockback))
 	elseif gearInfo.slot == "Pickaxe" then
+		table.insert(detailLines, getTierLabel(gearInfo.tier))
 		local tierStats = GearConfig.GetTierStats(gearInfo.tier)
 		if tierStats ~= nil then
 			table.insert(detailLines, string.format("Mining Power: %d", tierStats.pickaxePower))
 		end
 	else
+		table.insert(detailLines, getTierLabel(gearInfo.tier))
 		local tierStats = GearConfig.GetTierStats(gearInfo.tier)
 		if tierStats ~= nil then
 			table.insert(detailLines, string.format("Defense: %d", tierStats.armorDefense))
@@ -160,7 +188,9 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 		name = itemName,
 		slot = gearInfo.slot,
 		tier = gearInfo.tier,
-		imageId = GearConfig.GetImageIdForItem(itemName),
+		imageId = BombConfig.IsBombItem(itemName)
+			and BombConfig.GetImageIdForItem(itemName)
+			or GearConfig.GetImageIdForItem(itemName),
 		equippedText = primaryStat and primaryStat.equippedText or "Equipped: None",
 		primaryStatText = primaryStat and primaryStat.statText or nil,
 		detailLines = detailLines,

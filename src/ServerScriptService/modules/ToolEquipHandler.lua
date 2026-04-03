@@ -5,6 +5,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 local PlayerDataHandler = require(ServerScriptService.modules.PlayerDataHandler)
 
 local SLOT_TO_FOLDER: {[string]: string} = {
@@ -20,8 +21,21 @@ local playerStates: {[Player]: PlayerState} = {}
 
 local ToolEquipHandler = {}
 
-local function getToolTemplate(equipmentSlot: string, itemName: string): Tool?
-	local folderName = SLOT_TO_FOLDER[equipmentSlot]
+local function getToolFolderName(itemName: string): string?
+	if BombConfig.IsBombItem(itemName) then
+		return "Bombs"
+	end
+
+	local equipmentSlot = GearConfig.GetSlotForItem(itemName)
+	if equipmentSlot == nil then
+		return nil
+	end
+
+	return SLOT_TO_FOLDER[equipmentSlot]
+end
+
+local function getToolTemplate(itemName: string): Tool?
+	local folderName = getToolFolderName(itemName)
 	if folderName == nil or itemName == "" then
 		return nil
 	end
@@ -75,12 +89,7 @@ local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: n
 		return
 	end
 
-	local equipmentSlot = GearConfig.GetSlotForItem(itemName)
-	if equipmentSlot == nil then
-		return
-	end
-
-	local template = getToolTemplate(equipmentSlot, itemName)
+	local template = getToolTemplate(itemName)
 	if template == nil then
 		return
 	end

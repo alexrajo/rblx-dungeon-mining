@@ -1,5 +1,6 @@
 local components = script.Parent.components
 local contexts = script.Parent.contexts
+local utils = script.Parent.utils
 
 local ModuleIndex = {
 	PageManager = components.PageManager,
@@ -34,6 +35,7 @@ local ModuleIndex = {
 
 	StatsContext = contexts.StatsContext,
 	ScreenContext = contexts.ScreenContext,
+	InventoryUtils = utils.InventoryUtils,
 
 	TutorialSteps = components.Tutorials,
 }

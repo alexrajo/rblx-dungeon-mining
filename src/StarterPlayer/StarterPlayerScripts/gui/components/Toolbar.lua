@@ -5,11 +5,14 @@ local Roact = require(ReplicatedStorage.services.Roact)
 local localServices = ReplicatedStorage:WaitForChild("local_services")
 local HotbarService = require(localServices:WaitForChild("HotbarService"))
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
+local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
 local SelectablePanel = require(ModuleIndex.SelectablePanel)
 local TextLabel = require(ModuleIndex.TextLabel)
 local ScreenContext = require(ModuleIndex.ScreenContext)
+local StatsContext = require(ModuleIndex.StatsContext)
+local InventoryUtils = require(ModuleIndex.InventoryUtils)
 
 local createElement = Roact.createElement
 
@@ -66,7 +69,7 @@ function Toolbar:willUnmount()
 	end
 end
 
-function Toolbar:renderToolbar(screenData)
+function Toolbar:renderToolbar(screenData, statsData)
 	local isAtleast: (string) -> boolean = screenData.IsAtleast
 	local slotSize = isAtleast("md") and 86 or 70
 	local padding = isAtleast("md") and 10 or 6
@@ -80,6 +83,7 @@ function Toolbar:renderToolbar(screenData)
 		if itemName ~= "" then
 			local imageId = HotbarConfig.GetImageId(itemName)
 			local isSelected = selectedSlot == i
+			local bombCount = InventoryUtils.GetBombInventoryCount(statsData, itemName)
 			visibleSlotCount += 1
 
 			slotButtons["Slot" .. tostring(i)] = createElement(SelectablePanel, {
@@ -109,6 +113,26 @@ function Toolbar:renderToolbar(screenData)
 					Size = UDim2.fromScale(0.5, 0.5),
 					BackgroundTransparency = 1,
 				}),
+				BombCount = BombConfig.IsBombItem(itemName) and bombCount ~= nil and createElement("Frame", {
+					BackgroundColor3 = Color3.fromRGB(0, 43, 106),
+					AnchorPoint = Vector2.new(1, 1),
+					Position = UDim2.new(1, -8, 1, -8),
+					Size = UDim2.fromOffset(24, 18),
+					ZIndex = 5,
+				}, {
+					UICorner = createElement("UICorner", {
+						CornerRadius = UDim.new(0, 8),
+					}),
+					Text = createElement(TextLabel, {
+						Text = tostring(bombCount),
+						textSize = 11,
+						Size = UDim2.fromScale(1, 1),
+						ZIndex = 6,
+						textProps = {
+							TextScaled = true,
+						},
+					}),
+				}) or nil,
 				Name = createElement(TextLabel, {
 					Text = itemName,
 					textSize = 12,
@@ -159,9 +183,13 @@ end
 function Toolbar:render()
 	return createElement(ScreenContext.context.Consumer, {
 		render = function(data)
-			return self:renderToolbar({
-				Device = data.Device,
-				IsAtleast = data.IsAtleast,
+			return createElement(StatsContext.context.Consumer, {
+				render = function(statsData)
+					return self:renderToolbar({
+						Device = data.Device,
+						IsAtleast = data.IsAtleast,
+					}, statsData)
+				end,
 			})
 		end,
 	})

@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Roact = require(ReplicatedStorage.services.Roact)
+local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 
 local createElement = Roact.createElement
 
@@ -21,6 +22,7 @@ function ResourcesView:render()
 				local name = item.name
 				local amount = item.value
 				if amount <= 0 then continue end
+				if GearConfig.GetItemData(name) ~= nil then continue end
 
 				local element = createElement(ItemCounter, {
 					name = name,

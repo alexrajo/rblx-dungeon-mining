@@ -5,6 +5,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local OreNodeService = require(modules.OreNodeService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -15,11 +16,7 @@ local StatCalculation = require(utils.StatCalculation)
 local configs = ReplicatedStorage.configs
 local OreConfig = require(configs.OreConfig)
 local GearConfig = require(configs.GearConfig)
-local dropsConfig = require(configs.DropsConfig)
 local globalConfig = require(ReplicatedStorage.GlobalConfig)
-
-local RE_CoinDrop = APIService.GetEvent("DropCoins")
-local RE_ItemDrop = APIService.GetEvent("DropItems")
 
 -- Cross script communication
 local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
@@ -90,52 +87,7 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 	signalTutorialEvent:Fire(player, "mine")
 
 	if currentHP <= 0 then
-		-- Node is broken — award resources
-		local xpReward = math.max(5, oreData.baseValue)
-
-		-- Determine drops
-		local dropType = nodeInstance:GetAttribute("DropType")
-		local itemRewards = {}
-		if dropType then
-			local drops = dropsConfig.types[dropType]
-			if drops then
-				for dropName, dropChance in pairs(drops) do
-					if math.random() <= dropChance then
-						local amount = 1
-						if itemRewards[dropName] then
-							itemRewards[dropName] += amount
-						else
-							itemRewards[dropName] = amount
-						end
-					end
-				end
-			end
-		else
-			-- Default: drop the ore type itself
-			itemRewards[oreType] = 1
-		end
-
-		-- Visualize drops
-		if RE_ItemDrop then
-			for itemName, amount in pairs(itemRewards) do
-				local itemDefinition = dropsConfig.itemDefinitions[itemName]
-				if itemDefinition then
-					RE_ItemDrop:FireClient(player, amount, nodePosition, itemDefinition)
-				end
-			end
-		end
-
-		-- Award rewards
-		PlayerDataHandler.GiveXP(player, xpReward)
-		PlayerDataHandler.GiveItems(player, itemRewards)
-
-		signalTutorialEvent:Fire(player, "getItem")
-
-		-- Signal the node to break (the OreNode tag handler listens for this)
-		local breakEvent = nodeInstance:FindFirstChild("NodeBreak")
-		if breakEvent then
-			breakEvent:Fire()
-		end
+		OreNodeService.BreakNode(player, nodeInstance)
 
 		return { success = true, cooldown = globalConfig.MINE_SWING_COOLDOWN, broken = true }
 	end

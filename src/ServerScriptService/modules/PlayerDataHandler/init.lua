@@ -220,21 +220,31 @@ end
 function PlayerDataHandler.GiveItems(player: Player, itemsMap: {[string]: number})
 	if next(itemsMap) == nil then return end
 	local ownedItems = getStat("Inventory", {}, player)
+	local pendingItems = table.clone(itemsMap)
 	for i, item in pairs(ownedItems) do
 		local itemName = item.name
 		local itemAmount = item.value
 
-		local amountToGive = itemsMap[itemName]
+		local amountToGive = pendingItems[itemName]
 		if amountToGive ~= nil then
-			ownedItems[i] = {name = itemName, value = itemAmount + amountToGive}
-			itemsMap[itemName] = nil
+			local nextAmount = itemAmount + amountToGive
+			ownedItems[i] = {name = itemName, value = nextAmount}
+			pendingItems[itemName] = nil
 		end
 	end
-	for itemName, itemAmount in pairs(itemsMap) do
+	for itemName, itemAmount in pairs(pendingItems) do
 		if itemAmount == nil then continue end
 		table.insert(ownedItems, {name = itemName, value = itemAmount})
 	end
+
+	for index = #ownedItems, 1, -1 do
+		if ownedItems[index].value <= 0 then
+			table.remove(ownedItems, index)
+		end
+	end
+
 	setStat("Inventory", ownedItems, player)
+	sanitizeHotbarData(player)
 end
 
 function PlayerDataHandler.TakeItems(player: Player, itemsMap: {[string]: number})

@@ -4,11 +4,13 @@ local Roact = require(Services.Roact)
 
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 
 local createElement = Roact.createElement
 
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
 local TextLabel = require(ModuleIndex.TextLabel)
+local InventoryUtils = require(ModuleIndex.InventoryUtils)
 
 local LoadoutSlotCard = Roact.Component:extend("LoadoutSlotCard")
 local LoadoutView = Roact.PureComponent:extend("LoadoutView")
@@ -53,7 +55,13 @@ end
 
 function LoadoutSlotCard:render()
 	local itemName = self.props.itemName or ""
-	local imageId = itemName ~= "" and GearConfig.GetImageIdForItem(itemName) or ""
+	local bombCount = self.props.bombCount
+	local imageId = ""
+	if itemName ~= "" then
+		imageId = BombConfig.IsBombItem(itemName)
+			and BombConfig.GetImageIdForItem(itemName)
+			or GearConfig.GetImageIdForItem(itemName)
+	end
 	local hovering = self.state.hovering
 	local hasItem = itemName ~= ""
 	local zIndex = self.props.ZIndex or 1
@@ -125,6 +133,26 @@ function LoadoutSlotCard:render()
 				}),
 				Text = createElement(TextLabel, {
 					Text = self.props.badgeText,
+					textSize = 11,
+					Size = UDim2.fromScale(1, 1),
+					ZIndex = zIndex + 4,
+					textProps = {
+						TextScaled = true,
+					},
+				}),
+			}) or nil,
+			BombCount = hasItem and bombCount ~= nil and createElement("Frame", {
+				BackgroundColor3 = Color3.fromRGB(0, 43, 106),
+				AnchorPoint = Vector2.new(1, 1),
+				Position = UDim2.new(1, -8, 1, -8),
+				Size = UDim2.fromOffset(24, 18),
+				ZIndex = zIndex + 3,
+			}, {
+				UICorner = createElement("UICorner", {
+					CornerRadius = UDim.new(0, 8),
+				}),
+				Text = createElement(TextLabel, {
+					Text = tostring(bombCount),
 					textSize = 11,
 					Size = UDim2.fromScale(1, 1),
 					ZIndex = zIndex + 4,
@@ -255,11 +283,13 @@ function LoadoutView:renderHotbarColumn(data, layoutMetrics)
 	local cards = {}
 
 	for _, slotInfo in ipairs(HOTBAR_SLOT_DEFINITIONS) do
+		local itemName = hotbarSlots[slotInfo.slotIndex] or ""
 		cards["Hotbar" .. tostring(slotInfo.slotIndex)] = createElement(LoadoutSlotCard, {
 			LayoutOrder = slotInfo.slotIndex,
 			Size = UDim2.fromOffset(layoutMetrics.hotbarSlotSize, layoutMetrics.hotbarSlotSize),
 			badgeText = slotInfo.badgeText,
-			itemName = hotbarSlots[slotInfo.slotIndex] or "",
+			itemName = itemName,
+			bombCount = InventoryUtils.GetBombInventoryCount(data, itemName),
 			onRemove = function()
 				if self.props.onClearHotbarSlot ~= nil then
 					self.props.onClearHotbarSlot(slotInfo.slotIndex)
