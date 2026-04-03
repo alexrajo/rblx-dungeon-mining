@@ -90,11 +90,11 @@ function EnemyBillboard:render()
 	}, {
 		Name = createElement(TextLabel, {
 			Text = self.state.enemyType,
-			Size = UDim2.new(1, 0, 0.4, 0),
-			Position = UDim2.new(0, 0, 0, 0),
-			AnchorPoint = Vector2.zero,
+			Size = UDim2.new(2, 0, 0.4, 0),
+			Position = UDim2.new(0.5, 0, 0, 0),
+			AnchorPoint = Vector2.new(0.5, 0),
             textProps = {
-                TextScaled = true
+                TextScaled = true,
             }
 		}),
 		Health = createElement(ProgressBar, {

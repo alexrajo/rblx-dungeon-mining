@@ -19,7 +19,7 @@ GearConfig.tiers = {
 GearConfig.items = {
 	-- Tier 1 (Wood) - starting gear
 	["Wood Pickaxe"]    = { slot = "Pickaxe", tier = 1 },
-	["Wood Sword"]      = { slot = "Weapon", tier = 1, damage = 5, attackCooldown = 0.55, criticalHitChance = 0.1, criticalHitDamage = 1.5, knockback = 20 },
+	["Wood Sword"]      = { slot = "Weapon", tier = 1, damage = 5, attackCooldown = 0.55, criticalHitChance = 0.1, criticalHitDamage = 1.5, knockback = 40 },
 	["Wood Helmet"]     = { slot = "Helmet", tier = 1 },
 	["Wood Chestplate"] = { slot = "Chestplate", tier = 1 },
 	["Wood Leggings"]   = { slot = "Leggings", tier = 1 },
@@ -27,7 +27,7 @@ GearConfig.items = {
 
 	-- Tier 2 (Copper)
 	["Copper Pickaxe"]    = { slot = "Pickaxe", tier = 2 },
-	["Copper Sword"]      = { slot = "Weapon", tier = 2, damage = 10, attackCooldown = 0.52, criticalHitChance = 0.1, criticalHitDamage = 1.55, knockback = 24 },
+	["Copper Sword"]      = { slot = "Weapon", tier = 2, damage = 10, attackCooldown = 0.52, criticalHitChance = 0.1, criticalHitDamage = 1.55, knockback = 48 },
 	["Copper Helmet"]     = { slot = "Helmet", tier = 2 },
 	["Copper Chestplate"] = { slot = "Chestplate", tier = 2 },
 	["Copper Leggings"]   = { slot = "Leggings", tier = 2 },
@@ -35,7 +35,7 @@ GearConfig.items = {
 
 	-- Tier 3 (Iron)
 	["Iron Pickaxe"]    = { slot = "Pickaxe", tier = 3 },
-	["Iron Sword"]      = { slot = "Weapon", tier = 3, damage = 18, attackCooldown = 0.48, criticalHitChance = 0.1, criticalHitDamage = 1.65, knockback = 28 },
+	["Iron Sword"]      = { slot = "Weapon", tier = 3, damage = 18, attackCooldown = 0.48, criticalHitChance = 0.1, criticalHitDamage = 1.65, knockback = 56 },
 	["Iron Helmet"]     = { slot = "Helmet", tier = 3 },
 	["Iron Chestplate"] = { slot = "Chestplate", tier = 3 },
 	["Iron Leggings"]   = { slot = "Leggings", tier = 3 },
@@ -43,7 +43,7 @@ GearConfig.items = {
 
 	-- Tier 4 (Gold)
 	["Gold Pickaxe"]    = { slot = "Pickaxe", tier = 4 },
-	["Gold Sword"]      = { slot = "Weapon", tier = 4, damage = 28, attackCooldown = 0.45, criticalHitChance = 0.14, criticalHitDamage = 1.8, knockback = 32 },
+	["Gold Sword"]      = { slot = "Weapon", tier = 4, damage = 28, attackCooldown = 0.45, criticalHitChance = 0.14, criticalHitDamage = 1.8, knockback = 64 },
 	["Gold Helmet"]     = { slot = "Helmet", tier = 4 },
 	["Gold Chestplate"] = { slot = "Chestplate", tier = 4 },
 	["Gold Leggings"]   = { slot = "Leggings", tier = 4 },
@@ -51,7 +51,7 @@ GearConfig.items = {
 
 	-- Tier 5 (Diamond)
 	["Diamond Pickaxe"]    = { slot = "Pickaxe", tier = 5 },
-	["Diamond Sword"]      = { slot = "Weapon", tier = 5, damage = 40, attackCooldown = 0.42, criticalHitChance = 0.18, criticalHitDamage = 2, knockback = 38 },
+	["Diamond Sword"]      = { slot = "Weapon", tier = 5, damage = 40, attackCooldown = 0.42, criticalHitChance = 0.18, criticalHitDamage = 2, knockback = 76 },
 	["Diamond Helmet"]     = { slot = "Helmet", tier = 5 },
 	["Diamond Chestplate"] = { slot = "Chestplate", tier = 5 },
 	["Diamond Leggings"]   = { slot = "Leggings", tier = 5 },
@@ -59,7 +59,7 @@ GearConfig.items = {
 
 	-- Tier 6 (Obsidian)
 	["Obsidian Pickaxe"]    = { slot = "Pickaxe", tier = 6 },
-	["Obsidian Sword"]      = { slot = "Weapon", tier = 6, damage = 55, attackCooldown = 0.38, criticalHitChance = 0.22, criticalHitDamage = 2.2, knockback = 45 },
+	["Obsidian Sword"]      = { slot = "Weapon", tier = 6, damage = 55, attackCooldown = 0.38, criticalHitChance = 0.22, criticalHitDamage = 2.2, knockback = 90 },
 	["Obsidian Helmet"]     = { slot = "Helmet", tier = 6 },
 	["Obsidian Chestplate"] = { slot = "Chestplate", tier = 6 },
 	["Obsidian Leggings"]   = { slot = "Leggings", tier = 6 },

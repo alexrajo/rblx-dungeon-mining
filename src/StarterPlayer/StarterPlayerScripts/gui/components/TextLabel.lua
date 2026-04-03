@@ -21,10 +21,14 @@ end
 	@param BackgroundTransparency
 	@param textProps
 	@param SizeConstraint
+	@param RichText
 ]]
 function TextLabel:render()
 	local textSize = self.props.textSize
 	local text = tostring(self.props.Text)
+	-- This component layers two TextLabels for the white text + black shadow effect.
+	-- They need to share the same RichText mode when exact wrapping parity matters.
+	local useRichText = self.props.RichText ~= false
 	
 	local labelProps = {
 		AnchorPoint = Vector2.new(0.5, 0.45),
@@ -36,7 +40,7 @@ function TextLabel:render()
 		Text = text,
 		TextSize = textSize,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
-		RichText = true,
+		RichText = useRichText,
 	}
 	local labelStrokeProps = {
 		AnchorPoint = Vector2.new(0.5, 0.45),
@@ -45,9 +49,11 @@ function TextLabel:render()
 		BackgroundTransparency = 1,
 		ZIndex = 1,
 		Font = Enum.Font.LuckiestGuy,
-		Text = stripColorTags(text),
+		-- Strip color tags only when RichText is enabled so the shadow keeps matching plain-text callers exactly.
+		Text = useRichText and stripColorTags(text) or text,
 		TextSize = textSize,
 		TextColor3 = Color3.fromRGB(0, 0, 0),
+		RichText = useRichText,
 		--table.unpack(self.props.textProps or {})
 	}
 	

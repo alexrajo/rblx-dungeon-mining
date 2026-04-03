@@ -148,7 +148,8 @@ function TutorialManager:render()
 		}, {
 			Panel = createElement(Panel, {Size = UDim2.fromScale(1, 1)}, {
 				Title = createElement(TextLabel, {Text = "Tutorial", Size = UDim2.new(1, -16, 0, 24), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0), textSize = 24}),
-				Description = createElement(TextLabel, {Text = descriptionText, Size = UDim2.new(1, -16, 1, -20), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), textSize = 16, textProps = {TextWrapped = true}})
+				-- Disable RichText so the foreground label and shadow label wrap identically for multi-line tutorial text.
+				Description = createElement(TextLabel, {Text = descriptionText, Size = UDim2.new(1, -16, 1, -20), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), textSize = 16, RichText = false, textProps = {TextWrapped = true}})
 			})
 		})
     })
