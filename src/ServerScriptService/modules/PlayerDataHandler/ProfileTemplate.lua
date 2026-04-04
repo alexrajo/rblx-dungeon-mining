@@ -4,6 +4,7 @@ return {
 	Level = 1,
 	MaxFloorReached = 0,
 	UnlockedCheckpoints = {},
+	OpenedMineChests = {},
 	Inventory = {},
 	EquippedPickaxe = "Wood Pickaxe",
 	EquippedWeapon = "Wood Sword",

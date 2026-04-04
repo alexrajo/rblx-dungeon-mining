@@ -418,6 +418,32 @@ function PlayerDataHandler.GetMaxFloorReached(player: Player): number
 	return getStat("MaxFloorReached", 0, player)
 end
 
+function PlayerDataHandler.HasOpenedMineChest(player: Player, floor: number): boolean
+	local openedMineChests = getStat("OpenedMineChests", {}, player)
+	for _, entry in pairs(openedMineChests) do
+		if entry.name == tostring(floor) then
+			return entry.value == true
+		end
+	end
+
+	return false
+end
+
+function PlayerDataHandler.MarkMineChestOpened(player: Player, floor: number): boolean
+	if PlayerDataHandler.HasOpenedMineChest(player, floor) then
+		return false
+	end
+
+	local openedMineChests = getStat("OpenedMineChests", {}, player)
+	table.insert(openedMineChests, {
+		name = tostring(floor),
+		value = true,
+	})
+	setStat("OpenedMineChests", openedMineChests, player)
+
+	return true
+end
+
 -- Temp stats (session-only)
 function PlayerDataHandler.SetCurrentFloor(player: Player, floor: number)
 	local valueInstance = TempStats:GetTempStat(player, "CurrentFloor")

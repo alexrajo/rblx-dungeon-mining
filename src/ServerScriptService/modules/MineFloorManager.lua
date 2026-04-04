@@ -9,6 +9,7 @@ local CaveUtil = require(modules.CaveUtil)
 
 local configs = ReplicatedStorage.configs
 local MineLayerConfig = require(configs.MineLayerConfig)
+local MineRewardFloorConfig = require(configs.MineRewardFloorConfig)
 local OreConfig = require(configs.OreConfig)
 
 local Services = ReplicatedStorage.services
@@ -29,6 +30,10 @@ local floorPool: { [number]: { folder: Folder, players: { [Player]: boolean }, s
 local playerFloors: { [Player]: number } = {}
 
 local MineFloorManager = {}
+
+function MineFloorManager.IsRewardFloor(floor: number): boolean
+	return MineRewardFloorConfig.IsRewardFloor(floor)
+end
 
 function MineFloorManager.GetLayerForFloor(floor: number): (number?, table?)
 	for layerNum, layerData in pairs(MineLayerConfig) do
@@ -55,6 +60,14 @@ local NUM_ORE_NODES = 6
 local NUM_LIGHTS = 4
 local EXTRA_LADDER_REVEAL_CHANCE = 0.35
 local ASCENDING_LADDER_OFFSET = Vector3.new(0, 3, 12)
+local REWARD_ROOM_SIZE = Vector3.new(48, 20, 48)
+local REWARD_ROOM_WALL_THICKNESS = 2
+local REWARD_ROOM_FLOOR_THICKNESS = 2
+local REWARD_ROOM_LIGHT_HEIGHT = 10
+local REWARD_ROOM_SPAWN_OFFSET = Vector3.new(0, 1, 14)
+local REWARD_ROOM_EXIT_LADDER_OFFSET = Vector3.new(-12, 1, 14)
+local REWARD_ROOM_DESCEND_LADDER_OFFSET = Vector3.new(12, 3, -14)
+local REWARD_ROOM_CHEST_OFFSET = Vector3.new(0, 2, 0)
 
 local function createAscendingLadder(position: Vector3, parent: Instance, floorNumber: number)
 	local ladderModel = Instance.new("Model")
@@ -111,6 +124,121 @@ local function createAscendingLadder(position: Vector3, parent: Instance, floorN
 	ladderModel.Parent = parent
 
 	return ladderModel
+end
+
+local function createDescendingLadder(position: Vector3, parent: Instance, floorNumber: number)
+	local ladder = Instance.new("Part")
+	ladder.Name = "Ladder"
+	ladder.Size = Vector3.new(4, 6, 4)
+	ladder.Position = position
+	ladder.Anchored = true
+	ladder.Material = Enum.Material.Wood
+	ladder.BrickColor = BrickColor.new("Brown")
+	ladder:SetAttribute("FloorNumber", floorNumber)
+	ladder:SetAttribute("LadderAction", "descend")
+	ladder:SetAttribute("LadderVariant", "descending")
+	CollectionService:AddTag(ladder, "MineLadder")
+	ladder.Parent = parent
+
+	return ladder
+end
+
+local function createRewardChest(position: Vector3, parent: Instance, floorNumber: number)
+	local chest = Instance.new("Part")
+	chest.Name = "RewardChest"
+	chest.Size = Vector3.new(5, 4, 5)
+	chest.CFrame = CFrame.new(position)
+	chest.Anchored = true
+	chest.Material = Enum.Material.WoodPlanks
+	chest.BrickColor = BrickColor.new("Reddish brown")
+	chest:SetAttribute("FloorNumber", floorNumber)
+	CollectionService:AddTag(chest, "MineRewardChest")
+	chest.Parent = parent
+
+	return chest
+end
+
+local function createRewardRoom(floorOrigin: Vector3, parent: Instance, floorNumber: number): Vector3
+	local roomModel = Instance.new("Model")
+	roomModel.Name = "RewardRoom"
+
+	local roomSize = REWARD_ROOM_SIZE
+	local halfX = roomSize.X / 2
+	local halfY = roomSize.Y / 2
+	local halfZ = roomSize.Z / 2
+
+	local floorPart = Instance.new("Part")
+	floorPart.Name = "Floor"
+	floorPart.Size = Vector3.new(roomSize.X, REWARD_ROOM_FLOOR_THICKNESS, roomSize.Z)
+	floorPart.CFrame = CFrame.new(floorOrigin + Vector3.new(0, -REWARD_ROOM_FLOOR_THICKNESS / 2, 0))
+	floorPart.Anchored = true
+	floorPart.Material = Enum.Material.Slate
+	floorPart.BrickColor = BrickColor.new("Dark stone grey")
+	floorPart.Parent = roomModel
+
+	local ceiling = Instance.new("Part")
+	ceiling.Name = "Ceiling"
+	ceiling.Size = Vector3.new(roomSize.X, REWARD_ROOM_WALL_THICKNESS, roomSize.Z)
+	ceiling.CFrame = CFrame.new(floorOrigin + Vector3.new(0, roomSize.Y, 0))
+	ceiling.Anchored = true
+	ceiling.Material = Enum.Material.Slate
+	ceiling.BrickColor = BrickColor.new("Dark stone grey")
+	ceiling.Parent = roomModel
+
+	local function createWall(name: string, size: Vector3, offset: Vector3)
+		local wall = Instance.new("Part")
+		wall.Name = name
+		wall.Size = size
+		wall.CFrame = CFrame.new(floorOrigin + offset)
+		wall.Anchored = true
+		wall.Material = Enum.Material.Rock
+		wall.BrickColor = BrickColor.new("Dark taupe")
+		wall.Parent = roomModel
+	end
+
+	createWall(
+		"NorthWall",
+		Vector3.new(roomSize.X, roomSize.Y, REWARD_ROOM_WALL_THICKNESS),
+		Vector3.new(0, halfY, -halfZ)
+	)
+	createWall(
+		"SouthWall",
+		Vector3.new(roomSize.X, roomSize.Y, REWARD_ROOM_WALL_THICKNESS),
+		Vector3.new(0, halfY, halfZ)
+	)
+	createWall(
+		"WestWall",
+		Vector3.new(REWARD_ROOM_WALL_THICKNESS, roomSize.Y, roomSize.Z),
+		Vector3.new(-halfX, halfY, 0)
+	)
+	createWall(
+		"EastWall",
+		Vector3.new(REWARD_ROOM_WALL_THICKNESS, roomSize.Y, roomSize.Z),
+		Vector3.new(halfX, halfY, 0)
+	)
+
+	local lightAnchor = Instance.new("Part")
+	lightAnchor.Name = "LightAnchor"
+	lightAnchor.Size = Vector3.new(1, 1, 1)
+	lightAnchor.CFrame = CFrame.new(floorOrigin + Vector3.new(0, REWARD_ROOM_LIGHT_HEIGHT, 0))
+	lightAnchor.Anchored = true
+	lightAnchor.Transparency = 1
+	lightAnchor.CanCollide = false
+	lightAnchor.Parent = roomModel
+
+	local pointLight = Instance.new("PointLight")
+	pointLight.Brightness = 1
+	pointLight.Range = 45
+	pointLight.Color = Color3.fromRGB(255, 217, 153)
+	pointLight.Parent = lightAnchor
+
+	roomModel.Parent = parent
+
+	createAscendingLadder(floorOrigin + REWARD_ROOM_EXIT_LADDER_OFFSET, parent, floorNumber)
+	createDescendingLadder(floorOrigin + REWARD_ROOM_DESCEND_LADDER_OFFSET, parent, floorNumber)
+	createRewardChest(floorOrigin + REWARD_ROOM_CHEST_OFFSET, parent, floorNumber)
+
+	return floorOrigin + REWARD_ROOM_SPAWN_OFFSET
 end
 
 --- Fisher-Yates shuffle in place.
@@ -234,6 +362,12 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 	floorFolder:SetAttribute("FloorNumber", floorNumber)
 
 	local floorOrigin = getFloorOrigin(floorNumber)
+
+	if MineRewardFloorConfig.IsRewardFloor(floorNumber) then
+		local spawnPosition = createRewardRoom(floorOrigin, floorFolder, floorNumber)
+		floorFolder.Parent = workspace
+		return floorFolder, spawnPosition
+	end
 
 	-- Generate procedural cave
 	local caveModel, floorPositions, spawnPosition = CaveUtil.GenerateCave(floorOrigin)

@@ -22,3 +22,6 @@ APIService:CreateEventEndpoint("SendNextTutorialStep")
 
 -- Event to start the client-side mine transition overlay
 APIService:CreateEventEndpoint("StartMineTransition")
+
+-- Event to update the local player's reward chest appearance immediately after opening
+APIService:CreateEventEndpoint("MineChestOpened")
