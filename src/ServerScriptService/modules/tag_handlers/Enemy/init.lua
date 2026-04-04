@@ -7,6 +7,9 @@ controllerScriptRef.Enabled = false
 
 local TagHandler = {}
 
+local DEFAULT_MOVEMENT_BEHAVIOR = "DefaultGround"
+local DEFAULT_ATTACK_BEHAVIOR = "DefaultMelee"
+
 function TagHandler.Apply(instance: Instance)
 	-- Read EnemyType attribute and set stats from config
 	local enemyType = instance:GetAttribute("EnemyType")
@@ -27,13 +30,17 @@ function TagHandler.Apply(instance: Instance)
 		instance:SetAttribute("DetectionRadius", data.detectionRadius)
 		instance:SetAttribute("AttackRange", data.attackRange)
 		instance:SetAttribute("Behavior", data.behavior)
+		instance:SetAttribute("MovementBehavior", data.movementBehavior or DEFAULT_MOVEMENT_BEHAVIOR)
+		instance:SetAttribute("AttackBehavior", data.attackBehavior or DEFAULT_ATTACK_BEHAVIOR)
 		instance:SetAttribute("XPReward", data.xpReward)
 	end
 
 	-- Create LastAttacker ObjectValue for tracking who killed the enemy
-	local lastAttacker = Instance.new("ObjectValue")
-	lastAttacker.Name = "LastAttacker"
-	lastAttacker.Parent = instance
+	if instance:FindFirstChild("LastAttacker") == nil then
+		local lastAttacker = Instance.new("ObjectValue")
+		lastAttacker.Name = "LastAttacker"
+		lastAttacker.Parent = instance
+	end
 
 	-- Clone and enable the controller script
 	local controller = controllerScriptRef:Clone()
