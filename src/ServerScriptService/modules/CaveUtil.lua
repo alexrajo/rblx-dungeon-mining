@@ -64,6 +64,13 @@ local NEIGHBOUR_OFFSETS = {
 	Vector3.new( 0, 0, 1), Vector3.new( 0, 0,-1),
 }
 
+local function isWithinCaveBounds(gx: number, gy: number, gz: number, halfSize: number): boolean
+	return math.abs(gx) <= halfSize
+		and math.abs(gz) <= halfSize
+		and gy >= -CAVE_FLOOR_DEPTH
+		and gy <= CAVE_ROOF_HEIGHT
+end
+
 -- Returns true if at least one of the 6 face-neighbours of (x,y,z) is air.
 -- A cell is air when it was carved by a worm, falls outside the fill volume,
 -- or sits inside the spawn clear zone.
@@ -111,6 +118,7 @@ local function runWorm(origin: Vector3, wormIndex: number, seed: number): {[stri
 	)
 
 	local wormCF = CFrame.new(origin + startOffset)
+	local halfSize = math.floor(CAVE_SIZE / 2)
 
 	for i = 1, WORM_LENGTH do
 		local p = wormCF.Position
@@ -130,11 +138,13 @@ local function runWorm(origin: Vector3, wormIndex: number, seed: number): {[stri
 
 		local wormGX = math.round((clampedPos.X - origin.X) / BLOCK_SIZE)
 		local wormGZ = math.round((clampedPos.Z - origin.Z) / BLOCK_SIZE)
-		local halfSize = math.floor(CAVE_SIZE / 2)
 		local edgeDist = halfSize - math.max(math.abs(wormGX), math.abs(wormGZ))
 
 		local borderT = math.clamp(edgeDist / BORDER_FADE_BLOCKS, 0, 1)
 		local effectiveRadius = TUNNEL_RADIUS * borderT
+		if effectiveRadius <= 0 then
+			continue
+		end
 
 		local radiusInBlocks = math.ceil(effectiveRadius / BLOCK_SIZE)
 		for dx = -radiusInBlocks, radiusInBlocks do
@@ -145,7 +155,9 @@ local function runWorm(origin: Vector3, wormIndex: number, seed: number): {[stri
 						local gx = math.round((clampedPos.X + offset.X - origin.X) / BLOCK_SIZE)
 						local gy = math.round((clampedPos.Y + offset.Y - origin.Y) / BLOCK_SIZE)
 						local gz = math.round((clampedPos.Z + offset.Z - origin.Z) / BLOCK_SIZE)
-						carved[gx .. "," .. gy .. "," .. gz] = true
+						if isWithinCaveBounds(gx, gy, gz, halfSize) then
+							carved[gx .. "," .. gy .. "," .. gz] = true
+						end
 					end
 				end
 			end
@@ -258,10 +270,19 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 	local spawnExclusionRadius = SPAWN_CLEAR_RADIUS + BLOCK_SIZE
 	local floorPositions: {Vector3} = {}
 	local spawnPosition = position
+	local rejectedOutOfBoundsFloorPositions = 0
 
 	for key, _ in pairs(allCarved) do
 		local xStr, yStr, zStr = string.match(key, "^(-?%d+),(-?%d+),(-?%d+)$")
 		local gx, gy, gz = tonumber(xStr), tonumber(yStr), tonumber(zStr)
+		if gx == nil or gy == nil or gz == nil then
+			continue
+		end
+
+		if not isWithinCaveBounds(gx, gy, gz, halfSize) then
+			rejectedOutOfBoundsFloorPositions += 1
+			continue
+		end
 
 		if gy >= -CAVE_FLOOR_DEPTH + 1 and gy <= 1 then
 			local belowKey = gx .. "," .. (gy - 1) .. "," .. gz
@@ -279,6 +300,10 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 				end
 			end
 		end
+	end
+
+	if rejectedOutOfBoundsFloorPositions > 0 then
+		warn(("CaveUtil.GenerateCave rejected %d out-of-bounds floor candidates"):format(rejectedOutOfBoundsFloorPositions))
 	end
 
 	-- Spawn players at the center clearing, with the Y coordinate aligned to the
