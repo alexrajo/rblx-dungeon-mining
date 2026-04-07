@@ -5,18 +5,30 @@ local TweenService = game:GetService("TweenService")
 local Services = ReplicatedStorage.services
 local Roact = require(Services.Roact)
 local APIService = require(Services.APIService)
+local configs = ReplicatedStorage.configs
+local MineRewardFloorConfig = require(configs.MineRewardFloorConfig)
 
 local createElement = Roact.createElement
 
 local startTransitionEvent = APIService.GetEvent("StartMineTransition")
 local completeTransitionFunction = APIService.GetFunction("CompleteMineTransition")
+local readyTransitionEvent = APIService.GetEvent("MineTransitionReady")
 local finishTransitionEvent = APIService.GetEvent("FinishMineTransition")
 
 local FADE_DURATION = 0.12
 local BLACKOUT_HOLD_DURATION = 0.04
+local FLOOR_READY_WAIT_TIMEOUT = 4
 local FADE_TWEEN_INFO = TweenInfo.new(FADE_DURATION, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
 
 local MineTransitionOverlay = Roact.Component:extend("MineTransitionOverlay")
+
+local function getExpectedFloorRootName(floorNumber: number): string
+	if MineRewardFloorConfig.IsRewardFloor(floorNumber) then
+		return "RewardRoom"
+	end
+
+	return "Cave"
+end
 
 function MineTransitionOverlay:init()
 	self.coverRef = Roact.createRef()
@@ -52,6 +64,87 @@ function MineTransitionOverlay:playFade(targetTransparency: number)
 	end
 
 	return playbackState == Enum.PlaybackState.Completed
+end
+
+function MineTransitionOverlay:getFloorFolder(floorNumber: number): Instance?
+	return workspace:FindFirstChild("MineFloor_" .. floorNumber)
+end
+
+function MineTransitionOverlay:isMineFloorReady(floorNumber: number): boolean
+	local floorFolder = self:getFloorFolder(floorNumber)
+	if floorFolder == nil then
+		return false
+	end
+
+	return floorFolder:FindFirstChild(getExpectedFloorRootName(floorNumber)) ~= nil
+end
+
+function MineTransitionOverlay:waitForMineFloorReady(floorNumber: number): boolean
+	if self:isMineFloorReady(floorNumber) then
+		return true
+	end
+
+	local bindable = Instance.new("BindableEvent")
+	local resolved = false
+	local connections = {}
+
+	local function cleanup()
+		for _, connection in ipairs(connections) do
+			connection:Disconnect()
+		end
+
+		bindable:Destroy()
+	end
+
+	local function resolveIfReady()
+		if resolved then
+			return
+		end
+
+		if self:isMineFloorReady(floorNumber) then
+			resolved = true
+			bindable:Fire()
+		end
+	end
+
+	local function watchFloorFolder(folder: Instance)
+		table.insert(connections, folder.ChildAdded:Connect(function(child: Instance)
+			if child.Name == getExpectedFloorRootName(floorNumber) then
+				resolveIfReady()
+			end
+		end))
+	end
+
+	local existingFloorFolder = self:getFloorFolder(floorNumber)
+	if existingFloorFolder ~= nil then
+		watchFloorFolder(existingFloorFolder)
+	end
+
+	table.insert(connections, workspace.ChildAdded:Connect(function(child: Instance)
+		if child.Name == "MineFloor_" .. floorNumber then
+			watchFloorFolder(child)
+			resolveIfReady()
+		end
+	end))
+
+	task.delay(FLOOR_READY_WAIT_TIMEOUT, function()
+		if resolved then
+			return
+		end
+
+		resolved = true
+		bindable:Fire()
+	end)
+
+	resolveIfReady()
+
+	if not resolved then
+		bindable.Event:Wait()
+	end
+
+	local wasReady = self:isMineFloorReady(floorNumber)
+	cleanup()
+	return wasReady
 end
 
 function MineTransitionOverlay:runTransition(payload)
@@ -104,6 +197,14 @@ function MineTransitionOverlay:runTransition(payload)
 				isActive = false,
 			})
 			return
+		end
+
+		if result.destinationType == "mine" and type(result.targetFloor) == "number" then
+			self.phase = "waiting_for_ready"
+			local isReady = self:waitForMineFloorReady(result.targetFloor)
+			if isReady then
+				readyTransitionEvent:FireServer(transitionId, result.targetFloor)
+			end
 		end
 
 		RunService.RenderStepped:Wait()

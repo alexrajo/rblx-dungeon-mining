@@ -23,6 +23,7 @@ local activeTransitions: { [Player]: {
 	startedAt: number,
 	startFloor: number?,
 	targetFloor: number?,
+	destinationType: string?,
 } } = {}
 
 local MineTransitionService = {}
@@ -46,6 +47,7 @@ local function setProtectionAttribute(player: Player, isProtected: boolean)
 end
 
 local function clearTransition(player: Player)
+	MineFloorManager.SetPlayerFrozen(player, false)
 	activeTransitions[player] = nil
 	setProtectionAttribute(player, false)
 end
@@ -54,6 +56,23 @@ local function scheduleTimeout(player: Player, transitionId: string)
 	task.delay(TRANSITION_TIMEOUT, function()
 		local transition = activeTransitions[player]
 		if transition == nil or transition.transitionId ~= transitionId then
+			return
+		end
+
+		if transition.state == "waiting_for_ready" then
+			MineFloorManager.SetPlayerFrozen(player, false)
+			transition.state = "waiting_for_finish"
+
+			warn(string.format(
+				"MineTransitionService: force-releasing transition after readiness timeout (player=%s userId=%d transitionId=%s floor=%s kind=%s)",
+				player.Name,
+				player.UserId,
+				transition.transitionId,
+				tostring(transition.targetFloor),
+				tostring(transition.kind)
+			))
+
+			scheduleTimeout(player, transitionId)
 			return
 		end
 
@@ -92,16 +111,28 @@ end
 
 local function runTransitionAction(player: Player, transition): boolean
 	if transition.kind == "enter" then
-		return MineFloorManager.EnterMine(player, transition.startFloor or 1)
+		transition.targetFloor = transition.startFloor or 1
+		transition.destinationType = "mine"
+		return MineFloorManager.EnterMine(player, transition.targetFloor)
 	elseif transition.kind == "checkpoint" then
 		local targetFloor = transition.targetFloor or 1
 		if PlayerDataHandler.GetInMine(player) then
+			transition.destinationType = "mine"
 			return MineFloorManager.TravelToCheckpoint(player, targetFloor)
 		end
+		transition.destinationType = "mine"
 		return MineFloorManager.EnterMine(player, targetFloor)
 	elseif transition.kind == "descend" then
+		local currentFloor = MineFloorManager.GetCurrentFloor(player)
+		if currentFloor == nil then
+			return false
+		end
+
+		transition.targetFloor = currentFloor + 1
+		transition.destinationType = "mine"
 		return MineFloorManager.DescendFloor(player)
 	elseif transition.kind == "exit" then
+		transition.destinationType = "hub"
 		return MineFloorManager.ExitMine(player)
 	end
 
@@ -162,10 +193,48 @@ function MineTransitionService.CompleteTransition(player: Player, transitionId: 
 
 	signalTransitionTutorialStep(player, transition)
 
-	transition.state = "waiting_for_finish"
+	if transition.destinationType == "mine" then
+		transition.state = "waiting_for_ready"
+	else
+		MineFloorManager.SetPlayerFrozen(player, false)
+		transition.state = "waiting_for_finish"
+	end
+
 	scheduleTimeout(player, transition.transitionId)
 
-	return { success = true }
+	return {
+		success = true,
+		transitionKind = transition.kind,
+		targetFloor = transition.targetFloor,
+		destinationType = transition.destinationType,
+	}
+end
+
+function MineTransitionService.MarkReady(player: Player, transitionId: string, floorNumber: number)
+	local transition = activeTransitions[player]
+	if transition == nil then
+		return
+	end
+
+	if transition.transitionId ~= transitionId then
+		return
+	end
+
+	if transition.state ~= "waiting_for_ready" then
+		return
+	end
+
+	if transition.destinationType ~= "mine" then
+		return
+	end
+
+	if transition.targetFloor ~= floorNumber then
+		return
+	end
+
+	MineFloorManager.SetPlayerFrozen(player, false)
+	transition.state = "waiting_for_finish"
+	scheduleTimeout(player, transition.transitionId)
 end
 
 function MineTransitionService.FinishTransition(player: Player, transitionId: string)

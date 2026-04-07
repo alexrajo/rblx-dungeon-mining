@@ -31,6 +31,10 @@ local playerFloors: { [Player]: number } = {}
 
 local MineFloorManager = {}
 
+function MineFloorManager.GetCurrentFloor(player: Player): number?
+	return playerFloors[player]
+end
+
 function MineFloorManager.IsRewardFloor(floor: number): boolean
 	return MineRewardFloorConfig.IsRewardFloor(floor)
 end
@@ -268,6 +272,14 @@ local function unfreezePlayer(player: Player)
 		if hrp then
 			hrp.Anchored = false
 		end
+	end
+end
+
+function MineFloorManager.SetPlayerFrozen(player: Player, isFrozen: boolean)
+	if isFrozen then
+		freezePlayer(player)
+	else
+		unfreezePlayer(player)
 	end
 end
 
@@ -602,9 +614,8 @@ function MineFloorManager.EnterMine(player: Player, startFloor: number)
 	PlayerDataHandler.SetInMine(player, true)
 	PlayerDataHandler.SetCurrentFloor(player, startFloor)
 
-	-- Teleport player then unfreeze
+	-- Teleport player and keep them frozen until the transition service releases them.
 	teleportToFloor(player, startFloor)
-	unfreezePlayer(player)
 
 	-- Preload next floor in background
 	task.defer(function()
@@ -659,9 +670,8 @@ function MineFloorManager.DescendFloor(player: Player)
 	-- Update player state
 	PlayerDataHandler.SetCurrentFloor(player, nextFloor)
 
-	-- Teleport player then unfreeze
+	-- Teleport player and keep them frozen until the transition service releases them.
 	teleportToFloor(player, nextFloor)
-	unfreezePlayer(player)
 
 	-- Preload next floor in background
 	task.defer(function()
@@ -691,7 +701,6 @@ function MineFloorManager.TravelToCheckpoint(player: Player, targetFloor: number
 	PlayerDataHandler.SetCurrentFloor(player, targetFloor)
 
 	teleportToFloor(player, targetFloor)
-	unfreezePlayer(player)
 
 	task.defer(function()
 		preloadFloor(targetFloor + 1)
