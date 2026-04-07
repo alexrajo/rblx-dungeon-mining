@@ -21,6 +21,7 @@ local closeTweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDir
 local currentBlurTween: Tween = nil
 local currentFOVTween: Tween = nil
 
+local openMineElevatorEvent = APIService.GetEvent("OpenMineElevator")
 local signalTutorialEvent = APIService.GetEvent("SignalTutorial")
 
 local PageManager = Roact.Component:extend("PageManager")
@@ -124,6 +125,10 @@ function PageManager:render()
 end
 
 function PageManager:didMount()
+	self.connections["openMineElevator"] = openMineElevatorEvent.OnClientEvent:Connect(function()
+		self:openPage("MineElevator")
+	end)
+
 	self.connections["checkActivationCircles"] = game:GetService("RunService").Heartbeat:Connect(function()
 		
 		local char = player.Character

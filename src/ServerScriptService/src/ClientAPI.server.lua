@@ -25,3 +25,6 @@ APIService:CreateEventEndpoint("StartMineTransition")
 
 -- Event to update the local player's reward chest appearance immediately after opening
 APIService:CreateEventEndpoint("MineChestOpened")
+
+-- Event to open the mine elevator checkpoint selector UI on the client
+APIService:CreateEventEndpoint("OpenMineElevator")

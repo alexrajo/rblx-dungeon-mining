@@ -671,6 +671,35 @@ function MineFloorManager.DescendFloor(player: Player)
 	return true
 end
 
+function MineFloorManager.TravelToCheckpoint(player: Player, targetFloor: number)
+	if targetFloor < 1 then
+		return false
+	end
+
+	local currentFloor = playerFloors[player]
+
+	freezePlayer(player)
+
+	local folder = getOrCreateFloor(targetFloor)
+	if folder == nil then
+		unfreezePlayer(player)
+		return false
+	end
+
+	movePlayerToFloor(player, currentFloor, targetFloor)
+	PlayerDataHandler.SetInMine(player, true)
+	PlayerDataHandler.SetCurrentFloor(player, targetFloor)
+
+	teleportToFloor(player, targetFloor)
+	unfreezePlayer(player)
+
+	task.defer(function()
+		preloadFloor(targetFloor + 1)
+	end)
+
+	return true
+end
+
 function MineFloorManager.ExitMine(player: Player)
 	local currentFloor = playerFloors[player]
 

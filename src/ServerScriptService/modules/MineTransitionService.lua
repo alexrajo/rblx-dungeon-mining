@@ -8,6 +8,7 @@ local APIService = require(Services.APIService)
 
 local modules = ServerScriptService.modules
 local MineFloorManager = require(modules.MineFloorManager)
+local PlayerDataHandler = require(modules.PlayerDataHandler)
 
 local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
 local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
@@ -21,6 +22,7 @@ local activeTransitions: { [Player]: {
 	state: string,
 	startedAt: number,
 	startFloor: number?,
+	targetFloor: number?,
 } } = {}
 
 local MineTransitionService = {}
@@ -66,7 +68,7 @@ local function fireStartEvent(player: Player, transition)
 	})
 end
 
-local function beginTransition(player: Player, kind: string, startFloor: number?): boolean
+local function beginTransition(player: Player, kind: string, startFloor: number?, targetFloor: number?): boolean
 	if activeTransitions[player] ~= nil then
 		return false
 	end
@@ -77,6 +79,7 @@ local function beginTransition(player: Player, kind: string, startFloor: number?
 		state = "pending_blackout",
 		startedAt = os.clock(),
 		startFloor = startFloor,
+		targetFloor = targetFloor,
 	}
 
 	activeTransitions[player] = transition
@@ -90,6 +93,12 @@ end
 local function runTransitionAction(player: Player, transition): boolean
 	if transition.kind == "enter" then
 		return MineFloorManager.EnterMine(player, transition.startFloor or 1)
+	elseif transition.kind == "checkpoint" then
+		local targetFloor = transition.targetFloor or 1
+		if PlayerDataHandler.GetInMine(player) then
+			return MineFloorManager.TravelToCheckpoint(player, targetFloor)
+		end
+		return MineFloorManager.EnterMine(player, targetFloor)
 	elseif transition.kind == "descend" then
 		return MineFloorManager.DescendFloor(player)
 	elseif transition.kind == "exit" then
@@ -114,6 +123,11 @@ function MineTransitionService.StartEnterTransition(player: Player, startFloor: 
 	end
 
 	return beginTransition(player, "enter", sanitizedFloor)
+end
+
+function MineTransitionService.StartCheckpointTransition(player: Player, targetFloor: number): boolean
+	local sanitizedFloor = math.max(1, math.floor(targetFloor))
+	return beginTransition(player, "checkpoint", nil, sanitizedFloor)
 end
 
 function MineTransitionService.StartDescendTransition(player: Player): boolean

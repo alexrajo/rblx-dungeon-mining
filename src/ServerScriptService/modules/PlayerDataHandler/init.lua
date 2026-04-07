@@ -407,6 +407,21 @@ function PlayerDataHandler.UnlockCheckpoint(player: Player, floor: number)
 	setStat("UnlockedCheckpoints", checkpoints, player)
 end
 
+function PlayerDataHandler.HasUnlockedCheckpoint(player: Player, floor: number, includeFloorOne: boolean?): boolean
+	if includeFloorOne == true and floor == 1 then
+		return true
+	end
+
+	local checkpoints = getStat("UnlockedCheckpoints", {}, player)
+	for _, entry in pairs(checkpoints) do
+		if entry.name == tostring(floor) and entry.value == true then
+			return true
+		end
+	end
+
+	return false
+end
+
 function PlayerDataHandler.SetMaxFloorReached(player: Player, floor: number)
 	local current = getStat("MaxFloorReached", 0, player)
 	if floor > current then

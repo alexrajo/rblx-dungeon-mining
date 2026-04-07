@@ -11,21 +11,8 @@ function endpoint.Call(player: Player, startFloor: number)
 	if startFloor < 1 then startFloor = 1 end
 
 	-- Validate checkpoint is unlocked (floor 1 is always available)
-	if startFloor > 1 then
-		local checkpoints = PlayerDataHandler.GetClient(player)
-		if checkpoints then
-			local data = checkpoints:GetDataValue("UnlockedCheckpoints", {})
-			local found = false
-			for _, entry in pairs(data) do
-				if entry.name == tostring(startFloor) then
-					found = true
-					break
-				end
-			end
-			if not found then
-				return { success = false, reason = "checkpoint_locked" }
-			end
-		end
+	if not PlayerDataHandler.HasUnlockedCheckpoint(player, startFloor, true) then
+		return { success = false, reason = "checkpoint_locked" }
 	end
 
 	return { success = MineTransitionService.StartEnterTransition(player, startFloor) }
