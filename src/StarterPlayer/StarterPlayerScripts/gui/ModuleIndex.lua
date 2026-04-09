@@ -29,6 +29,8 @@ local ModuleIndex = {
 	FloorIndicator = components.FloorIndicator,
 	EnemyBillboard = components.EnemyBillboard,
 
+	SellConfirmationDialog = components.SellConfirmationDialog,
+
 	InventoryResourcesView = components.InventoryPage.ResourcesView,
 	InventoryGearView = components.InventoryPage.GearView,
 	InventoryLoadoutView = components.InventoryPage.LoadoutView,
