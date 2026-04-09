@@ -19,6 +19,7 @@ local TextButton = require(ModuleIndex.TextButton)
 local TextLabel = require(ModuleIndex.TextLabel)
 local Panel = require(ModuleIndex.Panel)
 local SelectablePanel = require(ModuleIndex.SelectablePanel)
+local SellConfirmationDialog = require(ModuleIndex.SellConfirmationDialog)
 
 local StatsContext = require(ModuleIndex.StatsContext)
 
@@ -30,6 +31,7 @@ function SellPage:init()
 	self:setState({
 		selectedItem = nil,
 		sellQuantity = 1,
+		showConfirmDialog = false,
 	})
 end
 
@@ -288,24 +290,50 @@ function SellPage:_renderContent(statsData)
 			}),
 		})
 
-		-- Sell button
-		detailChildren.SellButton = createElement(TextButton, {
-			text = "SELL",
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			size = "sm",
-			Position = UDim2.new(0.5, 0, 1, -28),
-			color = "yellow",
-			disabled = sellQuantity <= 0 or selectedOwned <= 0,
-			onClick = function()
-				if selectedItem and sellQuantity > 0 then
-					RF_SellItems:InvokeServer({
-						{ name = selectedItem, quantity = sellQuantity },
-					})
-					self:setState({ sellQuantity = 1 })
-				end
-			end,
+		-- Sell buttons
+		detailChildren.ButtonRow = createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0.9, 0, 0, 40),
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 1, -8),
+		}, {
+			UIListLayout = createElement("UIListLayout", {
+				FillDirection = Enum.FillDirection.Horizontal,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				Padding = UDim.new(0, 6),
+			}),
+			SellButton = createElement(TextButton, {
+				text = "SELL",
+				size = "xs",
+				color = "yellow",
+				LayoutOrder = 1,
+				disabled = sellQuantity <= 0 or selectedOwned <= 0,
+				onClick = function()
+					if selectedItem and sellQuantity > 0 then
+						RF_SellItems:InvokeServer({
+							{ name = selectedItem, quantity = sellQuantity },
+						})
+						self:setState({ sellQuantity = 1 })
+					end
+				end,
+			}),
+			SellAllButton = createElement(TextButton, {
+				text = "SELL ALL",
+				size = "xs",
+				color = "green",
+				LayoutOrder = 2,
+				disabled = selectedOwned <= 0,
+				onClick = function()
+					if selectedItem and selectedOwned > 0 then
+						self:setState({ showConfirmDialog = true })
+					end
+				end,
+			}),
 		})
 	end
+
+	local showConfirmDialog = self.state.showConfirmDialog
 
 	return createElement(PageWrapper, { isOpen = (currentPage == "Sell") }, {
 		Window = createElement(Window, {
@@ -314,6 +342,23 @@ function SellPage:_renderContent(statsData)
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			onExit = onExit,
 		}, {
+			ConfirmDialog = createElement(SellConfirmationDialog, {
+				visible = showConfirmDialog and selectedItem ~= nil and selectedOwned > 0,
+				itemName = selectedItem or "",
+				quantity = selectedOwned,
+				totalValue = selectedPrice * selectedOwned,
+				onConfirm = function()
+					if selectedItem and selectedOwned > 0 then
+						RF_SellItems:InvokeServer({
+							{ name = selectedItem, quantity = selectedOwned },
+						})
+					end
+					self:setState({ showConfirmDialog = false, sellQuantity = 1 })
+				end,
+				onCancel = function()
+					self:setState({ showConfirmDialog = false })
+				end,
+			}),
 			ItemsView = createElement("Frame", {
 				Size = UDim2.new(0.6, -12, 1, -16),
 				AnchorPoint = Vector2.new(0, 0.5),
