@@ -63,7 +63,7 @@ local function createGearCellContent(gearEntry)
 	}, {
 		Item = createElement(ItemCounter, {
 			name = gearEntry.name,
-			amount = gearEntry.amount or 1,
+			amount = gearEntry.amount,
 			Size = UDim2.fromScale(1, 1),
 		}),
 		Name = createElement(TextLabel, {

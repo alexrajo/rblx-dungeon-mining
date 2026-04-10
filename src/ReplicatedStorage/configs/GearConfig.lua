@@ -124,6 +124,11 @@ function GearConfig.IsArmorSlot(slotName: string): boolean
 		or slotName == "Boots"
 end
 
+function GearConfig.IsStackable(itemName: string): boolean
+	local item = GearConfig.items[itemName]
+	return item ~= nil and item.slot == "Bomb"
+end
+
 function GearConfig.GetTierStats(tier: number)
 	return GearConfig.tiers[tier]
 end

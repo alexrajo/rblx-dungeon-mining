@@ -41,14 +41,14 @@ function ItemCounter:render()
 				MaxSize = Vector2.new(64, 64)
 			})	
 		}),
-		Counter = createElement(TextLabel, {
+		Counter = amount ~= nil and createElement(TextLabel, {
 			Text = useRedText and '<font color="rgb(255, 30, 15)">'..counterText..'</font>' or counterText,
 			textProps = {TextScaled = true, TextXAlignment = amountOwned == nil and Enum.TextXAlignment.Right or Enum.TextXAlignment.Center},
 			Size = UDim2.fromScale(0.9, 0.2),
 			AnchorPoint = Vector2.new(1, 1),
 			Position = UDim2.fromScale(0.95, 0.95),
 			ZIndex = 2,
-		})
+		}) or nil,
 	})
 end
 
