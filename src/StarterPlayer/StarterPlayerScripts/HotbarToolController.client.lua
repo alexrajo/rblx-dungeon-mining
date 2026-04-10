@@ -36,13 +36,6 @@ local function trackTool(tool: Tool)
 		end
 	end))
 
-	table.insert(connections, tool.Equipped:Connect(function()
-		local slotIndex = tool:GetAttribute("HotbarSlot")
-		if type(slotIndex) == "number" then
-			HotbarService.SyncSelectedSlot(slotIndex)
-		end
-	end))
-
 	table.insert(connections, tool.Destroying:Connect(function()
 		disconnectTool(tool)
 	end))
