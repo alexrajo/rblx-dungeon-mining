@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
 local InventoryUtils = require(ModuleIndex.InventoryUtils)
 
@@ -25,6 +26,11 @@ function GearUtils.GetOwnedGearEntries(data, slotFilter: ((string, {slot: string
 	for _, fieldName in ipairs(EQUIPPED_FIELDS) do
 		local itemName = data[fieldName]
 		if type(itemName) == "string" and itemName ~= "" then
+			equippedItems[itemName] = true
+		end
+	end
+	for _, itemName in ipairs(HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})) do
+		if itemName ~= "" then
 			equippedItems[itemName] = true
 		end
 	end
