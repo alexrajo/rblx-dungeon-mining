@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Roact = require(ReplicatedStorage.services.Roact)
 local StarterGui = game:GetService("StarterGui")
 
---StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 
 local createElement = Roact.createElement
 
