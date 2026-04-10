@@ -30,6 +30,8 @@ local ModuleIndex = {
 	EnemyBillboard = components.EnemyBillboard,
 
 	SellConfirmationDialog = components.SellConfirmationDialog,
+	InventoryPopup = components.InventoryPopup,
+	InventoryPopupManager = components.InventoryPopupManager,
 
 	InventoryResourcesView = components.InventoryPage.ResourcesView,
 	InventoryGearView = components.InventoryPage.GearView,
