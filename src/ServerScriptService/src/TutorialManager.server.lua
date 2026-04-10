@@ -167,6 +167,21 @@ function completeTutorial(player: Player, tutorialName: string?)
 	playerState.currentStep = 0
 end
 
+function onPlayerCharacterAdded(player: Player)
+	local playerState = playerTutorialStates[player]
+	if playerState == nil or playerState.currentTutorial == nil then
+		return
+	end
+
+	activateTutorialStep(player, playerState.currentTutorial, playerState.currentStep)
+end
+
+game.Players.PlayerAdded:Connect(function(player: Player)
+	player.CharacterAdded:Connect(function()
+		onPlayerCharacterAdded(player)
+	end)
+end)
+
 game.Players.PlayerRemoving:Connect(playerRemoving)
 startTutorialEvent.Event:Connect(startTutorial)
 skipTutorialEvent.Event:Connect(skipTutorial)
