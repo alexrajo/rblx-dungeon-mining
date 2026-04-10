@@ -113,17 +113,6 @@ function GearView:getFirstAvailableHotbarSlot(data): number?
 	return nil
 end
 
-function GearView:getAssignedHotbarSlot(itemName: string, data): number?
-	local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
-	for index = 1, HotbarConfig.MAX_SLOTS do
-		if hotbarSlots[index] == itemName then
-			return index
-		end
-	end
-
-	return nil
-end
-
 function GearView:getEquipActionState(itemName: string?, data)
 	if type(itemName) ~= "string" or itemName == "" then
 		return nil
@@ -135,15 +124,6 @@ function GearView:getEquipActionState(itemName: string?, data)
 	end
 
 	if HotbarConfig.IsEntryHotbarEligible(itemName) then
-		local assignedSlot = self:getAssignedHotbarSlot(itemName, data)
-		if assignedSlot ~= nil then
-			return {
-				buttonText = "Equip",
-				disabled = true,
-				hintText = "Already equipped in hotbar slot " .. tostring(assignedSlot) .. ".",
-			}
-		end
-
 		local nextSlot = self:getFirstAvailableHotbarSlot(data)
 		if nextSlot == nil then
 			return {
@@ -162,14 +142,10 @@ function GearView:getEquipActionState(itemName: string?, data)
 		}
 	end
 
-	local equippedField = GearConfig.slotToField[itemData.slot]
-	local equippedItemName = equippedField and data[equippedField] or ""
 	return {
 		buttonText = "Equip",
-		disabled = equippedItemName == itemName,
-		hintText = equippedItemName == itemName
-			and ("Already equipped as " .. itemData.slot .. ".")
-			or ("Equips to your " .. string.lower(itemData.slot) .. " slot."),
+		disabled = false,
+		hintText = "Equips to your " .. string.lower(itemData.slot) .. " slot.",
 		mode = "gear",
 	}
 end
