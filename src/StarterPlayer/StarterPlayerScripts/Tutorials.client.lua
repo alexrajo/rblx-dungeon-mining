@@ -24,6 +24,7 @@ local Tutorials = {
 
 local positionIndicator: Part? = nil
 local activeIndicatorToken = 0
+local currentTutorialStep = nil
 local playerDataFolder = ReplicatedStorage:WaitForChild("PlayerData"):WaitForChild(plr.Name)
 local currentFloorValue = playerDataFolder:WaitForChild("CurrentFloor")
 
@@ -309,21 +310,30 @@ function characterAdded(newCharacter)
 	character = newCharacter
 	maid:DoCleaning()
 	destroyPositionIndicator()
+	if currentTutorialStep ~= nil then
+		local targetPoint = resolveStepTargetPosition(currentTutorialStep)
+		if targetPoint ~= nil or currentTutorialStep["pointToTags"] ~= nil then
+			startPositionIndicator(currentTutorialStep)
+		end
+	end
 end
 
 function onReceiveNextStep(tutorialStep, tutorialName)
 	destroyPositionIndicator()
 
 	if tutorialStep.completed then
+		currentTutorialStep = nil
 		return
 	end
+
+	currentTutorialStep = tutorialStep
 
 	local targetPoint = resolveStepTargetPosition(tutorialStep)
 	if targetPoint ~= nil then
 		positionIndicator = createPositionIndicator(targetPoint)
 	end
 
-	if tutorialStep["pointToTags"] ~= nil then
+	if tutorialStep["pointToTags"] ~= nil or targetPoint ~= nil then
 		startPositionIndicator(tutorialStep)
 	end
 end
