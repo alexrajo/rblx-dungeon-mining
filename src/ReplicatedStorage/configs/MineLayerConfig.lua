@@ -1,4 +1,8 @@
 local MineLayerConfig = {
+	-- Global default ore density: fraction of available floor positions that spawn an ore node.
+	-- Individual layers may override this with their own oreDensity field.
+	defaultOreDensity = 0.15,
+
 	[1] = {
 		name = "Shallow Mines",
 		theme = "shallow_mines",
@@ -28,6 +32,7 @@ local MineLayerConfig = {
 		minGearTier = 3,
 		primaryOre = "Gold",
 		secondaryOre = "Iron",
+		tertiaryOre = "Copper",
 		enemies = { "Skeleton", "Rock Golem" },
 		checkpointInterval = 5,
 		floorCompletionBonus = 10,
@@ -39,6 +44,7 @@ local MineLayerConfig = {
 		minGearTier = 4,
 		primaryOre = "Diamond",
 		secondaryOre = "Gold",
+		tertiaryOre = "Iron",
 		enemies = { "Gold Guardian", "Crystal Spider" },
 		checkpointInterval = 5,
 		floorCompletionBonus = 10,
@@ -50,6 +56,7 @@ local MineLayerConfig = {
 		minGearTier = 5,
 		primaryOre = "Obsidian",
 		secondaryOre = "Diamond",
+		tertiaryOre = "Gold",
 		enemies = { "Lava Slime", "Obsidian Knight" },
 		checkpointInterval = 5,
 		floorCompletionBonus = 10,
@@ -61,6 +68,7 @@ local MineLayerConfig = {
 		minGearTier = 6,
 		primaryOre = "Mythril",
 		secondaryOre = "Obsidian",
+		tertiaryOre = "Diamond",
 		enemies = { "Fire Elemental", "Magma Wyrm" },
 		checkpointInterval = 5,
 		floorCompletionBonus = 10,

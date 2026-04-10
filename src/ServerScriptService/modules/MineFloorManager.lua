@@ -60,7 +60,6 @@ local ORE_COLORS = {
 	Mythril = BrickColor.new("Bright violet"),
 }
 
-local NUM_ORE_NODES = 6
 local NUM_LIGHTS = 4
 local EXTRA_LADDER_REVEAL_CHANCE = 0.35
 local ASCENDING_LADDER_OFFSET = Vector3.new(0, 3, 12)
@@ -392,13 +391,31 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 	local spawnIndex = 0
 
-	-- Spawn ore nodes on valid floor positions
+	-- Compute ore node count from density and available floor positions
+	local oreDensity = layerData.oreDensity or MineLayerConfig.defaultOreDensity
+	local numOreNodes = math.max(1, math.floor(#floorPositions * oreDensity + 0.5))
+
+	-- Split ore nodes across primary, secondary, and optional tertiary types.
+	-- Ratio: ~1/2 primary, ~1/3 secondary, ~1/6 tertiary (3:2:1).
+	-- With no tertiary: ~2/3 primary, ~1/3 secondary (matching original 4:2 split at n=6).
 	local primaryOre = layerData.primaryOre
 	local secondaryOre = layerData.secondaryOre
+	local tertiaryOre = layerData.tertiaryOre
+	local secondaryCount = math.floor(numOreNodes / 3)
+	local tertiaryCount = tertiaryOre and math.floor(numOreNodes / 6) or 0
+	local primaryCount = numOreNodes - secondaryCount - tertiaryCount
+
 	local spawnedOreNodes = {}
 
-	for i = 1, NUM_ORE_NODES do
-		local oreType = (i <= 4) and primaryOre or secondaryOre
+	for i = 1, numOreNodes do
+		local oreType
+		if i <= primaryCount then
+			oreType = primaryOre
+		elseif i <= primaryCount + secondaryCount then
+			oreType = secondaryOre
+		else
+			oreType = tertiaryOre
+		end
 		local oreData = OreConfig.byName[oreType]
 		if oreData == nil then continue end
 
@@ -436,12 +453,16 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 		shuffleArray(revealCandidates)
 
-		local revealCount = 1
-		if #revealCandidates >= 2 and math.random() <= EXTRA_LADDER_REVEAL_CHANCE then
+		-- Scale ladder reveals with ore count: 1 base per 5 nodes (minimum 1),
+		-- plus a 35% chance for one extra reveal.
+		local baseRevealCount = math.max(1, math.floor(numOreNodes / 5))
+		local revealCount = baseRevealCount
+		if #revealCandidates > baseRevealCount and math.random() <= EXTRA_LADDER_REVEAL_CHANCE then
 			revealCount += 1
 		end
+		revealCount = math.min(revealCount, #revealCandidates)
 
-		for i = 1, math.min(revealCount, #revealCandidates) do
+		for i = 1, revealCount do
 			revealCandidates[i]:SetAttribute("RevealsLadder", true)
 		end
 	end
