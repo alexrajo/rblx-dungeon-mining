@@ -1,4 +1,5 @@
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -15,7 +16,13 @@ local GearConfig = require(configs.GearConfig)
 local EnemyConfig = require(configs.EnemyConfig)
 local globalConfig = require(ReplicatedStorage.GlobalConfig)
 
-local debounce = {}
+-- Timestamp-based per-player cooldown. Keyed by Player instance so entries
+-- are automatically distinct across sessions; cleaned up on PlayerRemoving.
+local lastAttackTime: {[Player]: number} = {}
+
+Players.PlayerRemoving:Connect(function(player)
+	lastAttackTime[player] = nil
+end)
 
 local endpoint = {}
 
@@ -40,8 +47,6 @@ local function applyKnockback(attackerRoot: BasePart, enemyRoot: BasePart, knock
 end
 
 function endpoint.Call(player: Player, enemies: {Instance})
-	if debounce[player] then return { success = false, cooldown = 0.1 } end
-
 	if type(enemies) ~= "table" then
 		return { success = false, cooldown = 0.1 }
 	end
@@ -51,15 +56,17 @@ function endpoint.Call(player: Player, enemies: {Instance})
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	if humanoidRootPart == nil then return { success = false, cooldown = 0.5 } end
 
-	-- Apply cooldown immediately to prevent spam
+	-- Compute weapon cooldown first so it can be used in the server-side window check.
 	local equippedWeapon = PlayerDataHandler.GetEquippedWeapon(player)
 	local weaponStats = GearConfig.GetWeaponCombatStats(equippedWeapon)
 	local attackCooldown = weaponStats.attackCooldown or globalConfig.ATTACK_SWING_COOLDOWN
 
-	debounce[player] = true
-	task.delay(attackCooldown, function()
-		debounce[player] = nil
-	end)
+	local now = os.clock()
+	local serverWindow = attackCooldown - globalConfig.SERVER_ACTION_LENIENCY
+	if lastAttackTime[player] and (now - lastAttackTime[player]) < serverWindow then
+		return { success = false, cooldown = 0.1 }
+	end
+	lastAttackTime[player] = os.clock()
 
 	-- Calculate attacker stats once for all hits
 	local level = PlayerDataHandler.GetClient(player) and PlayerDataHandler.GetClient(player):GetDataValue("Level", 1) or 1
