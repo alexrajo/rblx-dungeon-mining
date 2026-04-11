@@ -2,6 +2,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local APIService = require(ReplicatedStorage.services.APIService)
+local BombConfig = require(ReplicatedStorage.configs.BombConfig)
+local HotbarService = require(ReplicatedStorage.local_services.HotbarService)
 
 local player = Players.LocalPlayer
 
@@ -45,13 +47,24 @@ function BombAction.Activate()
 		return 0.5
 	end
 
+	-- Determine cooldown locally from the selected bomb's placementCooldown so
+	-- the timer starts immediately without waiting for a server round-trip.
+	local selectedItemName = HotbarService.GetSelectedEntryId()
+	local bombData = BombConfig.GetBombData(selectedItemName)
+	local cooldown = (bombData and bombData.placementCooldown) or 0.5
+
 	local track = getTrack(humanoid)
 	if track then
 		track:Play()
 	end
 
-	local result = APIService.GetFunction("UseBomb"):InvokeServer()
-	return (result and result.cooldown) or 0.5
+	-- Spawn the server call in the background; the client cooldown is already
+	-- determined above and does not depend on the server response.
+	task.spawn(function()
+		APIService.GetFunction("UseBomb"):InvokeServer()
+	end)
+
+	return cooldown
 end
 
 return BombAction

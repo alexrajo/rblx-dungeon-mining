@@ -1,4 +1,5 @@
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -22,12 +23,22 @@ local globalConfig = require(ReplicatedStorage.GlobalConfig)
 local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
 local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 
-local debounce = {}
+-- Timestamp-based per-player cooldown. Keyed by Player instance so entries
+-- are automatically distinct across sessions; cleaned up on PlayerRemoving.
+local lastMineTime: {[Player]: number} = {}
+
+Players.PlayerRemoving:Connect(function(player)
+	lastMineTime[player] = nil
+end)
 
 local endpoint = {}
 
 function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vector3)
-	if debounce[player] then return { success = false, cooldown = 0.1 } end
+	local now = os.clock()
+	local serverWindow = globalConfig.MINE_SWING_COOLDOWN - globalConfig.SERVER_ACTION_LENIENCY
+	if lastMineTime[player] and (now - lastMineTime[player]) < serverWindow then
+		return { success = false, cooldown = 0.1 }
+	end
 
 	-- Validate node exists and is tagged
 	if nodeInstance == nil or nodeInstance.Parent == nil then
@@ -70,11 +81,8 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 		}
 	end
 
-	-- Apply cooldown
-	debounce[player] = true
-	task.delay(globalConfig.MINE_SWING_COOLDOWN, function()
-		debounce[player] = nil
-	end)
+	-- Record the accepted action time (no task.delay needed with timestamp approach)
+	lastMineTime[player] = os.clock()
 
 	-- Calculate damage
 	local miningDamage = StatCalculation.GetMiningDamage(pickaxeTier)

@@ -263,25 +263,27 @@ function MineAction.Activate()
 		if targetNode then break end
 	end
 
-	-- Delay hit registration to sync with animation
-	task.wait(HIT_DELAY)
+	-- Spawn the hit-registration and server call in the background so the
+	-- cooldown timer starts immediately regardless of server latency.
+	if targetNode ~= nil then
+		task.spawn(function()
+			task.wait(HIT_DELAY)
 
-	-- No valid target — return 0 (delay already elapsed)
-	if targetNode == nil then return 0 end
+			-- Re-validate: node may have been destroyed during the delay
+			if targetNode.Parent == nil then return end
 
-	-- Play local shake animation on the hit node
-	task.spawn(shakeNode, targetNode)
+			task.spawn(shakeNode, targetNode)
 
-	-- Invoke server
-	local func = APIService.GetFunction("Mine")
-	local result = func:InvokeServer(targetNode, hitPosition)
+			local func = APIService.GetFunction("Mine")
+			local result = func:InvokeServer(targetNode, hitPosition)
 
-	if result and result.reason == "tier_too_low" then
-		showTierWarning(targetNode, result.requiredTier or 1, result.pickaxeTier or 1)
+			if result and result.reason == "tier_too_low" then
+				showTierWarning(targetNode, result.requiredTier or 1, result.pickaxeTier or 1)
+			end
+		end)
 	end
 
-	local cooldown = (result and result.cooldown) or globalConfig.MINE_SWING_COOLDOWN
-	return math.max(0, cooldown - HIT_DELAY)
+	return globalConfig.MINE_SWING_COOLDOWN
 end
 
 return MineAction

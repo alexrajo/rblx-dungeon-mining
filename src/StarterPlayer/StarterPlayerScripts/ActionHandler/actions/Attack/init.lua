@@ -6,6 +6,8 @@ local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
 
 local globalConfig = require(ReplicatedStorage:WaitForChild("GlobalConfig"))
+local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local StatRetrieval = require(ReplicatedStorage.utils.StatRetrieval)
 
 local HIT_DELAY = 0.2
 local ATTACK_ARC_DOT = 0 -- forward 180° arc
@@ -40,6 +42,12 @@ function AttackAction.Activate()
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoidRootPart == nil or humanoid == nil or humanoid.Health <= 0 then return 0.5 end
+
+	-- Determine cooldown locally from equipped weapon so the timer starts
+	-- immediately without waiting for a server round-trip.
+	local equippedWeapon = StatRetrieval.GetPlayerStat("EquippedWeapon", plr)
+	local weaponStats = GearConfig.GetWeaponCombatStats(equippedWeapon)
+	local attackCooldown = weaponStats.attackCooldown or globalConfig.ATTACK_SWING_COOLDOWN
 
 	-- Play weapon swing animation
 	local track = getTrack(humanoid)
@@ -86,15 +94,14 @@ function AttackAction.Activate()
 		end
 	end
 
-	-- Delay hit registration to sync with animation
-	task.wait(HIT_DELAY)
+	-- Spawn the hit-registration and server call in the background so the
+	-- cooldown timer starts immediately regardless of server latency.
+	task.spawn(function()
+		task.wait(HIT_DELAY)
+		APIService.GetFunction("Attack"):InvokeServer(hitEnemies)
+	end)
 
-	-- Invoke server with list of hit enemies, even on a miss, so cooldown is authoritative
-	local func = APIService.GetFunction("Attack")
-	local result = func:InvokeServer(hitEnemies)
-
-	local cooldown = (result and result.cooldown) or globalConfig.ATTACK_SWING_COOLDOWN
-	return math.max(0, cooldown - HIT_DELAY)
+	return attackCooldown
 end
 
 return AttackAction

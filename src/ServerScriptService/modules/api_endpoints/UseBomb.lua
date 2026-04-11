@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -8,8 +9,15 @@ local BombService = require(modules.BombService)
 
 local configs = ReplicatedStorage.configs
 local BombConfig = require(configs.BombConfig)
+local globalConfig = require(ReplicatedStorage.GlobalConfig)
 
-local debounce = {}
+-- Timestamp-based per-player cooldown. Keyed by Player instance so entries
+-- are automatically distinct across sessions; cleaned up on PlayerRemoving.
+local lastBombTime: {[Player]: number} = {}
+
+Players.PlayerRemoving:Connect(function(player)
+	lastBombTime[player] = nil
+end)
 
 local endpoint = {}
 
@@ -40,10 +48,6 @@ local function getToolHandleTemplate(itemName: string): Instance?
 end
 
 function endpoint.Call(player: Player)
-	if debounce[player] then
-		return { success = false, cooldown = 0.1 }
-	end
-
 	local bombItemName = getSelectedBombItemName(player)
 	if bombItemName == nil then
 		return { success = false, cooldown = 0.1, reason = "invalid_bomb" }
@@ -52,6 +56,15 @@ function endpoint.Call(player: Player)
 	local bombData = BombConfig.GetBombData(bombItemName)
 	if bombData == nil then
 		return { success = false, cooldown = 0.1, reason = "invalid_bomb" }
+	end
+
+	-- Timestamp-based cooldown check using the bomb's placementCooldown.
+	-- The leniency window allows requests that arrive slightly early due to
+	-- network timing to still be accepted.
+	local now = os.clock()
+	local serverWindow = bombData.placementCooldown - globalConfig.SERVER_ACTION_LENIENCY
+	if lastBombTime[player] and (now - lastBombTime[player]) < serverWindow then
+		return { success = false, cooldown = 0.1 }
 	end
 
 	if PlayerDataHandler.GetItemCount(player, bombItemName) <= 0 then
@@ -74,10 +87,8 @@ function endpoint.Call(player: Player)
 		return { success = false, cooldown = 0.1 }
 	end
 
-	debounce[player] = true
-	task.delay(0.35, function()
-		debounce[player] = nil
-	end)
+	-- Record the accepted action time (no task.delay needed with timestamp approach)
+	lastBombTime[player] = os.clock()
 
 	PlayerDataHandler.TakeItems(player, { [bombItemName] = 1 })
 
