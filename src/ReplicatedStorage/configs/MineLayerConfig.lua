@@ -1,7 +1,7 @@
 local MineLayerConfig = {
 	-- Global default ore density: fraction of available floor positions that spawn an ore node.
 	-- Individual layers may override this with their own oreDensity field.
-	defaultOreDensity = 0.15,
+	defaultOreDensity = 0.08,
 
 	[1] = {
 		name = "Shallow Mines",

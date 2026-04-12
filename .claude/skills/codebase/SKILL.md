@@ -520,3 +520,8 @@ local populationSize = instance:GetAttribute("PopulationSize")
 - **Do not use `game.X` shorthand for services** — always use `game:GetService("X")`
   - Exception: `game.Players.LocalPlayer` and `game.Workspace` are acceptable in client scripts
 - **Do not skip type annotations on function signatures**
+
+### Making code changes
+
+When making code changes, do not make ad hoc solutions to problems. Instead, solve them properly and make any refactoring changes necessary to implement the solutions.
+If a variable is repurposed for a new feature or a feature is changed, the variable should have its name updated to reflect its new purpose. If a function is changed to do something different, its name should be updated as well. If a module is changed significantly, it should be renamed to reflect its new responsibilities.
