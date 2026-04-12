@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 local BombConfig = require(ReplicatedStorage.configs.BombConfig)
+local ConsumablesConfig = require(ReplicatedStorage.configs.ConsumablesConfig)
 
 local HotbarConfig = {}
 
@@ -41,6 +42,10 @@ function HotbarConfig.IsEntryHotbarEligible(itemName: string): boolean
 		return true
 	end
 
+	if ConsumablesConfig.IsConsumableItem(itemName) then
+		return true
+	end
+
 	local slotName = GearConfig.GetSlotForItem(itemName)
 	return slotName == "Pickaxe" or slotName == "Weapon"
 end
@@ -51,6 +56,15 @@ function HotbarConfig.IsEntryAvailable(itemName: string, playerData): boolean
 	end
 
 	if BombConfig.IsBombItem(itemName) then
+		for _, item in ipairs(playerData.Inventory or {}) do
+			if item.name == itemName and item.value > 0 then
+				return true
+			end
+		end
+		return false
+	end
+
+	if ConsumablesConfig.IsConsumableItem(itemName) then
 		for _, item in ipairs(playerData.Inventory or {}) do
 			if item.name == itemName and item.value > 0 then
 				return true
@@ -82,6 +96,8 @@ function HotbarConfig.GetActionName(itemName: string): string?
 		return "Attack"
 	elseif BombConfig.IsBombItem(itemName) then
 		return "Bomb"
+	elseif ConsumablesConfig.IsConsumableItem(itemName) then
+		return "UseConsumable"
 	end
 
 	return nil
@@ -95,6 +111,8 @@ function HotbarConfig.ResolveActiveColor(itemName: string): string
 		return "red"
 	elseif actionName == "Bomb" then
 		return "orange"
+	elseif actionName == "UseConsumable" then
+		return "purple"
 	end
 
 	return "gray"
@@ -107,6 +125,10 @@ function HotbarConfig.GetImageId(itemName: string): string
 
 	if BombConfig.IsBombItem(itemName) then
 		return BombConfig.GetImageIdForItem(itemName)
+	end
+
+	if ConsumablesConfig.IsConsumableItem(itemName) then
+		return ConsumablesConfig.GetImageIdForItem(itemName)
 	end
 
 	return GearConfig.GetImageIdForItem(itemName)
