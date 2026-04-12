@@ -7,6 +7,7 @@ local APIService = require(ReplicatedStorage.services.APIService)
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local BuffsManager = require(modules.BuffsManager)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -71,6 +72,7 @@ function endpoint.Call(player: Player, enemies: {Instance})
 	-- Calculate attacker stats once for all hits
 	local level = PlayerDataHandler.GetClient(player) and PlayerDataHandler.GetClient(player):GetDataValue("Level", 1) or 1
 	local baseCombatDamage = StatCalculation.GetCombatDamage(equippedWeapon, level)
+		* BuffsManager.GetDamageMultiplier(player)
 
 	local totalDamage = 0
 	local hitCount = 0

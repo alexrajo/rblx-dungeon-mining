@@ -1,0 +1,1 @@
+-- Health regeneration disabled
