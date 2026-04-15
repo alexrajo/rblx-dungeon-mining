@@ -15,6 +15,8 @@ local SLOT_TO_FOLDER: {[string]: string} = {
 
 type PlayerState = {
 	tools: {[number]: Tool?},
+	itemNames: {[number]: string?},
+	syncQueued: boolean,
 }
 
 local playerStates: {[Player]: PlayerState} = {}
@@ -67,6 +69,7 @@ local function destroyTool(state: PlayerState, slotIndex: number)
 		tool:Destroy()
 		state.tools[slotIndex] = nil
 	end
+	state.itemNames[slotIndex] = nil
 end
 
 local function destroyAllTools(state: PlayerState)
@@ -75,23 +78,33 @@ local function destroyAllTools(state: PlayerState)
 	end
 end
 
-local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: number)
-	destroyTool(state, slotIndex)
+local function getBackpack(player: Player): Backpack?
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	if backpack ~= nil then
+		return backpack
+	end
 
-	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
-	local itemName = hotbarSlots[slotIndex]
+	local child = player:FindFirstChild("Backpack")
+	if child ~= nil and child:IsA("Backpack") then
+		return child
+	end
+
+	return nil
+end
+
+local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: number, itemName: string): Tool?
 	if itemName == nil or itemName == "" then
-		return
+		return nil
 	end
 
 	local actionName = HotbarConfig.GetActionName(itemName)
 	if actionName == nil then
-		return
+		return nil
 	end
 
 	local template = getToolTemplate(itemName)
 	if template == nil then
-		return
+		return nil
 	end
 
 	local tool = template:Clone()
@@ -101,62 +114,64 @@ local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: n
 	tool:SetAttribute("HotbarActionName", actionName)
 
 	state.tools[slotIndex] = tool
+	state.itemNames[slotIndex] = itemName
+	return tool
 end
 
-local function syncEquippedTool(player: Player)
+local function syncToolsToHotbar(player: Player)
 	local state = playerStates[player]
 	if state == nil then
 		return
 	end
 
-	local backpack = player:FindFirstChildOfClass("Backpack") or player:FindFirstChild("Backpack")
-	local character = player.Character
+	local backpack = getBackpack(player)
 	if backpack == nil then
 		return
 	end
 
+	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
+	local character = player.Character
 	for slotIndex = 1, HotbarConfig.MAX_SLOTS do
-		local tool = state.tools[slotIndex]
-		if tool and tool.Parent ~= backpack then
-			tool.Parent = backpack
+		local itemName = hotbarSlots[slotIndex] or ""
+		local existingTool = state.tools[slotIndex]
+		local existingItemName = state.itemNames[slotIndex]
+
+		if itemName == "" or HotbarConfig.GetActionName(itemName) == nil then
+			destroyTool(state, slotIndex)
+			continue
+		end
+
+		if existingTool == nil or existingTool.Parent == nil or existingItemName ~= itemName then
+			destroyTool(state, slotIndex)
+			existingTool = cloneToolForSlot(player, state, slotIndex, itemName)
+		end
+
+		if existingTool ~= nil and existingTool.Parent ~= backpack and existingTool.Parent ~= character then
+			existingTool.Parent = backpack
 		end
 	end
-
-	if character == nil then
-		return
-	end
-
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid == nil then
-		return
-	end
-
-	local selectedSlot = PlayerDataHandler.GetSelectedHotbarSlot(player)
-	if selectedSlot == 0 then
-		humanoid:UnequipTools()
-		return
-	end
-
-	local selectedTool = state.tools[selectedSlot]
-	if selectedTool == nil then
-		humanoid:UnequipTools()
-		return
-	end
-
-	humanoid:EquipTool(selectedTool)
 end
 
-local function rebuildTools(player: Player)
+local function queueSyncTools(player: Player)
 	local state = playerStates[player]
 	if state == nil then
 		return
 	end
 
-	destroyAllTools(state)
-	for slotIndex = 1, HotbarConfig.MAX_SLOTS do
-		cloneToolForSlot(player, state, slotIndex)
+	if state.syncQueued then
+		return
 	end
-	syncEquippedTool(player)
+
+	state.syncQueued = true
+	task.defer(function()
+		local latestState = playerStates[player]
+		if latestState == nil then
+			return
+		end
+
+		latestState.syncQueued = false
+		syncToolsToHotbar(player)
+	end)
 end
 
 local function cleanup(player: Player)
@@ -184,35 +199,29 @@ local function onPlayerAdded(player: Player)
 
 	playerStates[player] = {
 		tools = {},
+		itemNames = {},
+		syncQueued = false,
 	}
 
 	player.CharacterAdded:Connect(function()
 		task.wait(0.1)
-		rebuildTools(player)
+		queueSyncTools(player)
 	end)
 
 	PlayerDataHandler.ListenToStatUpdate("HotbarSlots", player, function()
-		rebuildTools(player)
-	end)
-
-	PlayerDataHandler.ListenToStatUpdate("SelectedHotbarSlot", player, function()
-		syncEquippedTool(player)
+		queueSyncTools(player)
 	end)
 
 	PlayerDataHandler.ListenToStatUpdate("EquippedPickaxe", player, function()
-		rebuildTools(player)
+		queueSyncTools(player)
 	end)
 
 	PlayerDataHandler.ListenToStatUpdate("EquippedWeapon", player, function()
-		rebuildTools(player)
-	end)
-
-	PlayerDataHandler.ListenToStatUpdate("Inventory", player, function()
-		rebuildTools(player)
+		queueSyncTools(player)
 	end)
 
 	if player.Character then
-		rebuildTools(player)
+		queueSyncTools(player)
 	end
 end
 

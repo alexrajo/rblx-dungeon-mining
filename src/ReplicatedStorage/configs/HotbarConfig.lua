@@ -7,7 +7,6 @@ local ConsumablesConfig = require(ReplicatedStorage.configs.ConsumablesConfig)
 local HotbarConfig = {}
 
 HotbarConfig.MAX_SLOTS = 5
-HotbarConfig.CURRENT_VERSION = 2
 
 function HotbarConfig.NormalizeStoredSlots(rawSlots): {string}
 	local normalized = table.create(HotbarConfig.MAX_SLOTS, "")
@@ -28,13 +27,6 @@ function HotbarConfig.NormalizeStoredSlots(rawSlots): {string}
 	end
 
 	return normalized
-end
-
-function HotbarConfig.GetDefaultSlotsForPlayerData(playerData): {string}
-	local slots = table.create(HotbarConfig.MAX_SLOTS, "")
-	slots[1] = playerData.EquippedPickaxe or ""
-	slots[2] = playerData.EquippedWeapon or ""
-	return slots
 end
 
 function HotbarConfig.IsEntryHotbarEligible(itemName: string): boolean

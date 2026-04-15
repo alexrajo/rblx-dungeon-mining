@@ -12,10 +12,9 @@ return {
 	EquippedChestplate = "",
 	EquippedLeggings = "",
 	EquippedBoots = "",
-	HotbarVersion = 0,
 	HotbarSlots = {
-		{name = "1", value = ""},
-		{name = "2", value = ""},
+		{name = "1", value = "Wood Pickaxe"},
+		{name = "2", value = "Wood Sword"},
 		{name = "3", value = ""},
 		{name = "4", value = ""},
 		{name = "5", value = ""},

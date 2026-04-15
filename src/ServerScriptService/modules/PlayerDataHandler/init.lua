@@ -20,7 +20,6 @@ local dbClients = {}
 local PlayerDataHandler = {}
 local getStat
 local setStat
-local migrateHotbarData
 
 local function handleRelease(player, client)
 	dbClients[player] = nil
@@ -71,15 +70,6 @@ local function getPlayerDataSnapshot(player: Player)
 	}
 end
 
-local function getFirstAvailableHotbarSlot(slotValues: {string}, playerData): number
-	for index, entryId in ipairs(slotValues) do
-		if entryId ~= "" and HotbarConfig.IsEntryAvailable(entryId, playerData) then
-			return index
-		end
-	end
-	return 0
-end
-
 local function sanitizeHotbarData(player: Player)
 	local playerData = getPlayerDataSnapshot(player)
 	local slotValues = normalizeHotbarSlots(getStat("HotbarSlots", ProfileTemplate.HotbarSlots, player))
@@ -102,8 +92,8 @@ local function sanitizeHotbarData(player: Player)
 	if type(selectedSlot) ~= "number" then
 		selectedSlot = 0
 	end
-	if selectedSlot < 1 or selectedSlot > HotbarConfig.MAX_SLOTS or slotValues[selectedSlot] == "" then
-		selectedSlot = getFirstAvailableHotbarSlot(slotValues, playerData)
+	if selectedSlot ~= 0 and (selectedSlot < 1 or selectedSlot > HotbarConfig.MAX_SLOTS or slotValues[selectedSlot] == "") then
+		selectedSlot = 0
 	end
 
 	setStat("HotbarSlots", buildStoredHotbarSlots(slotValues), player)
@@ -121,7 +111,7 @@ local function initializeClient(player: Player)
 	end
 	dbClients[player] = client
 	TempStats:InitializePlayer(player)
-	migrateHotbarData(player)
+	sanitizeHotbarData(player)
 end
 
 function addToStat(statName: string, defaultValue, player: Player, amount: number)
@@ -151,21 +141,6 @@ end
 function PlayerDataHandler.GetClient(player: Player)
 	return dbClients[player]
 end
-
-function PlayerDataHandler.MigrateHotbarData(player: Player)
-	local version = getStat("HotbarVersion", 0, player)
-	if version < HotbarConfig.CURRENT_VERSION then
-		local snapshot = getPlayerDataSnapshot(player)
-		local defaultSlots = HotbarConfig.GetDefaultSlotsForPlayerData(snapshot)
-		setStat("HotbarSlots", buildStoredHotbarSlots(defaultSlots), player)
-		setStat("SelectedHotbarSlot", getFirstAvailableHotbarSlot(defaultSlots, snapshot), player)
-		setStat("HotbarVersion", HotbarConfig.CURRENT_VERSION, player)
-	end
-
-	sanitizeHotbarData(player)
-end
-
-migrateHotbarData = PlayerDataHandler.MigrateHotbarData
 
 function PlayerDataHandler.ListenToStatUpdate(statName: string, player: Player, callback: (value: any) -> ())
 	local client = dbClients[player]

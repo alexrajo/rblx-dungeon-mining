@@ -19,7 +19,6 @@ local DEFAULT_VALUE = {
 	EquippedChestplate = "",
 	EquippedLeggings = "",
 	EquippedBoots = "",
-	HotbarVersion = 2,
 	HotbarSlots = {
 		{name = "1", value = "Wood Pickaxe"},
 		{name = "2", value = "Wood Sword"},
