@@ -14,7 +14,7 @@ local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunication
 local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 
 local PROTECTION_ATTRIBUTE = "TeleportProtected"
-local TRANSITION_TIMEOUT = 4
+local TRANSITION_TIMEOUT = 10
 
 local activeTransitions: { [Player]: {
 	transitionId: string,
