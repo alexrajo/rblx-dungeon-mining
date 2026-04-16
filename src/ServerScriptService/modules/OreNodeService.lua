@@ -4,6 +4,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local OreNodeUtil = require(modules.OreNodeUtil)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -20,20 +21,21 @@ local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunication
 local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 
 function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boolean
-	if nodeInstance == nil or nodeInstance.Parent == nil then
+	if nodeInstance == nil or nodeInstance.Parent == nil or not nodeInstance:IsA("Model") then
 		return false
 	end
 
-	local oreType = nodeInstance:GetAttribute("OreType") or "Stone"
+	local nodeModel = nodeInstance :: Model
+	local oreType = nodeModel:GetAttribute("OreType") or "Stone"
 	local oreData = OreConfig.byName[oreType]
 	if oreData == nil then
 		return false
 	end
 
-	local nodePosition = nodeInstance:IsA("Model") and nodeInstance:GetPivot().Position or nodeInstance.Position
+	local nodePosition = OreNodeUtil.GetPosition(nodeModel)
 	local xpReward = math.max(5, oreData.baseValue)
 
-	local dropType = nodeInstance:GetAttribute("DropType")
+	local dropType = nodeModel:GetAttribute("DropType")
 	local itemRewards = {}
 	if dropType then
 		local drops = dropsConfig.types[dropType]
@@ -62,8 +64,8 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 
 	signalTutorialEvent:Fire(player, "getItem")
 
-	local breakEvent = nodeInstance:FindFirstChild("NodeBreak")
-	if breakEvent then
+	local breakEvent = nodeModel:FindFirstChild("NodeBreak")
+	if breakEvent and breakEvent:IsA("BindableEvent") then
 		breakEvent:Fire()
 	end
 

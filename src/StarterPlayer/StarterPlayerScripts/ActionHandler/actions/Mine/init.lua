@@ -41,26 +41,19 @@ local function getTrack(humanoid: Humanoid): AnimationTrack?
 end
 
 -- Per-node shake state (client-local)
-local nodeOrigins: {[Instance]: CFrame} = {}
-local shakeVersion: {[Instance]: number} = {}
-local tierWarnings: {[Instance]: TierWarningState} = {}
+local nodeOrigins: {[Model]: CFrame} = {}
+local shakeVersion: {[Model]: number} = {}
+local tierWarnings: {[Model]: TierWarningState} = {}
 
-local function getNodeCFrame(node: Instance): CFrame
-	if node:IsA("Model") then
-		return (node :: Model):GetPivot()
-	end
-	return (node :: BasePart).CFrame
+local function getNodeCFrame(node: Model): CFrame
+	return node:GetPivot()
 end
 
-local function setNodeCFrame(node: Instance, cf: CFrame)
-	if node:IsA("Model") then
-		(node :: Model):PivotTo(cf)
-	else
-		(node :: BasePart).CFrame = cf
-	end
+local function setNodeCFrame(node: Model, cf: CFrame)
+	node:PivotTo(cf)
 end
 
-local function shakeNode(node: Instance)
+local function shakeNode(node: Model)
 	-- Store origin on first hit so rapid successive hits restore to the same position
 	if not nodeOrigins[node] then
 		nodeOrigins[node] = getNodeCFrame(node)
@@ -119,7 +112,7 @@ local function createTierWarningLabel(text: string, color: Color3, position: UDi
 	return label
 end
 
-local function clearTierWarning(node: Instance, gui: BillboardGui)
+local function clearTierWarning(node: Model, gui: BillboardGui)
 	local state = tierWarnings[node]
 	if state and state.gui == gui then
 		tierWarnings[node] = nil
@@ -129,7 +122,7 @@ local function clearTierWarning(node: Instance, gui: BillboardGui)
 	end
 end
 
-local function showTierWarning(node: Instance, requiredTier: number, pickaxeTier: number)
+local function showTierWarning(node: Model, requiredTier: number, pickaxeTier: number)
 	local previousState = tierWarnings[node]
 	local version = (previousState and previousState.version or 0) + 1
 	if previousState then
@@ -137,13 +130,18 @@ local function showTierWarning(node: Instance, requiredTier: number, pickaxeTier
 	end
 
 	local billboardGui = Instance.new("BillboardGui")
+	local adornee = node.PrimaryPart
+	if adornee == nil then
+		return
+	end
 	billboardGui.Name = "TierWarning"
 	billboardGui.AlwaysOnTop = true
 	billboardGui.LightInfluence = 0
 	billboardGui.MaxDistance = 80
 	billboardGui.Size = UDim2.fromOffset(200, 56)
 	billboardGui.StudsOffset = TIER_WARNING_INITIAL_OFFSET
-	billboardGui.Parent = node
+	billboardGui.Adornee = adornee
+	billboardGui.Parent = adornee
 
 	local container = Instance.new("Frame")
 	container.BackgroundTransparency = 1
@@ -244,7 +242,7 @@ function MineAction.Activate()
 		(hrpCFrame * CFrame.Angles( math.rad(45), 0, 0)).LookVector,  -- 45° down
 	}
 
-	local targetNode = nil
+	local targetNode: Model? = nil
 	local hitPosition = nil
 
 	for _, direction in ipairs(rayDirections) do
@@ -252,7 +250,7 @@ function MineAction.Activate()
 		if result then
 			local current = result.Instance
 			while current and current ~= workspace do
-				if CollectionService:HasTag(current, "OreNode") then
+				if current:IsA("Model") and CollectionService:HasTag(current, "OreNode") then
 					targetNode = current
 					hitPosition = result.Position
 					break

@@ -7,6 +7,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local OreNodeService = require(modules.OreNodeService)
+local OreNodeUtil = require(modules.OreNodeUtil)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -41,7 +42,7 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 	end
 
 	-- Validate node exists and is tagged
-	if nodeInstance == nil or nodeInstance.Parent == nil then
+	if nodeInstance == nil or nodeInstance.Parent == nil or not nodeInstance:IsA("Model") then
 		return { success = false, cooldown = 0.1 }
 	end
 	if not CollectionService:HasTag(nodeInstance, "OreNode") then
@@ -54,7 +55,8 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	if humanoidRootPart == nil then return { success = false, cooldown = 0.5 } end
 
-	local nodePosition = nodeInstance:IsA("Model") and nodeInstance:GetPivot().Position or nodeInstance.Position
+	local nodeModel = nodeInstance :: Model
+	local nodePosition = OreNodeUtil.GetPosition(nodeModel)
 	local distance = (nodePosition - humanoidRootPart.Position).Magnitude
 	if distance > globalConfig.MINE_REACH_DISTANCE then
 		return { success = false, cooldown = 0.1 }
@@ -64,7 +66,7 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 	local equippedPickaxe = PlayerDataHandler.GetEquippedPickaxe(player)
 	local pickaxeTier = GearConfig.GetTierForItem(equippedPickaxe) or 1
 
-	local oreType = nodeInstance:GetAttribute("OreType") or "Stone"
+	local oreType = nodeModel:GetAttribute("OreType") or "Stone"
 	local oreData = OreConfig.byName[oreType]
 	if oreData == nil then
 		return { success = false, cooldown = 0.5 }
@@ -88,14 +90,14 @@ function endpoint.Call(player: Player, nodeInstance: Instance, hitPosition: Vect
 	local miningDamage = StatCalculation.GetMiningDamage(pickaxeTier)
 
 	-- Reduce node HP
-	local currentHP = nodeInstance:GetAttribute("CurrentHP") or nodeInstance:GetAttribute("NodeHP") or oreData.nodeHP
+	local currentHP = nodeModel:GetAttribute("CurrentHP") or nodeModel:GetAttribute("NodeHP") or oreData.nodeHP
 	currentHP = currentHP - miningDamage
-	nodeInstance:SetAttribute("CurrentHP", currentHP)
+	nodeModel:SetAttribute("CurrentHP", currentHP)
 
 	signalTutorialEvent:Fire(player, "mine")
 
 	if currentHP <= 0 then
-		OreNodeService.BreakNode(player, nodeInstance)
+		OreNodeService.BreakNode(player, nodeModel)
 
 		return { success = true, cooldown = globalConfig.MINE_SWING_COOLDOWN, broken = true }
 	end

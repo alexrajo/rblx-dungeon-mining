@@ -4,7 +4,7 @@ local ProfileService = require(ReplicatedStorage.services.ProfileService)
 local DatabaseClient = {}
 DatabaseClient.__index = DatabaseClient
 
-local DATASTORE_PREFIX = "PlayerData1_"
+local DATASTORE_PREFIX = "PlayerData2_"
 
 function updatePlayerDataFolder(playerDataFolder: Folder, dbProfile)
 	if playerDataFolder == nil then warn("updatePlayerDataFolder: player data folder was not provided / was nil!") return end

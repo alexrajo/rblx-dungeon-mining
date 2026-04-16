@@ -4,6 +4,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local OreNodeService = require(modules.OreNodeService)
+local OreNodeUtil = require(modules.OreNodeUtil)
 
 local configs = ReplicatedStorage.configs
 local BombConfig = require(configs.BombConfig)
@@ -56,7 +57,7 @@ function BombService.ResolveExplosion(player: Player, bombItemName: string, posi
 	end
 
 	for _, nodeInstance in ipairs(CollectionService:GetTagged("OreNode")) do
-		if nodeInstance.Parent == nil then
+		if nodeInstance.Parent == nil or not nodeInstance:IsA("Model") then
 			continue
 		end
 
@@ -64,13 +65,11 @@ function BombService.ResolveExplosion(player: Player, bombItemName: string, posi
 			continue
 		end
 
-		local nodePosition = getInstancePosition(nodeInstance)
-		if nodePosition == nil then
-			continue
-		end
+		local nodeModel = nodeInstance :: Model
+		local nodePosition = OreNodeUtil.GetPosition(nodeModel)
 
 		if getHorizontalDistance(position, nodePosition) <= bombData.radius then
-			OreNodeService.BreakNode(player, nodeInstance)
+			OreNodeService.BreakNode(player, nodeModel)
 		end
 	end
 

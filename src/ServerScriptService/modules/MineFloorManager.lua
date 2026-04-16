@@ -6,6 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local CaveUtil = require(modules.CaveUtil)
+local OreNodeUtil = require(modules.OreNodeUtil)
 
 local configs = ReplicatedStorage.configs
 local MineLayerConfig = require(configs.MineLayerConfig)
@@ -48,17 +49,6 @@ function MineFloorManager.GetLayerForFloor(floor: number): (number?, table?)
 	end
 	return nil, nil
 end
-
--- Ore type → BrickColor mapping
-local ORE_COLORS = {
-	Stone = BrickColor.new("Medium stone grey"),
-	Copper = BrickColor.new("Nougat"),
-	Iron = BrickColor.new("Dark stone grey"),
-	Gold = BrickColor.new("Bright yellow"),
-	Diamond = BrickColor.new("Cyan"),
-	Obsidian = BrickColor.new("Really black"),
-	Mythril = BrickColor.new("Bright violet"),
-}
 
 local NUM_LIGHTS = 4
 local EXTRA_LADDER_REVEAL_CHANCE = 0.05
@@ -425,20 +415,20 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 			break
 		end
 
-		local node = Instance.new("Part")
-		node.Name = oreType .. "Node_" .. i
-		node.Size = Vector3.new(4, 4, 4)
-		node.Shape = Enum.PartType.Block
-		-- floorPositions is sampled from the walkable air cell above the floor, so ground ore nodes sit lower.
-		node.Position = floorPositions[spawnIndex] - Vector3.new(0, node.Size.Y / 2, 0)
-		node.Anchored = true
-		node.Material = Enum.Material.Rock
-		node.BrickColor = ORE_COLORS[oreType] or BrickColor.new("Medium stone grey")
+		local nodeRef = OreNodeUtil.GetRef(oreType)
+		if nodeRef == nil then continue end
 
-		node:SetAttribute("FloorNumber", floorNumber)
-		node:SetAttribute("OreType", oreType)
-		node:SetAttribute("TierRequired", oreData.minPickaxeTier)
-		node:SetAttribute("NodeHP", oreData.nodeHP)
+		local node = nodeRef:Clone()
+		node.Name = oreType .. "Node_" .. i
+		if OreNodeUtil.EnsurePrimaryPart(node) == nil then
+			node:Destroy()
+			continue
+		end
+		OreNodeUtil.AnchorModel(node)
+
+		-- floorPositions are walkable air-cell centers; move down to the actual floor surface.
+		node:PivotTo(CFrame.new(OreNodeUtil.GetFloorPlacementPosition(floorPositions[spawnIndex])))
+		OreNodeUtil.ApplyAttributes(node, floorNumber, oreType, oreData)
 		CollectionService:AddTag(node, "OreNode")
 
 		node.Parent = floorFolder
@@ -455,7 +445,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 		-- Scale ladder reveals with ore count: 1 base per 5 nodes (minimum 1),
 		-- plus a 35% chance for one extra reveal.
-		local baseRevealCount = math.max(1, math.floor(numOreNodes / 5))
+		local baseRevealCount = math.max(1, math.floor(#spawnedOreNodes / 5))
 		local revealCount = baseRevealCount
 		if #revealCandidates > baseRevealCount and math.random() <= EXTRA_LADDER_REVEAL_CHANCE then
 			revealCount += 1
