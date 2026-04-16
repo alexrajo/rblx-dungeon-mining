@@ -1,3 +1,4 @@
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
@@ -20,19 +21,48 @@ local RE_ItemDrop = APIService.GetEvent("DropItems")
 local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
 local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
 
+local function createLadder(position: Vector3, parent: Instance, floorNumber: number?)
+	local ladder = Instance.new("Part")
+	ladder.Name = "Ladder"
+	ladder.Size = Vector3.new(4, 6, 4)
+	ladder.Position = position
+	ladder.Anchored = true
+	ladder.Material = Enum.Material.Wood
+	ladder.BrickColor = BrickColor.new("Brown")
+	if floorNumber ~= nil then
+		ladder:SetAttribute("FloorNumber", floorNumber)
+	end
+	ladder:SetAttribute("LadderAction", "descend")
+	ladder:SetAttribute("LadderVariant", "descending")
+	CollectionService:AddTag(ladder, "MineLadder")
+	ladder.Parent = parent
+
+	return ladder
+end
+
 function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boolean
 	if nodeInstance == nil or nodeInstance.Parent == nil or not nodeInstance:IsA("Model") then
 		return false
 	end
 
 	local nodeModel = nodeInstance :: Model
+	if nodeModel:GetAttribute("Broken") then
+		return false
+	end
+	nodeModel:SetAttribute("Broken", true)
+
 	local oreType = nodeModel:GetAttribute("OreType") or "Stone"
 	local oreData = OreConfig.byName[oreType]
 	if oreData == nil then
+		nodeModel:SetAttribute("Broken", nil)
 		return false
 	end
 
+	local originalParent = nodeModel.Parent
 	local nodePosition = OreNodeUtil.GetPosition(nodeModel)
+	local revealPosition = nodePosition + Vector3.new(0, 3, 0)
+	local floorNumber = nodeModel:GetAttribute("FloorNumber")
+	local revealsLadder = nodeModel:GetAttribute("RevealsLadder")
 	local xpReward = math.max(5, oreData.baseValue)
 
 	local dropType = nodeModel:GetAttribute("DropType")
@@ -64,10 +94,11 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 
 	signalTutorialEvent:Fire(player, "getItem")
 
-	local breakEvent = nodeModel:FindFirstChild("NodeBreak")
-	if breakEvent and breakEvent:IsA("BindableEvent") then
-		breakEvent:Fire()
+	if revealsLadder and originalParent and originalParent.Parent then
+		createLadder(revealPosition, originalParent, floorNumber)
 	end
+
+	nodeModel:Destroy()
 
 	return true
 end

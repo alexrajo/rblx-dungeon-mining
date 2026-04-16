@@ -429,9 +429,9 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		-- floorPositions are walkable air-cell centers; move down to the actual floor surface.
 		node:PivotTo(CFrame.new(OreNodeUtil.GetFloorPlacementPosition(floorPositions[spawnIndex])))
 		OreNodeUtil.ApplyAttributes(node, floorNumber, oreType, oreData)
-		CollectionService:AddTag(node, "OreNode")
 
 		node.Parent = floorFolder
+		CollectionService:AddTag(node, "OreNode")
 		table.insert(spawnedOreNodes, node)
 	end
 
