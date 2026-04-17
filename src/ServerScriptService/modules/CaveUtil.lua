@@ -13,6 +13,10 @@ local CAVE_SIZE = 100
 -- How many blocks deep the floor fills below the worm path
 local CAVE_FLOOR_DEPTH = 2
 
+-- Lowest carved cell that can become playable cave air. Lower cells produce
+-- walkable surfaces inside or under the brown baseplate.
+local MIN_PLAYABLE_AIR_GY = 1
+
 -- How many blocks of roof sit above the worm path.
 -- The worm sphere carves naturally into this, giving an uneven roof.
 -- Increase for a taller cave with more ceiling variation.
@@ -258,7 +262,11 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 	for w = 1, NUM_WORMS do
 		local carved = runWorm(position, w, seed)
 		for key, v in pairs(carved) do
-			allCarved[key] = v
+			local _, yStr = string.match(key, "^(-?%d+),(-?%d+),(-?%d+)$")
+			local gy = tonumber(yStr)
+			if gy ~= nil and gy >= MIN_PLAYABLE_AIR_GY then
+				allCarved[key] = v
+			end
 		end
 	end
 
@@ -284,7 +292,7 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 			continue
 		end
 
-		if gy >= -CAVE_FLOOR_DEPTH + 1 and gy <= 1 then
+		if gy >= MIN_PLAYABLE_AIR_GY and gy <= CAVE_ROOF_HEIGHT then
 			local belowKey = gx .. "," .. (gy - 1) .. "," .. gz
 			local belowIsSolid = not allCarved[belowKey] and not inSpawnZone(gx, gz)
 
