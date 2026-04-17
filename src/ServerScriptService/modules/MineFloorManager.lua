@@ -51,8 +51,7 @@ function MineFloorManager.GetLayerForFloor(floor: number): (number?, table?)
 end
 
 local NUM_LIGHTS = 4
-local EXTRA_LADDER_REVEAL_CHANCE = 0.05
-local ORES_PER_LADDER_REVEAL = 5
+local ORES_PER_LADDER_REVEAL = 50
 local ASCENDING_LADDER_OFFSET = Vector3.new(0, 3, 12)
 local REWARD_ROOM_SIZE = Vector3.new(48, 20, 48)
 local REWARD_ROOM_WALL_THICKNESS = 2
@@ -448,9 +447,6 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		-- plus a chance for one extra reveal.
 		local baseRevealCount = math.max(1, math.floor(#spawnedOreNodes / ORES_PER_LADDER_REVEAL))
 		local revealCount = baseRevealCount
-		if #revealCandidates > baseRevealCount and math.random() <= EXTRA_LADDER_REVEAL_CHANCE then
-			revealCount += 1
-		end
 		revealCount = math.min(revealCount, #revealCandidates)
 
 		for i = 1, revealCount do
