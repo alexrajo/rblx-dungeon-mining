@@ -13,6 +13,10 @@ local CAVE_SIZE = 100
 -- How many blocks deep the floor fills below the worm path
 local CAVE_FLOOR_DEPTH = 2
 
+-- Lowest solid grid layer to instantiate. The layer below this is hidden by
+-- the baseplate underside and only wastes parts.
+local MIN_GENERATED_SOLID_GY = -CAVE_FLOOR_DEPTH + 1
+
 -- Lowest carved cell that can become playable cave air. Lower cells produce
 -- walkable surfaces inside or under the brown baseplate.
 local MIN_PLAYABLE_AIR_GY = 1
@@ -334,7 +338,7 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 
 	-- --- Fill the cave volume, surface blocks only ---
 	for x = -halfSize, halfSize do
-		for y = -CAVE_FLOOR_DEPTH, CAVE_ROOF_HEIGHT do
+		for y = MIN_GENERATED_SOLID_GY, CAVE_ROOF_HEIGHT do
 			for z = -halfSize, halfSize do
 				-- This position is air; nothing to place
 				if allCarved[x .. "," .. y .. "," .. z] or inSpawnZone(x, z) then
