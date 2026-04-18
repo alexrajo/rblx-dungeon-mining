@@ -137,14 +137,17 @@ local function createDescendingLadder(position: Vector3, parent: Instance, floor
 end
 
 local function createRewardChest(position: Vector3, parent: Instance, floorNumber: number)
-	local chest = Instance.new("Part")
+	local refs = ReplicatedStorage:FindFirstChild("refs")
+	local chestRef = if refs ~= nil then refs:FindFirstChild("Chest") else nil
+	if chestRef == nil or not chestRef:IsA("Model") then
+		warn("MineFloorManager: Missing ReplicatedStorage.refs.Chest model")
+		return nil
+	end
+
+	local chest = chestRef:Clone()
 	chest.Name = "RewardChest"
-	chest.Size = Vector3.new(5, 4, 5)
-	chest.CFrame = CFrame.new(position)
-	chest.Anchored = true
-	chest.Material = Enum.Material.WoodPlanks
-	chest.BrickColor = BrickColor.new("Reddish brown")
 	chest:SetAttribute("FloorNumber", floorNumber)
+	chest:PivotTo(CFrame.new(position))
 	CollectionService:AddTag(chest, "MineRewardChest")
 	chest.Parent = parent
 
@@ -593,7 +596,13 @@ local function teleportToFloor(player: Player, floorNumber: number)
 			local entry = floorPool[floorNumber]
 			local spawnPosition = if entry then entry.spawnPosition else getFloorOrigin(floorNumber)
 			local rootHeightOffset = humanoid.HipHeight + (humanoidRootPart.Size.Y / 2)
-			humanoidRootPart.CFrame = CFrame.new(spawnPosition + Vector3.new(0, rootHeightOffset, 0))
+			local targetCFrame = CFrame.new(spawnPosition + Vector3.new(0, rootHeightOffset, 0))
+
+			humanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+			humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+			humanoidRootPart.CFrame = targetCFrame
+			humanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+			humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
 		end
 	end
 end

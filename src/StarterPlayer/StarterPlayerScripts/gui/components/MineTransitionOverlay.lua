@@ -22,12 +22,12 @@ local FADE_TWEEN_INFO = TweenInfo.new(FADE_DURATION, Enum.EasingStyle.Sine, Enum
 
 local MineTransitionOverlay = Roact.Component:extend("MineTransitionOverlay")
 
-local function getExpectedFloorRootName(floorNumber: number): string
+local function getExpectedSpawnSupport(floorNumber: number): (string, string)
 	if MineRewardFloorConfig.IsRewardFloor(floorNumber) then
-		return "RewardRoom"
+		return "RewardRoom", "Floor"
 	end
 
-	return "Cave"
+	return "Cave", "SpawnPlatform"
 end
 
 function MineTransitionOverlay:init()
@@ -76,7 +76,13 @@ function MineTransitionOverlay:isMineFloorReady(floorNumber: number): boolean
 		return false
 	end
 
-	return floorFolder:FindFirstChild(getExpectedFloorRootName(floorNumber)) ~= nil
+	local rootName, supportName = getExpectedSpawnSupport(floorNumber)
+	local floorRoot = floorFolder:FindFirstChild(rootName)
+	if floorRoot == nil then
+		return false
+	end
+
+	return floorRoot:FindFirstChild(supportName) ~= nil
 end
 
 function MineTransitionOverlay:waitForMineFloorReady(floorNumber: number): boolean
@@ -108,10 +114,8 @@ function MineTransitionOverlay:waitForMineFloorReady(floorNumber: number): boole
 	end
 
 	local function watchFloorFolder(folder: Instance)
-		table.insert(connections, folder.ChildAdded:Connect(function(child: Instance)
-			if child.Name == getExpectedFloorRootName(floorNumber) then
-				resolveIfReady()
-			end
+		table.insert(connections, folder.DescendantAdded:Connect(function()
+			resolveIfReady()
 		end))
 	end
 

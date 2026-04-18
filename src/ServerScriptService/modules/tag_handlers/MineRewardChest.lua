@@ -25,12 +25,19 @@ local function getRewardDescription(rewardData): string
 end
 
 function TagHandler.Apply(instance: Instance)
-	if not instance:IsA("BasePart") then
-		warn("MineRewardChest: Expected a BasePart, got", instance:GetFullName())
+	if not instance:IsA("Model") then
+		warn("MineRewardChest: Expected a Model, got", instance:GetFullName())
 		return
 	end
 
-	local existingPrompt = instance:FindFirstChild(PROMPT_NAME)
+	local chestModel = instance :: Model
+	local promptHost = chestModel.PrimaryPart
+	if promptHost == nil then
+		warn("MineRewardChest: Chest model is missing PrimaryPart", chestModel:GetFullName())
+		return
+	end
+
+	local existingPrompt = promptHost:FindFirstChild(PROMPT_NAME)
 	if existingPrompt ~= nil then
 		existingPrompt:Destroy()
 	end
@@ -42,7 +49,7 @@ function TagHandler.Apply(instance: Instance)
 	prompt.HoldDuration = 3
 	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
-	prompt.Parent = instance
+	prompt.Parent = promptHost
 
 	prompt.Triggered:Connect(function(player: Player)
 		if Players:GetPlayerFromCharacter(player.Character) ~= player then
@@ -53,7 +60,7 @@ function TagHandler.Apply(instance: Instance)
 			return
 		end
 
-		local floorNumber = instance:GetAttribute("FloorNumber")
+		local floorNumber = chestModel:GetAttribute("FloorNumber")
 		if type(floorNumber) ~= "number" then
 			return
 		end

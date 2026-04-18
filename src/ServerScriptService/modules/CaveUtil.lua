@@ -49,6 +49,8 @@ local WORM_Y_VARIATION = 2
 
 -- Radius (in studs) of the guaranteed open spawn area at the cave center
 local SPAWN_CLEAR_RADIUS = 16
+local SPAWN_PLATFORM_SIZE = Vector3.new(12, 1, 12)
+local SPAWN_PLATFORM_SURFACE_CLEARANCE = 0.05
 
 -- How many blocks from the edge the gradual closing begins.
 -- Tunnels shrink to nothing by the time they reach the cave boundary.
@@ -194,6 +196,24 @@ local function createShellPart(
 	return part
 end
 
+local function getFloorSurfacePosition(floorPosition: Vector3): Vector3
+	return floorPosition - Vector3.new(0, BLOCK_SIZE, 0)
+end
+
+local function createSpawnPlatform(parent: Instance, surfacePosition: Vector3): Part
+	local platform = Instance.new("Part")
+	platform.Name = "SpawnPlatform"
+	platform.Size = SPAWN_PLATFORM_SIZE
+	platform.CFrame = CFrame.new(surfacePosition - Vector3.new(0, SPAWN_PLATFORM_SIZE.Y / 2, 0))
+	platform.Anchored = true
+	platform.CanCollide = true
+	platform.Material = BASE_MATERIAL
+	platform.BrickColor = BASE_COLOR
+	platform.Parent = parent
+
+	return platform
+end
+
 -- ============================================================
 -- PUBLIC API
 -- ============================================================
@@ -318,8 +338,8 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 		warn(("CaveUtil.GenerateCave rejected %d out-of-bounds floor candidates"):format(rejectedOutOfBoundsFloorPositions))
 	end
 
-	-- Spawn players at the center clearing, with the Y coordinate aligned to the
-	-- generated floor surface so the character does not drop after teleporting.
+	-- Spawn players on the nearest real walkable floor candidate. Keeping the
+	-- candidate's X/Z avoids placing the character over unsupported spawn air.
 	if #floorPositions > 0 then
 		local bestSpawnPosition = floorPositions[1]
 		local bestDistance = math.huge
@@ -333,8 +353,11 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 			end
 		end
 
-		spawnPosition = Vector3.new(position.X, bestSpawnPosition.Y, position.Z)
+		spawnPosition = getFloorSurfacePosition(bestSpawnPosition)
+			+ Vector3.new(0, SPAWN_PLATFORM_SURFACE_CLEARANCE, 0)
 	end
+
+	createSpawnPlatform(cave, spawnPosition)
 
 	-- --- Fill the cave volume, surface blocks only ---
 	for x = -halfSize, halfSize do
