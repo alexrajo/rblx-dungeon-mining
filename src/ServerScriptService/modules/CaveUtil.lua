@@ -200,19 +200,6 @@ local function getFloorSurfacePosition(floorPosition: Vector3): Vector3
 	return floorPosition - Vector3.new(0, BLOCK_SIZE, 0)
 end
 
-local function createSpawnPlatform(parent: Instance, surfacePosition: Vector3): Part
-	local platform = Instance.new("Part")
-	platform.Name = "SpawnPlatform"
-	platform.Size = SPAWN_PLATFORM_SIZE
-	platform.CFrame = CFrame.new(surfacePosition - Vector3.new(0, SPAWN_PLATFORM_SIZE.Y / 2, 0))
-	platform.Anchored = true
-	platform.CanCollide = true
-	platform.Material = BASE_MATERIAL
-	platform.BrickColor = BASE_COLOR
-	platform.Parent = parent
-
-	return platform
-end
 
 -- ============================================================
 -- PUBLIC API
@@ -357,7 +344,6 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 			+ Vector3.new(0, SPAWN_PLATFORM_SURFACE_CLEARANCE, 0)
 	end
 
-	createSpawnPlatform(cave, spawnPosition)
 
 	-- --- Fill the cave volume, surface blocks only ---
 	for x = -halfSize, halfSize do
