@@ -53,8 +53,8 @@ function StatCalculation.GetPlayerDefense(helmetTier: number, chestplateTier: nu
 	return total
 end
 
-function StatCalculation.GetPlayerMaxHealth(level: number): number
-	return 100 + 5 * (level - 1)
+function StatCalculation.GetPlayerMaxHealth(_level: number): number
+	return 100
 end
 
 function StatCalculation.GetPlayerMoveSpeed(bootsTier: number): number

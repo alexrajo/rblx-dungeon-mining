@@ -3,11 +3,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
 
-function updateCharacter(character: Model, level: number)
+function updateCharacter(character: Model)
 	local humanoid = character:FindFirstChild("Humanoid")
 	if not humanoid then return end
 
-	local maxHealth = StatCalculation.GetPlayerMaxHealth(level)
+	local maxHealth = StatCalculation.GetPlayerMaxHealth(1)
 	humanoid.MaxHealth = maxHealth
 	humanoid.Health = maxHealth
 
@@ -16,24 +16,13 @@ function updateCharacter(character: Model, level: number)
 end
 
 function playerAdded(player: Player)
-	local allPlayerData = ReplicatedStorage:WaitForChild("PlayerData")
-	local playerData = allPlayerData:WaitForChild(player.Name)
-	local levelValue = playerData:WaitForChild("Level")
-
 	player.CharacterAdded:Connect(function(character)
-		updateCharacter(character, levelValue.Value)
-	end)
-
-	levelValue.Changed:Connect(function(level)
-		local character = player.Character
-		if character then
-			updateCharacter(character, levelValue.Value)
-		end
+		updateCharacter(character)
 	end)
 
 	local character = player.Character
 	if character then
-		updateCharacter(character, levelValue.Value)
+		updateCharacter(character)
 	end
 end
 
