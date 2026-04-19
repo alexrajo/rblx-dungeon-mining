@@ -21,6 +21,7 @@ function ResourcesView:render()
 			for _, item in ipairs(inventory) do
 				local name = item.name
 				local amount = item.value
+				if type(amount) ~= "number" then continue end
 				if amount <= 0 then continue end
 				if GearConfig.GetItemData(name) ~= nil then continue end
 

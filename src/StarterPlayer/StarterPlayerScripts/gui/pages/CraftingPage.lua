@@ -16,6 +16,7 @@ local TextButton = require(ModuleIndex.TextButton)
 local TextLabel = require(ModuleIndex.TextLabel)
 local Panel = require(ModuleIndex.Panel)
 local ItemCounter = require(ModuleIndex.ItemCounter)
+local InventoryUtils = require(ModuleIndex.InventoryUtils)
 
 local StatsContext = require(ModuleIndex.StatsContext)
 
@@ -50,12 +51,7 @@ function CraftingPage:_renderContent(statsData)
 
 	-- Helper to get owned amount
 	local function getOwned(itemName)
-		for _, entry in ipairs(inventory) do
-			if entry.name == itemName then
-				return entry.value
-			end
-		end
-		return 0
+		return InventoryUtils.GetInventoryCount(statsData, itemName)
 	end
 
 	if selectedRecipe ~= nil then

@@ -42,7 +42,35 @@ function HotbarConfig.IsEntryHotbarEligible(itemName: string): boolean
 	return slotName == "Pickaxe" or slotName == "Weapon"
 end
 
-function HotbarConfig.IsEntryAvailable(itemName: string, playerData): boolean
+function HotbarConfig.ResolveEntryItemName(entryId: string?, playerData): string
+	if type(entryId) ~= "string" or entryId == "" then
+		return ""
+	end
+
+	if BombConfig.IsBombItem(entryId) or ConsumablesConfig.IsConsumableItem(entryId) then
+		return entryId
+	end
+
+	if GearConfig.GetItemData(entryId) ~= nil then
+		return entryId
+	end
+
+	for _, item in ipairs((playerData and playerData.Inventory) or {}) do
+		if item.id == entryId and type(item.name) == "string" then
+			return item.name
+		end
+	end
+
+	return ""
+end
+
+function HotbarConfig.IsEntryIdHotbarEligible(entryId: string, playerData): boolean
+	local itemName = HotbarConfig.ResolveEntryItemName(entryId, playerData)
+	return itemName ~= "" and HotbarConfig.IsEntryHotbarEligible(itemName)
+end
+
+function HotbarConfig.IsEntryAvailable(entryId: string, playerData): boolean
+	local itemName = HotbarConfig.ResolveEntryItemName(entryId, playerData)
 	if itemName == "" or not HotbarConfig.IsEntryHotbarEligible(itemName) then
 		return false
 	end
@@ -66,13 +94,12 @@ function HotbarConfig.IsEntryAvailable(itemName: string, playerData): boolean
 	end
 
 	local tier = GearConfig.GetTierForItem(itemName) or 0
-	if tier <= 1 then
-		return true
+	if tier <= 0 then
+		return false
 	end
 
-	local inventory = playerData.Inventory or {}
-	for _, item in ipairs(inventory) do
-		if item.name == itemName and item.value > 0 then
+	for _, item in ipairs(playerData.Inventory or {}) do
+		if item.id == entryId and item.name == itemName then
 			return true
 		end
 	end

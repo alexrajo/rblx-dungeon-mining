@@ -34,8 +34,11 @@ function updatePlayerDataFolder(playerDataFolder: Folder, dbProfile)
 		elseif valueRef:IsA("Folder") then
 			local expectedEntries = {}
 			for _, entry in pairs(value) do
-				if typeof(entry) == "table" and type(entry.name) == "string" then
-					expectedEntries[entry.name] = true
+				if typeof(entry) == "table" then
+					local entryName = type(entry.id) == "string" and entry.id or entry.name
+					if type(entryName) == "string" then
+						expectedEntries[entryName] = true
+					end
 				end
 			end
 
@@ -48,8 +51,54 @@ function updatePlayerDataFolder(playerDataFolder: Folder, dbProfile)
 			for i, entry in pairs(value) do
 				local success, err = pcall(function()
 					local entryValue = entry.value
-					local entryName = entry.name
+					local entryName = type(entry.id) == "string" and entry.id or entry.name
 					local entryType = typeof(entryValue)
+					if type(entry.id) == "string" then
+						local entryFolder = valueRef:FindFirstChild(entryName)
+						if entryFolder == nil then
+							entryFolder = Instance.new("Folder")
+							entryFolder.Name = entryName
+							entryFolder.Parent = valueRef
+						elseif not entryFolder:IsA("Folder") then
+							entryFolder:Destroy()
+							entryFolder = Instance.new("Folder")
+							entryFolder.Name = entryName
+							entryFolder.Parent = valueRef
+						end
+
+						local expectedFields = {}
+						for fieldName, fieldValue in pairs(entry) do
+							if fieldName == "id" then
+								continue
+							end
+
+							expectedFields[fieldName] = true
+							local fieldType = typeof(fieldValue)
+							local fieldRef = entryFolder:FindFirstChild(fieldName)
+							if fieldRef == nil then
+								if fieldType == "number" then
+									fieldRef = Instance.new("NumberValue")
+								elseif fieldType == "string" then
+									fieldRef = Instance.new("StringValue")
+								elseif fieldType == "boolean" then
+									fieldRef = Instance.new("BoolValue")
+								else
+									error("Type "..fieldType.." not recognized. From field: "..fieldName..", key: "..key)
+								end
+								fieldRef.Name = fieldName
+								fieldRef.Parent = entryFolder
+							end
+							fieldRef.Value = fieldValue
+						end
+
+						for _, field in ipairs(entryFolder:GetChildren()) do
+							if not expectedFields[field.Name] then
+								field:Destroy()
+							end
+						end
+
+						return
+					end
 
 					local entryValueRef = valueRef:FindFirstChild(entryName)
 					if entryValueRef == nil then
@@ -182,6 +231,14 @@ function DatabaseClient:ListenToDataValue(key: string, callback: (value: any) ->
 		self:_addConnection(dataValue.ChildAdded:Connect(function(newVal)
 			if newVal:IsA("ValueBase") then
 				self:_addConnection(newVal.Changed:Connect(onChange))
+			elseif newVal:IsA("Folder") then
+				self:_addConnection(newVal.ChildAdded:Connect(onChange))
+				self:_addConnection(newVal.ChildRemoved:Connect(onChange))
+				for _, child in ipairs(newVal:GetChildren()) do
+					if child:IsA("ValueBase") then
+						self:_addConnection(child.Changed:Connect(onChange))
+					end
+				end
 			end
 			onChange()
 		end))
@@ -190,6 +247,14 @@ function DatabaseClient:ListenToDataValue(key: string, callback: (value: any) ->
 		for _, child in ipairs(dataValue:GetChildren()) do
 			if child:IsA("ValueBase") then
 				self:_addConnection(child.Changed:Connect(onChange))
+			elseif child:IsA("Folder") then
+				self:_addConnection(child.ChildAdded:Connect(onChange))
+				self:_addConnection(child.ChildRemoved:Connect(onChange))
+				for _, field in ipairs(child:GetChildren()) do
+					if field:IsA("ValueBase") then
+						self:_addConnection(field.Changed:Connect(onChange))
+					end
+				end
 			end
 		end
 	end

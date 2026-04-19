@@ -18,8 +18,8 @@ local DEFAULT_VALUE = {
 	EquippedLeggings = "",
 	EquippedBoots = "",
 	HotbarSlots = {
-		{name = "1", value = "Wood Pickaxe"},
-		{name = "2", value = "Wood Sword"},
+		{name = "1", value = ""},
+		{name = "2", value = ""},
 		{name = "3", value = ""},
 		{name = "4", value = ""},
 		{name = "5", value = ""},
@@ -71,8 +71,21 @@ function StatsController:didMount()
 			local function updateFolderStat()
 				local newStat = {}
 				for _, child in ipairs(valueRef:GetChildren()) do
-					if not child:IsA("ValueBase") then continue end
-					table.insert(newStat, {name = child.Name, value = child.Value})
+					if child:IsA("ValueBase") then
+						table.insert(newStat, {name = child.Name, value = child.Value})
+					elseif child:IsA("Folder") then
+						local entry = {
+							id = child.Name,
+						}
+
+						for _, field in ipairs(child:GetChildren()) do
+							if field:IsA("ValueBase") then
+								entry[field.Name] = field.Value
+							end
+						end
+
+						table.insert(newStat, entry)
+					end
 				end
 
 				self:setState({
@@ -81,9 +94,23 @@ function StatsController:didMount()
 			end
 
 			local function connectFolderChild(child)
-				if not child:IsA("ValueBase") then return end
+				if child:IsA("ValueBase") then
+					dataUpdateMaid:GiveTask(child.Changed:Connect(updateFolderStat))
+				elseif child:IsA("Folder") then
+					dataUpdateMaid:GiveTask(child.ChildAdded:Connect(function(field)
+						if field:IsA("ValueBase") then
+							dataUpdateMaid:GiveTask(field.Changed:Connect(updateFolderStat))
+						end
+						updateFolderStat()
+					end))
+					dataUpdateMaid:GiveTask(child.ChildRemoved:Connect(updateFolderStat))
 
-				dataUpdateMaid:GiveTask(child.Changed:Connect(updateFolderStat))
+					for _, field in ipairs(child:GetChildren()) do
+						if field:IsA("ValueBase") then
+							dataUpdateMaid:GiveTask(field.Changed:Connect(updateFolderStat))
+						end
+					end
+				end
 			end
 
 			dataUpdateMaid:GiveTask(valueRef.ChildAdded:Connect(function(child)

@@ -25,11 +25,15 @@ function HotbarToolValidator.Validate(
 	end
 
 	local slotIndex = tool:GetAttribute("HotbarSlot")
+	local entryId = tool:GetAttribute("HotbarEntryId")
 	local itemName = tool:GetAttribute("HotbarItemName")
 	local actionName = tool:GetAttribute("HotbarActionName")
 
 	if type(slotIndex) ~= "number" or slotIndex < 1 or slotIndex > HotbarConfig.MAX_SLOTS then
 		return false, nil, "invalid_hotbar_slot"
+	end
+	if type(entryId) ~= "string" or entryId == "" then
+		return false, nil, "invalid_hotbar_entry"
 	end
 	if type(itemName) ~= "string" or itemName == "" then
 		return false, nil, "invalid_hotbar_item"
@@ -45,8 +49,12 @@ function HotbarToolValidator.Validate(
 	end
 
 	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
-	if hotbarSlots[slotIndex] ~= itemName then
+	if hotbarSlots[slotIndex] ~= entryId then
 		return false, nil, "hotbar_mismatch"
+	end
+
+	if PlayerDataHandler.ResolveInventoryEntryItemName(player, entryId) ~= itemName then
+		return false, nil, "entry_item_mismatch"
 	end
 
 	return true, itemName, nil

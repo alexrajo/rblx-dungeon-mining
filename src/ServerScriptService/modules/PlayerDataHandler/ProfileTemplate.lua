@@ -11,8 +11,8 @@ return {
 	EquippedLeggings = "",
 	EquippedBoots = "",
 	HotbarSlots = {
-		{name = "1", value = "Wood Pickaxe"},
-		{name = "2", value = "Wood Sword"},
+		{name = "1", value = ""},
+		{name = "2", value = ""},
 		{name = "3", value = ""},
 		{name = "4", value = ""},
 		{name = "5", value = ""},

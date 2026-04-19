@@ -5,13 +5,41 @@ local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 local InventoryUtils = {}
 
 function InventoryUtils.GetInventoryCount(data, itemName: string): number
+	local count = 0
 	for _, entry in ipairs(data.Inventory or {}) do
 		if entry.name == itemName then
-			return entry.value
+			if type(entry.value) == "number" then
+				count += entry.value
+			elseif type(entry.id) == "string" then
+				count += 1
+			end
 		end
 	end
 
-	return 0
+	return count
+end
+
+function InventoryUtils.GetInventoryInstance(data, itemId: string)
+	for _, entry in ipairs(data.Inventory or {}) do
+		if entry.id == itemId then
+			return entry
+		end
+	end
+
+	return nil
+end
+
+function InventoryUtils.ResolveEntryItemName(data, entryId: string?): string
+	if type(entryId) ~= "string" or entryId == "" then
+		return ""
+	end
+
+	local itemInstance = InventoryUtils.GetInventoryInstance(data, entryId)
+	if itemInstance ~= nil and type(itemInstance.name) == "string" then
+		return itemInstance.name
+	end
+
+	return entryId
 end
 
 function InventoryUtils.GetBombInventoryCount(data, itemName: string): number?

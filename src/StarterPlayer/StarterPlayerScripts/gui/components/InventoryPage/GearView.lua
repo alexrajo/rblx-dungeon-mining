@@ -30,17 +30,19 @@ function GearView:init()
 	self.rootRef = Roact.createRef()
 
 	self:setState({
+		selectedEntryId = nil,
 		selectedItemName = nil,
 		popupAnchor = nil,
 	})
 end
 
 function GearView:closePopup()
-	if self.state.selectedItemName == nil and self.state.popupAnchor == nil then
+	if self.state.selectedEntryId == nil and self.state.selectedItemName == nil and self.state.popupAnchor == nil then
 		return
 	end
 
 	self:setState({
+		selectedEntryId = Roact.None,
 		selectedItemName = Roact.None,
 		popupAnchor = Roact.None,
 	})
@@ -88,13 +90,13 @@ function GearView:didUpdate(prevProps)
 	end
 end
 
-function GearView:_isItemVisibleInEntries(itemName: string?, gearEntries): boolean
-	if type(itemName) ~= "string" or itemName == "" then
+function GearView:_isEntryVisibleInEntries(entryId: string?, gearEntries): boolean
+	if type(entryId) ~= "string" or entryId == "" then
 		return false
 	end
 
 	for _, gearEntry in ipairs(gearEntries) do
-		if gearEntry.name == itemName then
+		if gearEntry.id == entryId then
 			return true
 		end
 	end
@@ -151,16 +153,17 @@ function GearView:getEquipActionState(itemName: string?, data)
 end
 
 function GearView:equipSelectedItem(data)
+	local selectedEntryId = self.state.selectedEntryId
 	local selectedItemName = self.state.selectedItemName
 	local actionState = self:getEquipActionState(selectedItemName, data)
-	if actionState == nil or actionState.disabled then
+	if actionState == nil or actionState.disabled or type(selectedEntryId) ~= "string" then
 		return
 	end
 
 	if actionState.mode == "hotbar" and actionState.slotIndex ~= nil then
-		assignHotbarSlotEvent:FireServer(actionState.slotIndex, selectedItemName)
+		assignHotbarSlotEvent:FireServer(actionState.slotIndex, selectedEntryId)
 	else
-		equipGearEvent:FireServer(selectedItemName)
+		equipGearEvent:FireServer(selectedEntryId)
 	end
 
 	self:closePopup()
@@ -170,9 +173,9 @@ function GearView:render()
 	return createElement(StatsContext.context.Consumer, {
 		render = function(data)
 			local gearEntries = GearUtils.GetOwnedGearEntries(data)
-			if self.state.selectedItemName ~= nil and not self:_isItemVisibleInEntries(self.state.selectedItemName, gearEntries) then
+			if self.state.selectedEntryId ~= nil and not self:_isEntryVisibleInEntries(self.state.selectedEntryId, gearEntries) then
 				task.defer(function()
-					if self.state.selectedItemName ~= nil and not self:_isItemVisibleInEntries(self.state.selectedItemName, gearEntries) then
+					if self.state.selectedEntryId ~= nil and not self:_isEntryVisibleInEntries(self.state.selectedEntryId, gearEntries) then
 						self:closePopup()
 					end
 				end)
@@ -199,13 +202,14 @@ function GearView:render()
 						gearEntries = gearEntries,
 						itemsPerRow = 5,
 						interactive = true,
-						selectedItemName = self.state.selectedItemName,
+						selectedEntryId = self.state.selectedEntryId,
 						Size = UDim2.new(0.66, -8, 1, 0),
 						Position = UDim2.fromScale(0, 0),
 						AnchorPoint = Vector2.zero,
-						onItemSelected = function(itemName)
+						onItemSelected = function(gearEntry)
 							self:setState({
-								selectedItemName = itemName,
+								selectedEntryId = gearEntry.id,
+								selectedItemName = gearEntry.name,
 								popupAnchor = Roact.None,
 							})
 						end,

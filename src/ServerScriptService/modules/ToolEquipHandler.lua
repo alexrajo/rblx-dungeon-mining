@@ -15,7 +15,7 @@ local SLOT_TO_FOLDER: {[string]: string} = {
 
 type PlayerState = {
 	tools: {[number]: Tool?},
-	itemNames: {[number]: string?},
+	entryIds: {[number]: string?},
 	syncQueued: boolean,
 }
 
@@ -69,7 +69,7 @@ local function destroyTool(state: PlayerState, slotIndex: number)
 		tool:Destroy()
 		state.tools[slotIndex] = nil
 	end
-	state.itemNames[slotIndex] = nil
+	state.entryIds[slotIndex] = nil
 end
 
 local function destroyAllTools(state: PlayerState)
@@ -92,7 +92,7 @@ local function getBackpack(player: Player): Backpack?
 	return nil
 end
 
-local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: number, itemName: string): Tool?
+local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: number, entryId: string, itemName: string): Tool?
 	if itemName == nil or itemName == "" then
 		return nil
 	end
@@ -110,11 +110,12 @@ local function cloneToolForSlot(player: Player, state: PlayerState, slotIndex: n
 	local tool = template:Clone()
 	tool.CanBeDropped = false
 	tool:SetAttribute("HotbarSlot", slotIndex)
+	tool:SetAttribute("HotbarEntryId", entryId)
 	tool:SetAttribute("HotbarItemName", itemName)
 	tool:SetAttribute("HotbarActionName", actionName)
 
 	state.tools[slotIndex] = tool
-	state.itemNames[slotIndex] = itemName
+	state.entryIds[slotIndex] = entryId
 	return tool
 end
 
@@ -132,18 +133,19 @@ local function syncToolsToHotbar(player: Player)
 	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
 	local character = player.Character
 	for slotIndex = 1, HotbarConfig.MAX_SLOTS do
-		local itemName = hotbarSlots[slotIndex] or ""
+		local entryId = hotbarSlots[slotIndex] or ""
+		local itemName = entryId ~= "" and PlayerDataHandler.ResolveInventoryEntryItemName(player, entryId) or ""
 		local existingTool = state.tools[slotIndex]
-		local existingItemName = state.itemNames[slotIndex]
+		local existingEntryId = state.entryIds[slotIndex]
 
 		if itemName == "" or HotbarConfig.GetActionName(itemName) == nil then
 			destroyTool(state, slotIndex)
 			continue
 		end
 
-		if existingTool == nil or existingTool.Parent == nil or existingItemName ~= itemName then
+		if existingTool == nil or existingTool.Parent == nil or existingEntryId ~= entryId then
 			destroyTool(state, slotIndex)
-			existingTool = cloneToolForSlot(player, state, slotIndex, itemName)
+			existingTool = cloneToolForSlot(player, state, slotIndex, entryId, itemName)
 		end
 
 		if existingTool ~= nil and existingTool.Parent ~= backpack and existingTool.Parent ~= character then
@@ -199,7 +201,7 @@ local function onPlayerAdded(player: Player)
 
 	playerStates[player] = {
 		tools = {},
-		itemNames = {},
+		entryIds = {},
 		syncQueued = false,
 	}
 

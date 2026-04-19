@@ -79,7 +79,8 @@ function Toolbar:renderToolbar(screenData, statsData)
 	local slotButtons = {}
 	local visibleSlotCount = 0
 	for i = 1, HotbarConfig.MAX_SLOTS do
-		local itemName = hotbarSlots[i] or ""
+		local entryId = hotbarSlots[i] or ""
+		local itemName = HotbarConfig.ResolveEntryItemName(entryId, statsData)
 		if itemName ~= "" then
 			local imageId = HotbarConfig.GetImageId(itemName)
 			local isSelected = selectedSlot == i

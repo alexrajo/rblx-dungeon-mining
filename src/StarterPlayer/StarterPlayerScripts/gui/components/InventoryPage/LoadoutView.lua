@@ -226,7 +226,7 @@ function LoadoutSlotCard:render()
 end
 
 function LoadoutView:getCurrentArmorName(data, slotName: string): string
-	return data["Equipped" .. slotName] or ""
+	return HotbarConfig.ResolveEntryItemName(data["Equipped" .. slotName], data)
 end
 
 function LoadoutView:init()
@@ -283,7 +283,8 @@ function LoadoutView:renderHotbarColumn(data, layoutMetrics)
 	local cards = {}
 
 	for _, slotInfo in ipairs(HOTBAR_SLOT_DEFINITIONS) do
-		local itemName = hotbarSlots[slotInfo.slotIndex] or ""
+		local entryId = hotbarSlots[slotInfo.slotIndex] or ""
+		local itemName = HotbarConfig.ResolveEntryItemName(entryId, data)
 		cards["Hotbar" .. tostring(slotInfo.slotIndex)] = createElement(LoadoutSlotCard, {
 			LayoutOrder = slotInfo.slotIndex,
 			Size = UDim2.fromOffset(layoutMetrics.hotbarSlotSize, layoutMetrics.hotbarSlotSize),

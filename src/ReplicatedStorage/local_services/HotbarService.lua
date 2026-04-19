@@ -58,8 +58,8 @@ local function getHumanoid(): Humanoid?
 end
 
 local function getToolForSlot(slotIndex: number): Tool?
-	local expectedItemName = state.slots[slotIndex]
-	if expectedItemName == nil or expectedItemName == "" then
+	local expectedEntryId = state.slots[slotIndex]
+	if expectedEntryId == nil or expectedEntryId == "" then
 		return nil
 	end
 
@@ -71,7 +71,7 @@ local function getToolForSlot(slotIndex: number): Tool?
 		for _, child in ipairs(container:GetChildren()) do
 			if child:IsA("Tool")
 				and child:GetAttribute("HotbarSlot") == slotIndex
-				and child:GetAttribute("HotbarItemName") == expectedItemName
+				and child:GetAttribute("HotbarEntryId") == expectedEntryId
 			then
 				return child
 			end

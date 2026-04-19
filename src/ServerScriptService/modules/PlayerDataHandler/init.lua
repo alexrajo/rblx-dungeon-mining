@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 local Services = ReplicatedStorage.services
 local ProfileService = require(Services.ProfileService)
 local DatabaseClientClass = require(game.ServerScriptService.modules.DatabaseClient)
@@ -20,6 +21,11 @@ local dbClients = {}
 local PlayerDataHandler = {}
 local getStat
 local setStat
+
+local STARTER_HOTBAR_ITEMS = {
+	[1] = "Wood Pickaxe",
+	[2] = "Wood Sword",
+}
 
 local function handleRelease(player, client)
 	dbClients[player] = nil
@@ -68,6 +74,73 @@ local function getPlayerDataSnapshot(player: Player)
 	}
 end
 
+local function isInstanceInventoryItem(itemName: string): boolean
+	return GearConfig.GetItemData(itemName) ~= nil and not GearConfig.IsStackable(itemName)
+end
+
+local function createItemInstance(itemName: string)
+	return {
+		id = HttpService:GenerateGUID(false),
+		name = itemName,
+	}
+end
+
+local function findInventoryInstanceByName(inventory, itemName: string)
+	for _, entry in ipairs(inventory or {}) do
+		if type(entry.id) == "string" and entry.name == itemName then
+			return entry
+		end
+	end
+
+	return nil
+end
+
+local function findInventoryInstanceById(inventory, itemId: string)
+	for _, entry in ipairs(inventory or {}) do
+		if entry.id == itemId and type(entry.name) == "string" then
+			return entry
+		end
+	end
+
+	return nil
+end
+
+local function ensureStarterGear(player: Player)
+	local inventory = table.clone(getStat("Inventory", ProfileTemplate.Inventory, player))
+	local changed = false
+	local starterInstances = {}
+
+	for _, itemName in pairs(STARTER_HOTBAR_ITEMS) do
+		local itemInstance = findInventoryInstanceByName(inventory, itemName)
+		if itemInstance == nil then
+			itemInstance = createItemInstance(itemName)
+			table.insert(inventory, itemInstance)
+			changed = true
+		end
+		starterInstances[itemName] = itemInstance
+	end
+
+	if changed then
+		setStat("Inventory", inventory, player)
+	end
+
+	local slotValues = normalizeHotbarSlots(getStat("HotbarSlots", ProfileTemplate.HotbarSlots, player))
+	local hotbarChanged = false
+	for slotIndex, itemName in pairs(STARTER_HOTBAR_ITEMS) do
+		if slotValues[slotIndex] == "" or slotValues[slotIndex] == itemName then
+			local itemInstance = starterInstances[itemName]
+			if itemInstance ~= nil and slotValues[slotIndex] ~= itemInstance.id then
+				slotValues[slotIndex] = itemInstance.id
+				hotbarChanged = true
+			end
+		end
+	end
+
+	if hotbarChanged then
+		setStat("HotbarSlots", buildStoredHotbarSlots(slotValues), player)
+	end
+end
+
 local function sanitizeHotbarData(player: Player)
 	local playerData = getPlayerDataSnapshot(player)
 	local slotValues = normalizeHotbarSlots(getStat("HotbarSlots", ProfileTemplate.HotbarSlots, player))
@@ -75,7 +148,6 @@ local function sanitizeHotbarData(player: Player)
 
 	for index, entryId in ipairs(slotValues) do
 		local isValid = entryId ~= ""
-			and HotbarConfig.IsEntryHotbarEligible(entryId)
 			and HotbarConfig.IsEntryAvailable(entryId, playerData)
 			and not seenEntries[entryId]
 
@@ -109,6 +181,7 @@ local function initializeClient(player: Player)
 	end
 	dbClients[player] = client
 	TempStats:InitializePlayer(player)
+	ensureStarterGear(player)
 	sanitizeHotbarData(player)
 end
 
@@ -189,11 +262,26 @@ function PlayerDataHandler.GiveLevel(player: Player, amount: number)
 	notificationEvent:FireClient(player, {Type = "levelup", Title = "Level up!", Level = newLevel})
 end
 
--- Inventory (ores, resources, consumables)
+-- Inventory (stackable items and instanced gear)
 function PlayerDataHandler.GiveItems(player: Player, itemsMap: {[string]: number})
 	if next(itemsMap) == nil then return end
 	local ownedItems = getStat("Inventory", {}, player)
-	local pendingItems = table.clone(itemsMap)
+	local pendingItems = {}
+	for itemName, amount in pairs(itemsMap) do
+		local amountToGive = math.floor(amount)
+		if amountToGive == 0 then
+			continue
+		end
+
+		if isInstanceInventoryItem(itemName) then
+			for _ = 1, amountToGive do
+				table.insert(ownedItems, createItemInstance(itemName))
+			end
+		else
+			pendingItems[itemName] = (pendingItems[itemName] or 0) + amountToGive
+		end
+	end
+
 	for i, item in pairs(ownedItems) do
 		local itemName = item.name
 		local itemAmount = item.value
@@ -211,7 +299,8 @@ function PlayerDataHandler.GiveItems(player: Player, itemsMap: {[string]: number
 	end
 
 	for index = #ownedItems, 1, -1 do
-		if ownedItems[index].value <= 0 then
+		local entry = ownedItems[index]
+		if entry.value ~= nil and entry.value <= 0 then
 			table.remove(ownedItems, index)
 		end
 	end
@@ -228,18 +317,51 @@ function PlayerDataHandler.TakeItems(player: Player, itemsMap: {[string]: number
 	PlayerDataHandler.GiveItems(player, tblClone)
 end
 
+function PlayerDataHandler.TakeItemInstances(player: Player, itemIds: {string}): boolean
+	local ownedItems = getStat("Inventory", {}, player)
+	local idsToRemove = {}
+	for _, itemId in ipairs(itemIds) do
+		if type(itemId) ~= "string" or itemId == "" then
+			return false
+		end
+		idsToRemove[itemId] = true
+	end
+
+	for itemId in pairs(idsToRemove) do
+		if findInventoryInstanceById(ownedItems, itemId) == nil then
+			return false
+		end
+	end
+
+	for index = #ownedItems, 1, -1 do
+		local entry = ownedItems[index]
+		if type(entry.id) == "string" and idsToRemove[entry.id] then
+			table.remove(ownedItems, index)
+		end
+	end
+
+	setStat("Inventory", ownedItems, player)
+	sanitizeHotbarData(player)
+	return true
+end
+
 function PlayerDataHandler.GetInventory(player: Player)
 	return getStat("Inventory", ProfileTemplate.Inventory, player)
 end
 
 function PlayerDataHandler.GetItemCount(player: Player, itemName: string): number
 	local inventory = PlayerDataHandler.GetInventory(player)
+	local count = 0
 	for _, entry in pairs(inventory) do
 		if entry.name == itemName then
-			return entry.value
+			if type(entry.value) == "number" then
+				count += entry.value
+			elseif type(entry.id) == "string" then
+				count += 1
+			end
 		end
 	end
-	return 0
+	return count
 end
 
 function PlayerDataHandler.HasItems(player: Player, itemsMap: {[string]: number}): boolean
@@ -252,13 +374,36 @@ function PlayerDataHandler.HasItems(player: Player, itemsMap: {[string]: number}
 end
 
 -- Gear
-function PlayerDataHandler.EquipGear(player: Player, itemName: string, slot: string)
+function PlayerDataHandler.GetItemInstance(player: Player, itemId: string)
+	return findInventoryInstanceById(PlayerDataHandler.GetInventory(player), itemId)
+end
+
+function PlayerDataHandler.ResolveInventoryEntryItemName(player: Player, entryId: string): string
+	local snapshot = getPlayerDataSnapshot(player)
+	return HotbarConfig.ResolveEntryItemName(entryId, snapshot)
+end
+
+function PlayerDataHandler.PlayerOwnsItemInstance(player: Player, itemId: string): boolean
+	return PlayerDataHandler.GetItemInstance(player, itemId) ~= nil
+end
+
+function PlayerDataHandler.EquipGear(player: Player, itemId: string, slot: string)
 	if not GearConfig.IsArmorSlot(slot) then
 		return false
 	end
 
+	local itemInstance = PlayerDataHandler.GetItemInstance(player, itemId)
+	if itemInstance == nil then
+		return false
+	end
+
+	local itemName = itemInstance.name
+	if GearConfig.GetSlotForItem(itemName) ~= slot then
+		return false
+	end
+
 	local fieldName = "Equipped" .. slot
-	setStat(fieldName, itemName, player)
+	setStat(fieldName, itemId, player)
 	sanitizeHotbarData(player)
 	return true
 end
@@ -300,7 +445,7 @@ function PlayerDataHandler.AssignHotbarEntry(player: Player, slotIndex: number, 
 	if type(slotIndex) ~= "number" or slotIndex < 1 or slotIndex > HotbarConfig.MAX_SLOTS then
 		return false
 	end
-	if type(entryId) ~= "string" or not HotbarConfig.IsEntryHotbarEligible(entryId) then
+	if type(entryId) ~= "string" then
 		return false
 	end
 

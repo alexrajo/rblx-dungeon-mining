@@ -15,34 +15,38 @@ local EQUIPPED_FIELDS = {
 }
 
 function GearUtils.GetOwnedGearEntries(data, slotFilter: ((string, {slot: string, tier: number}) -> boolean)?)
-	local inventoryCounts: {[string]: number} = {}
-	for _, entry in ipairs(data.Inventory or {}) do
-		inventoryCounts[entry.name] = entry.value
-	end
-
 	local equippedItems: {[string]: boolean} = {}
 	for _, fieldName in ipairs(EQUIPPED_FIELDS) do
-		local itemName = data[fieldName]
-		if type(itemName) == "string" and itemName ~= "" then
-			equippedItems[itemName] = true
+		local itemId = data[fieldName]
+		if type(itemId) == "string" and itemId ~= "" then
+			equippedItems[itemId] = true
 		end
 	end
-	for _, itemName in ipairs(HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})) do
-		if itemName ~= "" then
-			equippedItems[itemName] = true
+	for _, entryId in ipairs(HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})) do
+		if entryId ~= "" then
+			equippedItems[entryId] = true
 		end
 	end
 
 	local gearEntries = {}
-	for itemName, itemData in pairs(GearConfig.items) do
-		local isStackable = GearConfig.IsStackable(itemName)
-		local isOwned = (isStackable and (inventoryCounts[itemName] or 0) > 0)
-			or (not isStackable and (itemData.tier <= 1 or (inventoryCounts[itemName] or 0) > 0))
-		local isVisible = not equippedItems[itemName]
-		if isOwned and isVisible and (slotFilter == nil or slotFilter(itemName, itemData)) then
-			local amount = isStackable and InventoryUtils.GetInventoryCount(data, itemName) or nil
+	for _, entry in ipairs(data.Inventory or {}) do
+		local itemName = entry.name
+		local itemData = GearConfig.GetItemData(itemName)
+		if itemData == nil then
+			continue
+		end
 
+		local isStackable = GearConfig.IsStackable(itemName)
+		local entryId = isStackable and itemName or entry.id
+		if type(entryId) ~= "string" or entryId == "" then
+			continue
+		end
+
+		local isVisible = not equippedItems[entryId]
+		if isVisible and (slotFilter == nil or slotFilter(itemName, itemData)) then
+			local amount = isStackable and InventoryUtils.GetInventoryCount(data, itemName) or nil
 			table.insert(gearEntries, {
+				id = entryId,
 				name = itemName,
 				amount = amount,
 				slot = itemData.slot,

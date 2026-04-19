@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 local BombConfig = require(ReplicatedStorage.configs.BombConfig)
+local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 
 local GearDetailUtils = {}
 
@@ -44,13 +45,13 @@ end
 
 local function getEquippedItemNameForSlot(slotName: string, statsData): string
 	local equippedFieldName = GearConfig.slotToField[slotName]
-	local equippedItemName = equippedFieldName and statsData[equippedFieldName] or ""
+	local equippedEntryId = equippedFieldName and statsData[equippedFieldName] or ""
 
-	if type(equippedItemName) ~= "string" then
+	if type(equippedEntryId) ~= "string" then
 		return ""
 	end
 
-	return equippedItemName
+	return HotbarConfig.ResolveEntryItemName(equippedEntryId, statsData)
 end
 
 local function getPrimaryStatData(itemName: string, statsData)

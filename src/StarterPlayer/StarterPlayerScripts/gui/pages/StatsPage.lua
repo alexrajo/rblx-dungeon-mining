@@ -57,7 +57,7 @@ function StatsPage:render()
 
 			local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
 			local selectedSlot = data.SelectedHotbarSlot or 0
-			local selectedItemName = hotbarSlots[selectedSlot] or ""
+			local selectedItemName = HotbarConfig.ResolveEntryItemName(hotbarSlots[selectedSlot], data)
 			local selectedSlotName = GearConfig.GetSlotForItem(selectedItemName)
 			local selectedPickaxe = selectedSlotName == "Pickaxe" and selectedItemName or ""
 			local selectedWeapon = selectedSlotName == "Weapon" and selectedItemName or ""
@@ -68,16 +68,16 @@ function StatsPage:render()
 			local leggingsTier = 0
 			local bootsTier = 0
 			if data.EquippedHelmet ~= "" then
-				helmetTier = GearConfig.GetTierForItem(data.EquippedHelmet) or 0
+				helmetTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedHelmet, data)) or 0
 			end
 			if data.EquippedChestplate ~= "" then
-				chestplateTier = GearConfig.GetTierForItem(data.EquippedChestplate) or 0
+				chestplateTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedChestplate, data)) or 0
 			end
 			if data.EquippedLeggings ~= "" then
-				leggingsTier = GearConfig.GetTierForItem(data.EquippedLeggings) or 0
+				leggingsTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedLeggings, data)) or 0
 			end
 			if data.EquippedBoots ~= "" then
-				bootsTier = GearConfig.GetTierForItem(data.EquippedBoots) or 0
+				bootsTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedBoots, data)) or 0
 			end
 
 			local miningPower = pickaxeTier ~= nil and StatCalculation.GetMiningDamage(pickaxeTier) or 0

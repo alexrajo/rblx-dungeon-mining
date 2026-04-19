@@ -15,12 +15,12 @@ function GearGridView:init()
 	self.cellRefs = {}
 end
 
-function GearGridView:_getCellRef(itemName: string)
-	if self.cellRefs[itemName] == nil then
-		self.cellRefs[itemName] = Roact.createRef()
+function GearGridView:_getCellRef(entryId: string)
+	if self.cellRefs[entryId] == nil then
+		self.cellRefs[entryId] = Roact.createRef()
 	end
 
-	return self.cellRefs[itemName]
+	return self.cellRefs[entryId]
 end
 
 function GearGridView:_reportSelectedCellLayout()
@@ -29,20 +29,20 @@ function GearGridView:_reportSelectedCellLayout()
 		return
 	end
 
-	local selectedItemName = self.props.selectedItemName
-	if type(selectedItemName) ~= "string" or selectedItemName == "" then
+	local selectedEntryId = self.props.selectedEntryId
+	if type(selectedEntryId) ~= "string" or selectedEntryId == "" then
 		onSelectedCellLayoutChanged(nil)
 		return
 	end
 
-	local selectedCellRef = self.cellRefs[selectedItemName]
+	local selectedCellRef = self.cellRefs[selectedEntryId]
 	local selectedCell = selectedCellRef and selectedCellRef:getValue()
 	if selectedCell == nil then
 		return
 	end
 
 	onSelectedCellLayoutChanged({
-		itemName = selectedItemName,
+		entryId = selectedEntryId,
 		absolutePosition = selectedCell.AbsolutePosition,
 		absoluteSize = selectedCell.AbsoluteSize,
 	})
@@ -86,11 +86,11 @@ function GearGridView:render()
 	local paddingPixels = 4
 	local gearEntries = self.props.gearEntries or {}
 	local interactive = self.props.interactive == true
-	local selectedItemName = self.props.selectedItemName
+	local selectedEntryId = self.props.selectedEntryId
 	local itemElements = {}
 
 	for _, gearEntry in ipairs(gearEntries) do
-		local elementKey = gearEntry.name
+		local elementKey = gearEntry.id or gearEntry.name
 		local content = createGearCellContent(gearEntry)
 		local cellRef = self:_getCellRef(elementKey)
 
@@ -102,10 +102,10 @@ function GearGridView:render()
 			}, {
 				Cell = createElement(SelectablePanel, {
 					Size = UDim2.fromScale(1, 1),
-					selected = selectedItemName == gearEntry.name,
+					selected = selectedEntryId == elementKey,
 					onSelect = function()
 						if self.props.onItemSelected then
-							self.props.onItemSelected(gearEntry.name)
+							self.props.onItemSelected(gearEntry)
 						end
 					end,
 				}, {

@@ -42,7 +42,7 @@ function ControlsOverlay:willUnmount()
 	end
 end
 
-function ControlsOverlay:renderMobile(screenData)
+function ControlsOverlay:renderMobile(screenData, statsData)
 	local selectedSlot = self.state.hotbar.selectedSlot or 0
 	if selectedSlot == 0 then
 		return createElement("Frame", {
@@ -53,7 +53,8 @@ function ControlsOverlay:renderMobile(screenData)
 	end
 
 	local slots = self.state.hotbar.slots or {}
-	local itemName = slots[selectedSlot] or ""
+	local entryId = slots[selectedSlot] or ""
+	local itemName = HotbarConfig.ResolveEntryItemName(entryId, statsData)
 	if itemName == "" then
 		return createElement("Frame", {
 			Position = self.props.Position,
@@ -98,8 +99,8 @@ function ControlsOverlay:render()
 			end
 
 			return createElement(StatsContext.context.Consumer, {
-				render = function(_statsData)
-					return self:renderMobile(screenData)
+				render = function(statsData)
+					return self:renderMobile(screenData, statsData)
 				end,
 			})
 		end,

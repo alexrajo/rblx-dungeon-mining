@@ -35,35 +35,38 @@ local EQUIPPED_ARMOR_FIELDS = {
 
 local SellPage = Roact.Component:extend("SellPage")
 
-local function buildEquippedItemLookup(statsData): {[string]: boolean}
-	local equippedItems = {}
+local function buildEquippedEntryLookup(statsData): {[string]: boolean}
+	local equippedEntries = {}
 
 	for _, fieldName in ipairs(EQUIPPED_ARMOR_FIELDS) do
-		local itemName = statsData[fieldName]
-		if type(itemName) == "string" and itemName ~= "" then
-			equippedItems[itemName] = true
+		local entryId = statsData[fieldName]
+		if type(entryId) == "string" and entryId ~= "" then
+			equippedEntries[entryId] = true
 		end
 	end
 
-	for _, itemName in ipairs(HotbarConfig.NormalizeStoredSlots(statsData.HotbarSlots or {})) do
+	for _, entryId in ipairs(HotbarConfig.NormalizeStoredSlots(statsData.HotbarSlots or {})) do
+		local itemName = HotbarConfig.ResolveEntryItemName(entryId, statsData)
 		local slotName = GearConfig.GetSlotForItem(itemName)
 		if slotName == "Pickaxe" or slotName == "Weapon" then
-			equippedItems[itemName] = true
+			equippedEntries[entryId] = true
 		end
 	end
 
-	return equippedItems
+	return equippedEntries
 end
 
 function SellPage:init()
 	self:setState({
-		selectedItem = nil,
+		selectedEntryId = nil,
 		sellQuantity = 1,
 		showConfirmDialog = false,
 	})
 end
 
-function SellPage:_renderItemCell(itemName: string, ownedAmount: number, isSelected: boolean, isEquipped: boolean)
+function SellPage:_renderItemCell(cellData, isSelected: boolean, isEquipped: boolean)
+	local itemName = cellData.name
+	local ownedAmount = cellData.owned
 	local itemConfig = ItemLookupService.GetItemDefinitionFromName(itemName) or {}
 	local imageId = itemConfig.imageId or "76280156712677"
 	local price = SellPriceConfig[itemName]
@@ -74,7 +77,7 @@ function SellPage:_renderItemCell(itemName: string, ownedAmount: number, isSelec
 		dominantAxis = Enum.DominantAxis.Width,
 		onSelect = function()
 			self:setState({
-				selectedItem = itemName,
+				selectedEntryId = cellData.id,
 				sellQuantity = 1,
 			})
 		end,
@@ -89,13 +92,13 @@ function SellPage:_renderItemCell(itemName: string, ownedAmount: number, isSelec
 			ScaleType = Enum.ScaleType.Fit,
 			ZIndex = 3,
 		}),
-		QuantityLabel = createElement(TextLabel, {
+		QuantityLabel = ownedAmount ~= nil and createElement(TextLabel, {
 			Text = tostring(ownedAmount),
 			Size = UDim2.fromScale(0.9, 0.2),
 			AnchorPoint = Vector2.new(0.5, 1),
 			Position = UDim2.fromScale(0.5, 0.72),
 			ZIndex = 3,
-		}),
+		}) or nil,
 		PriceRow = createElement("Frame", {
 			BackgroundTransparency = 1,
 			Size = UDim2.fromScale(0.9, 0.2),
@@ -153,39 +156,69 @@ function SellPage:_renderContent(statsData)
 	end
 
 	local inventory = statsData.Inventory or {}
-	local selectedItem = self.state.selectedItem
+	local selectedEntryId = self.state.selectedEntryId
 	local sellQuantity = self.state.sellQuantity
-	local equippedItems = buildEquippedItemLookup(statsData)
+	local equippedEntries = buildEquippedEntryLookup(statsData)
 
-	-- Build lookup of owned items
-	local ownedMap = {}
-	for _, entry in ipairs(inventory) do
-		ownedMap[entry.name] = entry.value
-	end
-
-	-- Build sellable item list (items in SellPriceConfig with quantity > 0)
 	local sellableItems = {}
-	for itemName, _ in pairs(SellPriceConfig) do
-		local owned = ownedMap[itemName] or 0
-		if owned > 0 then
-			table.insert(sellableItems, { name = itemName, owned = owned })
+	for _, entry in ipairs(inventory) do
+		local itemName = entry.name
+		if SellPriceConfig[itemName] == nil then
+			continue
+		end
+
+		local itemData = GearConfig.GetItemData(itemName)
+		local isInstanceItem = itemData ~= nil and not GearConfig.IsStackable(itemName)
+		if isInstanceItem then
+			if type(entry.id) == "string" and entry.id ~= "" then
+				table.insert(sellableItems, {
+					id = entry.id,
+					name = itemName,
+					owned = nil,
+					isInstanceItem = true,
+				})
+			end
+		elseif type(entry.value) == "number" and entry.value > 0 then
+			table.insert(sellableItems, {
+				id = "stack:" .. itemName,
+				name = itemName,
+				owned = entry.value,
+				isInstanceItem = false,
+			})
 		end
 	end
+
 	table.sort(sellableItems, function(a, b)
+		if a.name == b.name then
+			return a.id < b.id
+		end
 		return a.name < b.name
 	end)
 
 	-- Clamp sell quantity
+	local selectedCell = nil
+	for _, itemData in ipairs(sellableItems) do
+		if itemData.id == selectedEntryId then
+			selectedCell = itemData
+			break
+		end
+	end
+
+	local selectedItem = selectedCell and selectedCell.name or nil
+	local selectedIsInstanceItem = selectedCell ~= nil and selectedCell.isInstanceItem == true
 	local selectedOwned = 0
 	local selectedPrice = 0
 	local selectedIsEquipped = false
-	if selectedItem then
-		selectedOwned = ownedMap[selectedItem] or 0
+	if selectedCell ~= nil then
+		selectedOwned = selectedIsInstanceItem and 1 or (selectedCell.owned or 0)
 		selectedPrice = SellPriceConfig[selectedItem] or 0
-		selectedIsEquipped = equippedItems[selectedItem] == true
+		selectedIsEquipped = equippedEntries[selectedCell.id] == true
 		if selectedOwned <= 0 then
 			selectedItem = nil
+			selectedCell = nil
 			selectedIsEquipped = false
+		elseif selectedIsInstanceItem then
+			sellQuantity = 1
 		elseif sellQuantity > selectedOwned then
 			sellQuantity = selectedOwned
 		end
@@ -198,11 +231,10 @@ function SellPage:_renderContent(statsData)
 	local paddingPixels = 4
 	local gridChildren = {}
 	for _, itemData in ipairs(sellableItems) do
-		gridChildren[itemData.name] = self:_renderItemCell(
-			itemData.name,
-			itemData.owned,
-			selectedItem == itemData.name,
-			equippedItems[itemData.name] == true
+		gridChildren[itemData.id] = self:_renderItemCell(
+			itemData,
+			selectedEntryId == itemData.id,
+			equippedEntries[itemData.id] == true
 		)
 	end
 
@@ -261,7 +293,7 @@ function SellPage:_renderContent(statsData)
 		})
 
 		-- Quantity selector
-		detailChildren.QuantitySelector = createElement("Frame", {
+		detailChildren.QuantitySelector = not selectedIsInstanceItem and createElement("Frame", {
 			BackgroundTransparency = 1,
 			Size = UDim2.new(0.9, 0, 0, 30),
 			AnchorPoint = Vector2.new(0.5, 0),
@@ -381,15 +413,21 @@ function SellPage:_renderContent(statsData)
 				LayoutOrder = 1,
 				disabled = selectedIsEquipped or sellQuantity <= 0 or selectedOwned <= 0,
 				onClick = function()
-					if selectedItem and not selectedIsEquipped and sellQuantity > 0 then
-						RF_SellItems:InvokeServer({
-							{ name = selectedItem, quantity = sellQuantity },
-						})
+					if selectedCell and selectedItem and not selectedIsEquipped and sellQuantity > 0 then
+						if selectedIsInstanceItem then
+							RF_SellItems:InvokeServer({
+								{ id = selectedCell.id },
+							})
+						else
+							RF_SellItems:InvokeServer({
+								{ name = selectedItem, quantity = sellQuantity },
+							})
+						end
 						self:setState({ sellQuantity = 1 })
 					end
 				end,
 			}),
-			SellAllButton = createElement(TextButton, {
+			SellAllButton = not selectedIsInstanceItem and createElement(TextButton, {
 				text = "SELL ALL",
 				size = "xs",
 				color = "green",
@@ -400,7 +438,7 @@ function SellPage:_renderContent(statsData)
 						self:setState({ showConfirmDialog = true })
 					end
 				end,
-			}),
+			}) or nil,
 		})
 	end
 
@@ -414,12 +452,12 @@ function SellPage:_renderContent(statsData)
 			onExit = onExit,
 		}, {
 			ConfirmDialog = createElement(SellConfirmationDialog, {
-				visible = showConfirmDialog and selectedItem ~= nil and not selectedIsEquipped and selectedOwned > 0,
+				visible = showConfirmDialog and not selectedIsInstanceItem and selectedItem ~= nil and not selectedIsEquipped and selectedOwned > 0,
 				itemName = selectedItem or "",
 				quantity = selectedOwned,
 				totalValue = selectedPrice * selectedOwned,
 				onConfirm = function()
-					if selectedItem and not selectedIsEquipped and selectedOwned > 0 then
+					if selectedItem and not selectedIsInstanceItem and not selectedIsEquipped and selectedOwned > 0 then
 						RF_SellItems:InvokeServer({
 							{ name = selectedItem, quantity = selectedOwned },
 						})

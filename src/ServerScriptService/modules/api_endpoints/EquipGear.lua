@@ -9,25 +9,21 @@ local GearConfig = require(configs.GearConfig)
 
 local endpoint = {}
 
-function endpoint.Call(player: Player, itemName: string)
-	if type(itemName) ~= "string" then return false end
+function endpoint.Call(player: Player, itemId: string)
+	if type(itemId) ~= "string" then return false end
 
-	local itemData = GearConfig.items[itemName]
+	local itemInstance = PlayerDataHandler.GetItemInstance(player, itemId)
+	if itemInstance == nil then return false end
+
+	local itemData = GearConfig.items[itemInstance.name]
 	if itemData == nil then return false end
 
 	local slot = itemData.slot
-	local tier = itemData.tier
 	if GearConfig.slotToField[slot] == nil then
 		return false
 	end
 
-	-- Tier 1 (Wood) items are always available as starting gear
-	if tier > 1 then
-		local owned = PlayerDataHandler.GetItemCount(player, itemName)
-		if owned <= 0 then return false end
-	end
-
-	return PlayerDataHandler.EquipGear(player, itemName, slot)
+	return PlayerDataHandler.EquipGear(player, itemId, slot)
 end
 
 return endpoint
