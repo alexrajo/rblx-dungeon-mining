@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
+local CrateService = require(modules.CrateService)
 local OreNodeService = require(modules.OreNodeService)
 local OreNodeUtil = require(modules.OreNodeUtil)
 
@@ -70,6 +71,25 @@ function BombService.ResolveExplosion(player: Player, bombItemName: string, posi
 
 		if getHorizontalDistance(position, nodePosition) <= bombData.radius then
 			OreNodeService.BreakNode(player, nodeModel)
+		end
+	end
+
+	for _, crateInstance in ipairs(CollectionService:GetTagged("MineCrate")) do
+		if crateInstance.Parent == nil then
+			continue
+		end
+
+		if crateInstance:GetAttribute("FloorNumber") ~= floorNumber then
+			continue
+		end
+
+		local cratePosition = getInstancePosition(crateInstance)
+		if cratePosition == nil then
+			continue
+		end
+
+		if getHorizontalDistance(position, cratePosition) <= bombData.radius then
+			CrateService.BreakCrate(player, crateInstance)
 		end
 	end
 
