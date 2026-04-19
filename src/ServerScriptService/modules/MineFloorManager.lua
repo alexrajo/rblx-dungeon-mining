@@ -833,6 +833,29 @@ function MineFloorManager.Init()
 			removePlayerFromFloor(player, currentFloor)
 		end
 	end)
+
+	-- Reset mine state (including ambience) when a character respawns
+	local function onCharacterAdded(player: Player)
+		local currentFloor = playerFloors[player]
+		if currentFloor then
+			removePlayerFromFloor(player, currentFloor)
+		end
+		PlayerDataHandler.SetInMine(player, false)
+		PlayerDataHandler.SetCurrentFloor(player, 0)
+		PlayerDataHandler.SetActiveTheme(player, DEFAULT_THEME)
+	end
+
+	Players.PlayerAdded:Connect(function(player: Player)
+		player.CharacterAdded:Connect(function()
+			onCharacterAdded(player)
+		end)
+	end)
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		player.CharacterAdded:Connect(function()
+			onCharacterAdded(player)
+		end)
+	end
 end
 
 return MineFloorManager
