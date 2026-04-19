@@ -6,6 +6,8 @@ local ItemLookupService = require(Services.ItemLookupService)
 
 local configs = ReplicatedStorage.configs
 local SellPriceConfig = require(configs.SellPriceConfig)
+local HotbarConfig = require(configs.HotbarConfig)
+local GearConfig = require(configs.GearConfig)
 
 local RF_SellItems = APIService.GetFunction("SellItems")
 
@@ -24,8 +26,34 @@ local SellConfirmationDialog = require(ModuleIndex.SellConfirmationDialog)
 local StatsContext = require(ModuleIndex.StatsContext)
 
 local COIN_ICON_ID = "11953783945"
+local EQUIPPED_ARMOR_FIELDS = {
+	"EquippedHelmet",
+	"EquippedChestplate",
+	"EquippedLeggings",
+	"EquippedBoots",
+}
 
 local SellPage = Roact.Component:extend("SellPage")
+
+local function buildEquippedItemLookup(statsData): {[string]: boolean}
+	local equippedItems = {}
+
+	for _, fieldName in ipairs(EQUIPPED_ARMOR_FIELDS) do
+		local itemName = statsData[fieldName]
+		if type(itemName) == "string" and itemName ~= "" then
+			equippedItems[itemName] = true
+		end
+	end
+
+	for _, itemName in ipairs(HotbarConfig.NormalizeStoredSlots(statsData.HotbarSlots or {})) do
+		local slotName = GearConfig.GetSlotForItem(itemName)
+		if slotName == "Pickaxe" or slotName == "Weapon" then
+			equippedItems[itemName] = true
+		end
+	end
+
+	return equippedItems
+end
 
 function SellPage:init()
 	self:setState({
@@ -35,7 +63,7 @@ function SellPage:init()
 	})
 end
 
-function SellPage:_renderItemCell(itemName: string, ownedAmount: number, isSelected: boolean)
+function SellPage:_renderItemCell(itemName: string, ownedAmount: number, isSelected: boolean, isEquipped: boolean)
 	local itemConfig = ItemLookupService.GetItemDefinitionFromName(itemName) or {}
 	local imageId = itemConfig.imageId or "76280156712677"
 	local price = SellPriceConfig[itemName]
@@ -57,6 +85,7 @@ function SellPage:_renderItemCell(itemName: string, ownedAmount: number, isSelec
 			Position = UDim2.fromScale(0.5, 0.02),
 			Size = UDim2.fromScale(0.6, 0.6),
 			BackgroundTransparency = 1,
+			ImageColor3 = isEquipped and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(255, 255, 255),
 			ScaleType = Enum.ScaleType.Fit,
 			ZIndex = 3,
 		}),
@@ -93,6 +122,24 @@ function SellPage:_renderItemCell(itemName: string, ownedAmount: number, isSelec
 				LayoutOrder = 2,
 			}),
 		}),
+		EquippedOverlay = isEquipped and createElement("Frame", {
+			BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+			BackgroundTransparency = 0.45,
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = 5,
+		}, {
+			UICorner = createElement("UICorner", {
+				CornerRadius = UDim.new(0, 6),
+			}),
+			EquippedLabel = createElement(TextLabel, {
+				Text = "EQUIPPED",
+				Size = UDim2.new(0.92, 0, 0.22, 0),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				textSize = 13,
+				ZIndex = 6,
+			}),
+		}),
 	})
 end
 
@@ -108,6 +155,7 @@ function SellPage:_renderContent(statsData)
 	local inventory = statsData.Inventory or {}
 	local selectedItem = self.state.selectedItem
 	local sellQuantity = self.state.sellQuantity
+	local equippedItems = buildEquippedItemLookup(statsData)
 
 	-- Build lookup of owned items
 	local ownedMap = {}
@@ -130,11 +178,14 @@ function SellPage:_renderContent(statsData)
 	-- Clamp sell quantity
 	local selectedOwned = 0
 	local selectedPrice = 0
+	local selectedIsEquipped = false
 	if selectedItem then
 		selectedOwned = ownedMap[selectedItem] or 0
 		selectedPrice = SellPriceConfig[selectedItem] or 0
+		selectedIsEquipped = equippedItems[selectedItem] == true
 		if selectedOwned <= 0 then
 			selectedItem = nil
+			selectedIsEquipped = false
 		elseif sellQuantity > selectedOwned then
 			sellQuantity = selectedOwned
 		end
@@ -147,7 +198,12 @@ function SellPage:_renderContent(statsData)
 	local paddingPixels = 4
 	local gridChildren = {}
 	for _, itemData in ipairs(sellableItems) do
-		gridChildren[itemData.name] = self:_renderItemCell(itemData.name, itemData.owned, selectedItem == itemData.name)
+		gridChildren[itemData.name] = self:_renderItemCell(
+			itemData.name,
+			itemData.owned,
+			selectedItem == itemData.name,
+			equippedItems[itemData.name] == true
+		)
 	end
 
 	-- Build detail panel content
@@ -221,6 +277,7 @@ function SellPage:_renderContent(statsData)
 				color = "red",
 				customSize = UDim2.fromOffset(30, 30),
 				disableHoverScaleTween = true,
+				disabled = selectedIsEquipped,
 				onClick = function()
 					local newQty = math.max(1, sellQuantity - 1)
 					self:setState({ sellQuantity = newQty })
@@ -243,6 +300,7 @@ function SellPage:_renderContent(statsData)
 				color = "green",
 				customSize = UDim2.fromOffset(30, 30),
 				disableHoverScaleTween = true,
+				disabled = selectedIsEquipped,
 				onClick = function()
 					local newQty = math.min(selectedOwned, sellQuantity + 1)
 					self:setState({ sellQuantity = newQty })
@@ -290,6 +348,19 @@ function SellPage:_renderContent(statsData)
 			}),
 		})
 
+		if selectedIsEquipped then
+			detailChildren.EquippedNotice = createElement(TextLabel, {
+				Text = "Currently equipped. Unequip this item before selling.",
+				Size = UDim2.new(0.88, 0, 0, 42),
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.fromScale(0.5, 0.72),
+				textSize = 13,
+				textProps = {
+					TextWrapped = true,
+				},
+			})
+		end
+
 		-- Sell buttons
 		detailChildren.ButtonRow = createElement("Frame", {
 			BackgroundTransparency = 1,
@@ -308,9 +379,9 @@ function SellPage:_renderContent(statsData)
 				size = "xs",
 				color = "yellow",
 				LayoutOrder = 1,
-				disabled = sellQuantity <= 0 or selectedOwned <= 0,
+				disabled = selectedIsEquipped or sellQuantity <= 0 or selectedOwned <= 0,
 				onClick = function()
-					if selectedItem and sellQuantity > 0 then
+					if selectedItem and not selectedIsEquipped and sellQuantity > 0 then
 						RF_SellItems:InvokeServer({
 							{ name = selectedItem, quantity = sellQuantity },
 						})
@@ -323,9 +394,9 @@ function SellPage:_renderContent(statsData)
 				size = "xs",
 				color = "green",
 				LayoutOrder = 2,
-				disabled = selectedOwned <= 0,
+				disabled = selectedIsEquipped or selectedOwned <= 0,
 				onClick = function()
-					if selectedItem and selectedOwned > 0 then
+					if selectedItem and not selectedIsEquipped and selectedOwned > 0 then
 						self:setState({ showConfirmDialog = true })
 					end
 				end,
@@ -343,12 +414,12 @@ function SellPage:_renderContent(statsData)
 			onExit = onExit,
 		}, {
 			ConfirmDialog = createElement(SellConfirmationDialog, {
-				visible = showConfirmDialog and selectedItem ~= nil and selectedOwned > 0,
+				visible = showConfirmDialog and selectedItem ~= nil and not selectedIsEquipped and selectedOwned > 0,
 				itemName = selectedItem or "",
 				quantity = selectedOwned,
 				totalValue = selectedPrice * selectedOwned,
 				onConfirm = function()
-					if selectedItem and selectedOwned > 0 then
+					if selectedItem and not selectedIsEquipped and selectedOwned > 0 then
 						RF_SellItems:InvokeServer({
 							{ name = selectedItem, quantity = selectedOwned },
 						})

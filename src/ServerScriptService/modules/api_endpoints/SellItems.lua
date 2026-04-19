@@ -10,14 +10,39 @@ local GearConfig = require(configs.GearConfig)
 
 local endpoint = {}
 
+local function isEquippedGear(player: Player, itemName: string): boolean
+	local slotName = GearConfig.GetSlotForItem(itemName)
+	if slotName == nil then
+		return false
+	end
+
+	local equippedArmor = PlayerDataHandler.GetEquippedArmor(player)
+	for _, equippedName in pairs(equippedArmor) do
+		if equippedName == itemName then
+			return true
+		end
+	end
+
+	if slotName ~= "Pickaxe" and slotName ~= "Weapon" then
+		return false
+	end
+
+	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
+	for _, hotbarItemName in ipairs(hotbarSlots) do
+		if hotbarItemName == itemName then
+			return true
+		end
+	end
+
+	return false
+end
+
 function endpoint.Call(player: Player, items: {{name: string, quantity: number}})
 	if type(items) ~= "table" then return { success = false } end
 
 	-- Validate all items before processing
 	local totalCoins = 0
 	local takeMap = {}
-	local equippedArmor = PlayerDataHandler.GetEquippedArmor(player)
-	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
 
 	for _, item in ipairs(items) do
 		if type(item) ~= "table" then return { success = false } end
@@ -34,18 +59,8 @@ function endpoint.Call(player: Player, items: {{name: string, quantity: number}}
 		local price = SellPriceConfig[name]
 		if price == nil then return { success = false } end
 
-		-- Prevent selling equipped gear
-		if GearConfig.items[name] then
-			for _, equippedName in pairs(equippedArmor) do
-				if equippedName == name then
-					return { success = false, reason = "equipped" }
-				end
-			end
-			for _, hotbarItemName in ipairs(hotbarSlots) do
-				if hotbarItemName == name then
-					return { success = false, reason = "equipped" }
-				end
-			end
+		if isEquippedGear(player, name) then
+			return { success = false, reason = "equipped" }
 		end
 
 		local owned = PlayerDataHandler.GetItemCount(player, name)
