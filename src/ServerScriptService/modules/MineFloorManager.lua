@@ -54,6 +54,7 @@ end
 
 local NUM_LIGHTS = 4
 local ORES_PER_LADDER_REVEAL = 50
+local DEFAULT_THEME = "default"
 local ASCENDING_LADDER_OFFSET = Vector3.new(0, 3, 12)
 local REWARD_ROOM_SIZE = Vector3.new(48, 20, 48)
 local REWARD_ROOM_WALL_THICKNESS = 2
@@ -563,6 +564,19 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 	return floorFolder, spawnPosition
 end
 
+local function getThemeForFloor(floorNumber: number): string
+	local _, layerData = MineFloorManager.GetLayerForFloor(floorNumber)
+	if layerData ~= nil and type(layerData.theme) == "string" and layerData.theme ~= "" then
+		return layerData.theme
+	end
+
+	return DEFAULT_THEME
+end
+
+local function setPlayerThemeForFloor(player: Player, floorNumber: number)
+	PlayerDataHandler.SetActiveTheme(player, getThemeForFloor(floorNumber))
+end
+
 --- Get a floor from the pool, or generate it synchronously as fallback.
 local function getOrCreateFloor(floorNumber: number): Folder?
 	local entry = floorPool[floorNumber]
@@ -676,6 +690,7 @@ function MineFloorManager.EnterMine(player: Player, startFloor: number)
 	-- Update player state
 	PlayerDataHandler.SetInMine(player, true)
 	PlayerDataHandler.SetCurrentFloor(player, startFloor)
+	setPlayerThemeForFloor(player, startFloor)
 
 	-- Teleport player and keep them frozen until the transition service releases them.
 	teleportToFloor(player, startFloor)
@@ -732,6 +747,7 @@ function MineFloorManager.DescendFloor(player: Player)
 
 	-- Update player state
 	PlayerDataHandler.SetCurrentFloor(player, nextFloor)
+	setPlayerThemeForFloor(player, nextFloor)
 
 	-- Teleport player and keep them frozen until the transition service releases them.
 	teleportToFloor(player, nextFloor)
@@ -762,6 +778,7 @@ function MineFloorManager.TravelToCheckpoint(player: Player, targetFloor: number
 	movePlayerToFloor(player, currentFloor, targetFloor)
 	PlayerDataHandler.SetInMine(player, true)
 	PlayerDataHandler.SetCurrentFloor(player, targetFloor)
+	setPlayerThemeForFloor(player, targetFloor)
 
 	teleportToFloor(player, targetFloor)
 
@@ -778,6 +795,7 @@ function MineFloorManager.ExitMine(player: Player)
 	-- Update player state
 	PlayerDataHandler.SetInMine(player, false)
 	PlayerDataHandler.SetCurrentFloor(player, 0)
+	PlayerDataHandler.SetActiveTheme(player, DEFAULT_THEME)
 
 	-- Remove from floor tracking (triggers cleanup)
 	if currentFloor then

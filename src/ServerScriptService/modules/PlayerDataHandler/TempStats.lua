@@ -5,7 +5,8 @@ local tableUtils = require(utils.TableUtils)
 
 local tempStatsNames = {
 	"CurrentFloor",
-	"InMine"
+	"InMine",
+	"ActiveTheme",
 }
 
 local module = {}
@@ -35,6 +36,11 @@ function module:InitializePlayer(player: Player)
 	inMine.Name = "InMine"
 	inMine.Parent = playerDataFolder
 	inMine.Value = false
+
+	local activeTheme = Instance.new("StringValue")
+	activeTheme.Name = "ActiveTheme"
+	activeTheme.Parent = playerDataFolder
+	activeTheme.Value = "default"
 end
 
 function module:GetTempStat(player: Player, tempStatName: string): ValueBase

@@ -600,6 +600,21 @@ function PlayerDataHandler.GetInMine(player: Player): boolean
 	return false
 end
 
+function PlayerDataHandler.SetActiveTheme(player: Player, themeName: string)
+	local valueInstance = TempStats:GetTempStat(player, "ActiveTheme")
+	if valueInstance then
+		valueInstance.Value = themeName
+	end
+end
+
+function PlayerDataHandler.GetActiveTheme(player: Player): string
+	local valueInstance = TempStats:GetTempStat(player, "ActiveTheme")
+	if valueInstance then
+		return valueInstance.Value
+	end
+	return "default"
+end
+
 -- Tutorials
 function PlayerDataHandler.GetTutorialIsCompleted(player: Player, tutorialName: string)
 	local tutorialStates = getStat("TutorialStates", ProfileTemplate.TutorialStates, player)

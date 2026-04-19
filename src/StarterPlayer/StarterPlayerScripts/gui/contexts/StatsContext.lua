@@ -29,6 +29,7 @@ local DEFAULT_VALUE = {
 	TutorialStates = {{name = "Intro", value = false}},
 	CurrentFloor = 0,
 	InMine = false,
+	ActiveTheme = "default",
 }
 local StatsContext = Roact.createContext(DEFAULT_VALUE)
 local StatsController = Roact.Component:extend("StatsController")
