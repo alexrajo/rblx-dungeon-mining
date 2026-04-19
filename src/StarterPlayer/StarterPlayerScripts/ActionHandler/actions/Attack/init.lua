@@ -2,6 +2,7 @@ local plr = game.Players.LocalPlayer
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
 
@@ -9,6 +10,16 @@ local globalConfig = require(ReplicatedStorage:WaitForChild("GlobalConfig"))
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 
 local HIT_DELAY = 0.2
+local SWORD_SWING_SOUND_IDS = {
+	125023973544068,
+	77014651976869,
+	73220320692052,
+	140194463941336,
+	105564993105995,
+	94410407602311,
+	127060626004341,
+	133050367938898,
+}
 local ATTACK_ARC_DOT = 0 -- forward 180° arc
 
 local attackAnim = Instance.new("Animation")
@@ -45,6 +56,18 @@ local function getTargetPosition(target: Instance): Vector3?
 	return nil
 end
 
+local function playRandomSwordSwingSound()
+	local soundId = SWORD_SWING_SOUND_IDS[math.random(1, #SWORD_SWING_SOUND_IDS)]
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://" .. soundId
+	SoundService:PlayLocalSound(sound)
+
+	task.spawn(function()
+		sound.Ended:Wait()
+		sound:Destroy()
+	end)
+end
+
 local AttackAction = {}
 
 function AttackAction.Activate(tool: Tool?)
@@ -59,6 +82,8 @@ function AttackAction.Activate(tool: Tool?)
 	local weaponName = tool and tool:GetAttribute("HotbarItemName") or nil
 	local weaponStats = GearConfig.GetWeaponCombatStats(type(weaponName) == "string" and weaponName or nil)
 	local attackCooldown = weaponStats.attackCooldown or globalConfig.ATTACK_SWING_COOLDOWN
+
+	playRandomSwordSwingSound()
 
 	-- Play weapon swing animation
 	local track = getTrack(humanoid)
