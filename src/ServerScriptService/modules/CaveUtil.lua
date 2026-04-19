@@ -49,6 +49,7 @@ local WORM_Y_VARIATION = 2
 
 -- Radius (in studs) of the guaranteed open spawn area at the cave center
 local SPAWN_CLEAR_RADIUS = 16
+local SPAWN_CONTENT_EXCLUSION_RADIUS = BLOCK_SIZE * 1.5
 local SPAWN_PLATFORM_SIZE = Vector3.new(12, 1, 12)
 local SPAWN_PLATFORM_SURFACE_CLEARANCE = 0.05
 
@@ -200,6 +201,16 @@ local function getFloorSurfacePosition(floorPosition: Vector3): Vector3
 	return floorPosition - Vector3.new(0, BLOCK_SIZE, 0)
 end
 
+local function removeContentSpawnPositionsNearSpawn(floorPositions: {Vector3}, spawnFloorPosition: Vector3)
+	for index = #floorPositions, 1, -1 do
+		local offset = floorPositions[index] - spawnFloorPosition
+		local horizontalDistance = Vector2.new(offset.X, offset.Z).Magnitude
+		if horizontalDistance <= SPAWN_CONTENT_EXCLUSION_RADIUS then
+			table.remove(floorPositions, index)
+		end
+	end
+end
+
 
 -- ============================================================
 -- PUBLIC API
@@ -342,6 +353,7 @@ function CaveUtil.GenerateCave(position: Vector3): (Model, {Vector3}, Vector3)
 
 		spawnPosition = getFloorSurfacePosition(bestSpawnPosition)
 			+ Vector3.new(0, SPAWN_PLATFORM_SURFACE_CLEARANCE, 0)
+		removeContentSpawnPositionsNearSpawn(floorPositions, bestSpawnPosition)
 	end
 
 
