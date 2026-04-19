@@ -6,6 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local OreNodeUtil = require(modules.OreNodeUtil)
+local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -15,6 +16,8 @@ local OreConfig = require(configs.OreConfig)
 local dropsConfig = require(configs.DropsConfig)
 
 local OreNodeService = {}
+
+local ORE_NODE_BREAK_SOUND_ID = "9118587701"
 
 local RE_ItemDrop = APIService.GetEvent("DropItems")
 
@@ -98,6 +101,7 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 		createLadder(revealPosition, originalParent, floorNumber)
 	end
 
+	WorldSoundService.PlayOneShotAtPosition(ORE_NODE_BREAK_SOUND_ID, nodePosition)
 	nodeModel:Destroy()
 
 	return true

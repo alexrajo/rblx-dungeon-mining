@@ -4,6 +4,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -13,6 +14,8 @@ local CrateConfig = require(configs.CrateConfig)
 local dropsConfig = require(configs.DropsConfig)
 
 local CrateService = {}
+
+local CRATE_BREAK_SOUND_ID = "117158373103667"
 
 local RE_ItemDrop = APIService.GetEvent("DropItems")
 
@@ -105,6 +108,7 @@ function CrateService.BreakCrate(player: Player, crate: Instance): boolean
 		signalTutorialEvent:Fire(player, "getItem")
 	end
 
+	WorldSoundService.PlayOneShotAtPosition(CRATE_BREAK_SOUND_ID, cratePosition)
 	crate:Destroy()
 
 	return true
