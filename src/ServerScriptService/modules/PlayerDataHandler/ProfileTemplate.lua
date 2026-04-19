@@ -6,8 +6,6 @@ return {
 	UnlockedCheckpoints = {},
 	OpenedMineChests = {},
 	Inventory = {},
-	EquippedPickaxe = "Wood Pickaxe",
-	EquippedWeapon = "Wood Sword",
 	EquippedHelmet = "",
 	EquippedChestplate = "",
 	EquippedLeggings = "",

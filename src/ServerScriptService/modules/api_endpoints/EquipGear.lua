@@ -27,8 +27,7 @@ function endpoint.Call(player: Player, itemName: string)
 		if owned <= 0 then return false end
 	end
 
-	PlayerDataHandler.EquipGear(player, itemName, slot)
-	return true
+	return PlayerDataHandler.EquipGear(player, itemName, slot)
 end
 
 return endpoint

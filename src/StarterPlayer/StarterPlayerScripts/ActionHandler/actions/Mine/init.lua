@@ -41,19 +41,31 @@ local function getTrack(humanoid: Humanoid): AnimationTrack?
 end
 
 -- Per-node shake state (client-local)
-local nodeOrigins: {[Model]: CFrame} = {}
-local shakeVersion: {[Model]: number} = {}
+local nodeOrigins: {[Instance]: CFrame} = {}
+local shakeVersion: {[Instance]: number} = {}
 local tierWarnings: {[Model]: TierWarningState} = {}
 
-local function getNodeCFrame(node: Model): CFrame
-	return node:GetPivot()
+local function getNodeCFrame(node: Instance): CFrame
+	if node:IsA("BasePart") then
+		return node.CFrame
+	end
+
+	if node:IsA("Model") then
+		return node:GetPivot()
+	end
+
+	return CFrame.new()
 end
 
-local function setNodeCFrame(node: Model, cf: CFrame)
-	node:PivotTo(cf)
+local function setNodeCFrame(node: Instance, cf: CFrame)
+	if node:IsA("BasePart") then
+		node.CFrame = cf
+	elseif node:IsA("Model") then
+		node:PivotTo(cf)
+	end
 end
 
-local function shakeNode(node: Model)
+local function shakeNode(node: Instance)
 	-- Store origin on first hit so rapid successive hits restore to the same position
 	if not nodeOrigins[node] then
 		nodeOrigins[node] = getNodeCFrame(node)
@@ -217,7 +229,7 @@ end
 
 local MineAction = {}
 
-function MineAction.Activate()
+function MineAction.Activate(tool: Tool?)
 	local character = plr.Character
 	if character == nil or character.Parent == nil then return 0.5 end
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
@@ -230,7 +242,7 @@ function MineAction.Activate()
 		track:Play()
 	end
 
-	-- Raycast forward from HumanoidRootPart in three directions to find an OreNode
+	-- Raycast forward from HumanoidRootPart in three directions to find a mineable target.
 	local raycastParams = RaycastParams.new()
 	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 	raycastParams.FilterDescendantsInstances = {character}
@@ -242,7 +254,7 @@ function MineAction.Activate()
 		(hrpCFrame * CFrame.Angles( math.rad(45), 0, 0)).LookVector,  -- 45° down
 	}
 
-	local targetNode: Model? = nil
+	local targetNode: Instance? = nil
 	local hitPosition = nil
 
 	for _, direction in ipairs(rayDirections) do
@@ -250,7 +262,10 @@ function MineAction.Activate()
 		if result then
 			local current = result.Instance
 			while current and current ~= workspace do
-				if current:IsA("Model") and CollectionService:HasTag(current, "OreNode") then
+				local isOreNode = current:IsA("Model") and CollectionService:HasTag(current, "OreNode")
+				local isMineCrate = CollectionService:HasTag(current, "MineCrate")
+					and (current:IsA("Model") or current:IsA("BasePart"))
+				if isOreNode or isMineCrate then
 					targetNode = current
 					hitPosition = result.Position
 					break
@@ -273,9 +288,9 @@ function MineAction.Activate()
 			task.spawn(shakeNode, targetNode)
 
 			local func = APIService.GetFunction("Mine")
-			local result = func:InvokeServer(targetNode, hitPosition)
+			local result = func:InvokeServer(tool, targetNode, hitPosition)
 
-			if result and result.reason == "tier_too_low" then
+			if result and result.reason == "tier_too_low" and targetNode:IsA("Model") then
 				showTierWarning(targetNode, result.requiredTier or 1, result.pickaxeTier or 1)
 			end
 		end)

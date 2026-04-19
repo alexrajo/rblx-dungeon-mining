@@ -8,8 +8,6 @@ local InventoryUtils = require(ModuleIndex.InventoryUtils)
 local GearUtils = {}
 
 local EQUIPPED_FIELDS = {
-	"EquippedPickaxe",
-	"EquippedWeapon",
 	"EquippedHelmet",
 	"EquippedChestplate",
 	"EquippedLeggings",

@@ -36,7 +36,7 @@ function HotbarActionService.IsActionReady(): boolean
 	return actionReady
 end
 
-function HotbarActionService.ActivateAction(actionName: string): boolean
+function HotbarActionService.ActivateAction(actionName: string, tool: Tool?): boolean
 	if not actionReady then
 		return false
 	end
@@ -47,7 +47,7 @@ function HotbarActionService.ActivateAction(actionName: string): boolean
 	end
 
 	setActionReady(false)
-	local cooldownTime = action:Invoke()
+	local cooldownTime = action:Invoke(tool)
 	if cooldownTime == nil then
 		cooldownTime = 0
 	end
@@ -60,17 +60,21 @@ function HotbarActionService.ActivateAction(actionName: string): boolean
 end
 
 function HotbarActionService.ActivateSelected(): boolean
-	local itemName = HotbarService.GetSelectedEntryId()
-	if itemName == "" then
+	local tool = HotbarService.GetSelectedTool()
+	if tool == nil then
 		return false
 	end
 
-	local actionName = HotbarConfig.GetActionName(itemName)
-	if actionName == nil then
+	local actionName = tool:GetAttribute("HotbarActionName")
+	local itemName = tool:GetAttribute("HotbarItemName")
+	if type(actionName) ~= "string" or actionName == "" then
+		return false
+	end
+	if type(itemName) ~= "string" or HotbarConfig.GetActionName(itemName) ~= actionName then
 		return false
 	end
 
-	return HotbarActionService.ActivateAction(actionName)
+	return HotbarActionService.ActivateAction(actionName, tool)
 end
 
 function HotbarActionService.OnActionReadyChanged(callback: (boolean) -> ()): () -> ()

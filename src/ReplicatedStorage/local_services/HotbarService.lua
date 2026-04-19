@@ -255,6 +255,19 @@ function HotbarService.GetSelectedEntryId(): string
 	return state.slots[state.selectedSlot] or ""
 end
 
+function HotbarService.GetSelectedTool(): Tool?
+	initialize()
+	if state.selectedSlot < 1 or state.selectedSlot > HotbarConfig.MAX_SLOTS then
+		return nil
+	end
+	local tool = getToolForSlot(state.selectedSlot)
+	local character = player.Character
+	if tool == nil or character == nil or tool.Parent ~= character then
+		return nil
+	end
+	return tool
+end
+
 function HotbarService.SelectSlot(slotIndex: number)
 	initialize()
 	if slotIndex == state.selectedSlot then

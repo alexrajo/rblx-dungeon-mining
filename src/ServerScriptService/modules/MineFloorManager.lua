@@ -6,9 +6,11 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local CaveUtil = require(modules.CaveUtil)
+local CrateService = require(modules.CrateService)
 local OreNodeUtil = require(modules.OreNodeUtil)
 
 local configs = ReplicatedStorage.configs
+local CrateConfig = require(configs.CrateConfig)
 local MineLayerConfig = require(configs.MineLayerConfig)
 local MineRewardFloorConfig = require(configs.MineRewardFloorConfig)
 local OreConfig = require(configs.OreConfig)
@@ -61,6 +63,7 @@ local REWARD_ROOM_SPAWN_OFFSET = Vector3.new(0, 1, 14)
 local REWARD_ROOM_EXIT_LADDER_OFFSET = Vector3.new(-12, 1, 14)
 local REWARD_ROOM_DESCEND_LADDER_OFFSET = Vector3.new(12, 3, -14)
 local REWARD_ROOM_CHEST_OFFSET = Vector3.new(0, 2, 0)
+local FLOOR_POSITION_TO_SURFACE_OFFSET = Vector3.new(0, 4, 0)
 
 local function createAscendingLadder(position: Vector3, parent: Instance, floorNumber: number)
 	local ladderModel = Instance.new("Model")
@@ -152,6 +155,22 @@ local function createRewardChest(position: Vector3, parent: Instance, floorNumbe
 	chest.Parent = parent
 
 	return chest
+end
+
+local function getCrateRef(): Instance?
+	local refs = ReplicatedStorage:FindFirstChild("refs")
+	local crateRef = if refs ~= nil then refs:FindFirstChild("Crate") else nil
+	if crateRef == nil then
+		warn("MineFloorManager: Missing ReplicatedStorage.refs.Crate")
+		return nil
+	end
+
+	if not crateRef:IsA("Model") and not crateRef:IsA("BasePart") then
+		warn("MineFloorManager: ReplicatedStorage.refs.Crate must be a Model or BasePart")
+		return nil
+	end
+
+	return crateRef
 end
 
 local function createRewardRoom(floorOrigin: Vector3, parent: Instance, floorNumber: number): Vector3
@@ -454,6 +473,33 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 		for i = 1, revealCount do
 			revealCandidates[i]:SetAttribute("RevealsLadder", true)
+		end
+	end
+
+	-- Spawn destructible resource crates on remaining walkable floor positions.
+	local crateDensity = layerData.crateDensity or CrateConfig.defaultCrateDensity
+	local numCrates = math.max(0, math.floor(#floorPositions * crateDensity + 0.5))
+	local crateRef = if numCrates > 0 then getCrateRef() else nil
+
+	if crateRef ~= nil then
+		for i = 1, numCrates do
+			spawnIndex = spawnIndex + 1
+			if spawnIndex > #floorPositions then
+				warn("MineFloorManager: Not enough floor positions for mine crates")
+				break
+			end
+
+			local crate = crateRef:Clone()
+			crate.Name = "MineCrate_" .. i
+			crate:SetAttribute("FloorNumber", floorNumber)
+			crate:SetAttribute("CrateHP", CrateConfig.defaultHealth)
+
+			local floorSurfacePosition = floorPositions[spawnIndex] - FLOOR_POSITION_TO_SURFACE_OFFSET
+			CrateService.PlaceOnFloor(crate, floorSurfacePosition)
+			CrateService.AnchorCrate(crate)
+
+			crate.Parent = floorFolder
+			CollectionService:AddTag(crate, "MineCrate")
 		end
 	end
 

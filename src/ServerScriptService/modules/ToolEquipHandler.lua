@@ -212,14 +212,6 @@ local function onPlayerAdded(player: Player)
 		queueSyncTools(player)
 	end)
 
-	PlayerDataHandler.ListenToStatUpdate("EquippedPickaxe", player, function()
-		queueSyncTools(player)
-	end)
-
-	PlayerDataHandler.ListenToStatUpdate("EquippedWeapon", player, function()
-		queueSyncTools(player)
-	end)
-
 	if player.Character then
 		queueSyncTools(player)
 	end

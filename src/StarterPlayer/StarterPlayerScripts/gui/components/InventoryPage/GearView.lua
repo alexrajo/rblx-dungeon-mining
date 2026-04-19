@@ -158,10 +158,6 @@ function GearView:equipSelectedItem(data)
 	end
 
 	if actionState.mode == "hotbar" and actionState.slotIndex ~= nil then
-		local itemData = GearConfig.GetItemData(selectedItemName)
-		if itemData ~= nil and itemData.slot ~= "Bomb" then
-			equipGearEvent:FireServer(selectedItemName)
-		end
 		assignHotbarSlotEvent:FireServer(actionState.slotIndex, selectedItemName)
 	else
 		equipGearEvent:FireServer(selectedItemName)

@@ -7,7 +7,6 @@ local APIService = require(Services.APIService)
 
 local globalConfig = require(ReplicatedStorage:WaitForChild("GlobalConfig"))
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
-local StatRetrieval = require(ReplicatedStorage.utils.StatRetrieval)
 
 local HIT_DELAY = 0.2
 local ATTACK_ARC_DOT = 0 -- forward 180° arc
@@ -34,19 +33,31 @@ local function getTrack(humanoid: Humanoid): AnimationTrack?
 	return cachedTrack
 end
 
+local function getTargetPosition(target: Instance): Vector3?
+	if target:IsA("BasePart") then
+		return target.Position
+	end
+
+	if target:IsA("Model") then
+		return target:GetPivot().Position
+	end
+
+	return nil
+end
+
 local AttackAction = {}
 
-function AttackAction.Activate()
+function AttackAction.Activate(tool: Tool?)
 	local character = plr.Character
 	if character == nil or character.Parent == nil then return 0.5 end
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoidRootPart == nil or humanoid == nil or humanoid.Health <= 0 then return 0.5 end
 
-	-- Determine cooldown locally from equipped weapon so the timer starts
+	-- Determine cooldown locally from the wielded weapon so the timer starts
 	-- immediately without waiting for a server round-trip.
-	local equippedWeapon = StatRetrieval.GetPlayerStat("EquippedWeapon", plr)
-	local weaponStats = GearConfig.GetWeaponCombatStats(equippedWeapon)
+	local weaponName = tool and tool:GetAttribute("HotbarItemName") or nil
+	local weaponStats = GearConfig.GetWeaponCombatStats(type(weaponName) == "string" and weaponName or nil)
 	local attackCooldown = weaponStats.attackCooldown or globalConfig.ATTACK_SWING_COOLDOWN
 
 	-- Play weapon swing animation
@@ -66,29 +77,33 @@ function AttackAction.Activate()
 		overlapParams
 	)
 
-	-- Collect unique enemy models within the forward arc
-	local hitEnemies: {Instance} = {}
-	local seenEnemies: {[Instance]: boolean} = {}
+	-- Collect unique attack targets within the forward arc.
+	local hitTargets: {Instance} = {}
+	local seenTargets: {[Instance]: boolean} = {}
 	local lookVector = humanoidRootPart.CFrame.LookVector
 
 	for _, part in ipairs(parts) do
 		local current = part
-		local enemyModel = nil
+		local target = nil
 		while current and current ~= workspace do
 			if CollectionService:HasTag(current, "Enemy") then
-				enemyModel = current
+				target = current
+				break
+			end
+			if CollectionService:HasTag(current, "MineCrate") then
+				target = current
 				break
 			end
 			current = current.Parent
 		end
 
-		if enemyModel and not seenEnemies[enemyModel] then
-			local enemyRoot = enemyModel:FindFirstChild("HumanoidRootPart")
-			if enemyRoot then
-				local toEnemy = enemyRoot.Position - humanoidRootPart.Position
-				if toEnemy.Magnitude > 0 and toEnemy.Unit:Dot(lookVector) >= ATTACK_ARC_DOT then
-					seenEnemies[enemyModel] = true
-					table.insert(hitEnemies, enemyModel)
+		if target and not seenTargets[target] then
+			local targetPosition = getTargetPosition(target)
+			if targetPosition ~= nil then
+				local toTarget = targetPosition - humanoidRootPart.Position
+				if toTarget.Magnitude > 0 and toTarget.Unit:Dot(lookVector) >= ATTACK_ARC_DOT then
+					seenTargets[target] = true
+					table.insert(hitTargets, target)
 				end
 			end
 		end
@@ -98,7 +113,7 @@ function AttackAction.Activate()
 	-- cooldown timer starts immediately regardless of server latency.
 	task.spawn(function()
 		task.wait(HIT_DELAY)
-		APIService.GetFunction("Attack"):InvokeServer(hitEnemies)
+		APIService.GetFunction("Attack"):InvokeServer(tool, hitTargets)
 	end)
 
 	return attackCooldown

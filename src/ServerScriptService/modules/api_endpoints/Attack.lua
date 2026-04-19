@@ -7,7 +7,9 @@ local APIService = require(ReplicatedStorage.services.APIService)
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local HotbarToolValidator = require(modules.HotbarToolValidator)
 local BuffsManager = require(modules.BuffsManager)
+local CrateService = require(modules.CrateService)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -26,6 +28,23 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 local endpoint = {}
+
+local function findTaggedAncestor(instance: Instance, tagName: string): Instance?
+	local current = instance
+	while current and current ~= workspace do
+		if CollectionService:HasTag(current, tagName) then
+			return current
+		end
+		current = current.Parent
+	end
+
+	return nil
+end
+
+local function isOnPlayerFloor(player: Player, instance: Instance): boolean
+	local floorNumber = instance:GetAttribute("FloorNumber")
+	return type(floorNumber) ~= "number" or PlayerDataHandler.GetCurrentFloor(player) == floorNumber
+end
 
 local function applyKnockback(attackerRoot: BasePart, enemyRoot: BasePart, knockback: number)
 	if knockback <= 0 or enemyRoot.Anchored then
@@ -47,9 +66,14 @@ local function applyKnockback(attackerRoot: BasePart, enemyRoot: BasePart, knock
 	enemyRoot:ApplyImpulse(impulseDirection.Unit * knockback * enemyRoot.AssemblyMass)
 end
 
-function endpoint.Call(player: Player, enemies: {Instance})
+function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 	if type(enemies) ~= "table" then
 		return { success = false, cooldown = 0.1 }
+	end
+
+	local validTool, weaponItemName, toolReason = HotbarToolValidator.Validate(player, tool, "Attack", "Weapon")
+	if not validTool or weaponItemName == nil then
+		return { success = false, cooldown = 0.1, reason = toolReason }
 	end
 
 	local character = player.Character
@@ -58,8 +82,7 @@ function endpoint.Call(player: Player, enemies: {Instance})
 	if humanoidRootPart == nil then return { success = false, cooldown = 0.5 } end
 
 	-- Compute weapon cooldown first so it can be used in the server-side window check.
-	local equippedWeapon = PlayerDataHandler.GetEquippedWeapon(player)
-	local weaponStats = GearConfig.GetWeaponCombatStats(equippedWeapon)
+	local weaponStats = GearConfig.GetWeaponCombatStats(weaponItemName)
 	local attackCooldown = weaponStats.attackCooldown or globalConfig.ATTACK_SWING_COOLDOWN
 
 	local now = os.clock()
@@ -71,7 +94,7 @@ function endpoint.Call(player: Player, enemies: {Instance})
 
 	-- Calculate attacker stats once for all hits
 	local level = PlayerDataHandler.GetClient(player) and PlayerDataHandler.GetClient(player):GetDataValue("Level", 1) or 1
-	local baseCombatDamage = StatCalculation.GetCombatDamage(equippedWeapon, level)
+	local baseCombatDamage = StatCalculation.GetCombatDamage(weaponItemName, level)
 		* BuffsManager.GetDamageMultiplier(player)
 
 	local totalDamage = 0
@@ -81,16 +104,26 @@ function endpoint.Call(player: Player, enemies: {Instance})
 	for _, targetInstance in ipairs(enemies) do
 		if targetInstance == nil or targetInstance.Parent == nil then continue end
 
-		-- Confirm Enemy tag (server re-validates client claim)
-		local enemyModel = nil
-		local current = targetInstance
-		while current and current ~= workspace do
-			if CollectionService:HasTag(current, "Enemy") then
-				enemyModel = current
-				break
+		local crateInstance = findTaggedAncestor(targetInstance, "MineCrate")
+		if crateInstance ~= nil then
+			if not isOnPlayerFloor(player, crateInstance) then
+				continue
 			end
-			current = current.Parent
+
+			local cratePosition = CrateService.GetPosition(crateInstance)
+			local distance = (cratePosition - humanoidRootPart.Position).Magnitude
+			if distance > globalConfig.ATTACK_REACH_DISTANCE then
+				continue
+			end
+
+			if CrateService.BreakCrate(player, crateInstance) then
+				hitCount += 1
+			end
+			continue
 		end
+
+		-- Confirm Enemy tag (server re-validates client claim)
+		local enemyModel = findTaggedAncestor(targetInstance, "Enemy")
 		if enemyModel == nil then continue end
 
 		-- Validate distance

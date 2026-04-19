@@ -14,6 +14,7 @@ local StatsContext = require(ModuleIndex.StatsContext)
 
 local configs = ReplicatedStorage.configs
 local GearConfig = require(configs.GearConfig)
+local HotbarConfig = require(configs.HotbarConfig)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -54,9 +55,13 @@ function StatsPage:render()
 		render = function(data)
 			local level = data.Level or 1
 
-			-- Get gear tiers
-			local pickaxeTier = GearConfig.GetTierForItem(data.EquippedPickaxe or "Wood Pickaxe") or 1
-			local weaponTier = GearConfig.GetTierForItem(data.EquippedWeapon or "Wood Sword") or 1
+			local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
+			local selectedSlot = data.SelectedHotbarSlot or 0
+			local selectedItemName = hotbarSlots[selectedSlot] or ""
+			local selectedSlotName = GearConfig.GetSlotForItem(selectedItemName)
+			local selectedPickaxe = selectedSlotName == "Pickaxe" and selectedItemName or ""
+			local selectedWeapon = selectedSlotName == "Weapon" and selectedItemName or ""
+			local pickaxeTier = GearConfig.GetTierForItem(selectedPickaxe)
 
 			local helmetTier = 0
 			local chestplateTier = 0
@@ -75,8 +80,8 @@ function StatsPage:render()
 				bootsTier = GearConfig.GetTierForItem(data.EquippedBoots) or 0
 			end
 
-			local miningPower = StatCalculation.GetMiningDamage(pickaxeTier)
-			local combatDamage = StatCalculation.GetCombatDamage(weaponTier, level)
+			local miningPower = pickaxeTier ~= nil and StatCalculation.GetMiningDamage(pickaxeTier) or 0
+			local combatDamage = StatCalculation.GetCombatDamage(selectedWeapon ~= "" and selectedWeapon or nil, level)
 			local defense = StatCalculation.GetPlayerDefense(helmetTier, chestplateTier, leggingsTier, bootsTier)
 			local maxHP = StatCalculation.GetPlayerMaxHealth(level)
 			local maxFloor = data.MaxFloorReached or 0
@@ -99,8 +104,8 @@ function StatsPage:render()
 						MiningPower = createStatRow("Mining Power", tostring(miningPower), 3),
 						CombatDamage = createStatRow("Combat Damage", tostring(combatDamage), 4),
 						Defense = createStatRow("Defense", tostring(defense), 5),
-						Pickaxe = createStatRow("Pickaxe", data.EquippedPickaxe or "None", 6),
-						Weapon = createStatRow("Weapon", data.EquippedWeapon or "None", 7),
+						Pickaxe = createStatRow("Pickaxe", selectedPickaxe ~= "" and selectedPickaxe or "None wielded", 6),
+						Weapon = createStatRow("Weapon", selectedWeapon ~= "" and selectedWeapon or "None wielded", 7),
 						MaxFloor = createStatRow("Deepest Floor", tostring(maxFloor), 8),
 					})
 				})

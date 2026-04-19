@@ -61,8 +61,6 @@ end
 local function getPlayerDataSnapshot(player: Player)
 	return {
 		Inventory = getStat("Inventory", ProfileTemplate.Inventory, player),
-		EquippedPickaxe = getStat("EquippedPickaxe", ProfileTemplate.EquippedPickaxe, player),
-		EquippedWeapon = getStat("EquippedWeapon", ProfileTemplate.EquippedWeapon, player),
 		EquippedHelmet = getStat("EquippedHelmet", ProfileTemplate.EquippedHelmet, player),
 		EquippedChestplate = getStat("EquippedChestplate", ProfileTemplate.EquippedChestplate, player),
 		EquippedLeggings = getStat("EquippedLeggings", ProfileTemplate.EquippedLeggings, player),
@@ -255,15 +253,18 @@ end
 
 -- Gear
 function PlayerDataHandler.EquipGear(player: Player, itemName: string, slot: string)
+	if not GearConfig.IsArmorSlot(slot) then
+		return false
+	end
+
 	local fieldName = "Equipped" .. slot
 	setStat(fieldName, itemName, player)
 	sanitizeHotbarData(player)
+	return true
 end
 
-function PlayerDataHandler.GetEquippedGear(player: Player)
+function PlayerDataHandler.GetEquippedArmor(player: Player)
 	return {
-		Pickaxe = getStat("EquippedPickaxe", ProfileTemplate.EquippedPickaxe, player),
-		Weapon = getStat("EquippedWeapon", ProfileTemplate.EquippedWeapon, player),
 		Helmet = getStat("EquippedHelmet", ProfileTemplate.EquippedHelmet, player),
 		Chestplate = getStat("EquippedChestplate", ProfileTemplate.EquippedChestplate, player),
 		Leggings = getStat("EquippedLeggings", ProfileTemplate.EquippedLeggings, player),
@@ -271,15 +272,11 @@ function PlayerDataHandler.GetEquippedGear(player: Player)
 	}
 end
 
-function PlayerDataHandler.GetEquippedPickaxe(player: Player): string
-	return getStat("EquippedPickaxe", ProfileTemplate.EquippedPickaxe, player)
-end
-
-function PlayerDataHandler.GetEquippedWeapon(player: Player): string
-	return getStat("EquippedWeapon", ProfileTemplate.EquippedWeapon, player)
-end
-
 function PlayerDataHandler.ClearEquippedGear(player: Player, slot: string)
+	if not GearConfig.IsArmorSlot(slot) then
+		return false
+	end
+
 	local fieldName = "Equipped" .. slot
 	if ProfileTemplate[fieldName] == nil then
 		return false
@@ -330,15 +327,8 @@ function PlayerDataHandler.ClearHotbarSlot(player: Player, slotIndex: number): b
 	end
 
 	local slots = PlayerDataHandler.GetHotbarSlots(player)
-	local entryId = slots[slotIndex] or ""
 	slots[slotIndex] = ""
 	PlayerDataHandler.SetHotbarSlots(player, slots)
-
-	local equipmentSlot = GearConfig.GetSlotForItem(entryId)
-	local fieldName = equipmentSlot and ("Equipped" .. equipmentSlot) or nil
-	if fieldName ~= nil and getStat(fieldName, "", player) == entryId then
-		setStat(fieldName, "", player)
-	end
 
 	return true
 end

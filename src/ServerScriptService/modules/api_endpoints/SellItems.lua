@@ -16,7 +16,8 @@ function endpoint.Call(player: Player, items: {{name: string, quantity: number}}
 	-- Validate all items before processing
 	local totalCoins = 0
 	local takeMap = {}
-	local equippedGear = PlayerDataHandler.GetEquippedGear(player)
+	local equippedArmor = PlayerDataHandler.GetEquippedArmor(player)
+	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
 
 	for _, item in ipairs(items) do
 		if type(item) ~= "table" then return { success = false } end
@@ -35,8 +36,13 @@ function endpoint.Call(player: Player, items: {{name: string, quantity: number}}
 
 		-- Prevent selling equipped gear
 		if GearConfig.items[name] then
-			for _, equippedName in pairs(equippedGear) do
+			for _, equippedName in pairs(equippedArmor) do
 				if equippedName == name then
+					return { success = false, reason = "equipped" }
+				end
+			end
+			for _, hotbarItemName in ipairs(hotbarSlots) do
+				if hotbarItemName == name then
 					return { success = false, reason = "equipped" }
 				end
 			end

@@ -73,8 +73,6 @@ GearConfig.items = {
 
 -- Map slot names to ProfileTemplate field names
 GearConfig.slotToField = {
-	Pickaxe = "EquippedPickaxe",
-	Weapon = "EquippedWeapon",
 	Helmet = "EquippedHelmet",
 	Chestplate = "EquippedChestplate",
 	Leggings = "EquippedLeggings",

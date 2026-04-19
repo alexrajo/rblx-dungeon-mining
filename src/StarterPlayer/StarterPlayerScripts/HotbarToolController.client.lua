@@ -32,7 +32,7 @@ local function trackTool(tool: Tool)
 	table.insert(connections, tool.Activated:Connect(function()
 		local actionName = tool:GetAttribute("HotbarActionName")
 		if type(actionName) == "string" and actionName ~= "" then
-			HotbarActionService.ActivateAction(actionName)
+			HotbarActionService.ActivateAction(actionName, tool)
 		end
 	end))
 
