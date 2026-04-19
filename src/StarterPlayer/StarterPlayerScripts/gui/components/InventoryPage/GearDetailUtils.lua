@@ -68,11 +68,11 @@ local function getPrimaryStatData(itemName: string, statsData)
 		end
 
 		return {
-			label = "Damage",
+			label = "Enemy Damage",
 			value = bombData.enemyDamage,
 			equippedItemName = "Hotbar",
 			delta = 0,
-			statText = string.format("Damage: %d", bombData.enemyDamage),
+			statText = string.format("Enemy Damage: %d", bombData.enemyDamage),
 			equippedText = "Use from hotbar",
 		}
 	end
@@ -161,7 +161,8 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 
 		table.insert(detailLines, "Consumable")
 		table.insert(detailLines, string.format("Radius: %d", bombData.radius))
-		table.insert(detailLines, string.format("Max Damage: %d", bombData.enemyDamage))
+		table.insert(detailLines, "Breaks OreNodes in range")
+		table.insert(detailLines, string.format("Max Enemy Damage: %d", bombData.enemyDamage))
 		table.insert(detailLines, string.format("Fuse Time: %.1fs", bombData.fuseTime))
 	elseif gearInfo.slot == "Weapon" then
 		table.insert(detailLines, getTierLabel(gearInfo.tier))

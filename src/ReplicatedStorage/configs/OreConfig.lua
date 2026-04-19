@@ -2,7 +2,6 @@ local OreConfig = {
 	{
 		name = "Stone",
 		layer = 1,
-		minPickaxeTier = 1,
 		rarity = "Common",
 		baseValue = 1,
 		nodeHP = 2,
@@ -10,7 +9,6 @@ local OreConfig = {
 	{
 		name = "Copper",
 		layer = 1,
-		minPickaxeTier = 1,
 		rarity = "Common",
 		baseValue = 5,
 		nodeHP = 4,
@@ -18,7 +16,6 @@ local OreConfig = {
 	{
 		name = "Iron",
 		layer = 2,
-		minPickaxeTier = 2,
 		rarity = "Common",
 		baseValue = 12,
 		nodeHP = 6,
@@ -26,7 +23,6 @@ local OreConfig = {
 	{
 		name = "Gold",
 		layer = 3,
-		minPickaxeTier = 3,
 		rarity = "Uncommon",
 		baseValue = 25,
 		nodeHP = 8,
@@ -34,7 +30,6 @@ local OreConfig = {
 	{
 		name = "Diamond",
 		layer = 4,
-		minPickaxeTier = 4,
 		rarity = "Rare",
 		baseValue = 60,
 		nodeHP = 12,
@@ -42,7 +37,6 @@ local OreConfig = {
 	{
 		name = "Obsidian",
 		layer = 5,
-		minPickaxeTier = 5,
 		rarity = "Rare",
 		baseValue = 120,
 		nodeHP = 15,
@@ -50,7 +44,6 @@ local OreConfig = {
 	{
 		name = "Mythril",
 		layer = 6,
-		minPickaxeTier = 6,
 		rarity = "Very Rare",
 		baseValue = 250,
 		nodeHP = 18,

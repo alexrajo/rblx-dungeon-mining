@@ -130,17 +130,6 @@ function endpoint.Call(player: Player, tool: Instance?, nodeInstance: Instance, 
 		return { success = false, cooldown = 0.5 }
 	end
 
-	if pickaxeTier < oreData.minPickaxeTier then
-		-- Pickaxe too weak — bounce off feedback
-		return {
-			success = false,
-			cooldown = 0.5,
-			reason = "tier_too_low",
-			requiredTier = oreData.minPickaxeTier,
-			pickaxeTier = pickaxeTier,
-		}
-	end
-
 	-- Record the accepted action time (no task.delay needed with timestamp approach)
 	lastMineTime[player] = os.clock()
 

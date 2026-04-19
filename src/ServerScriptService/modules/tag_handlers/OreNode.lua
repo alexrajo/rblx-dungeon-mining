@@ -25,9 +25,6 @@ function TagHandler.Apply(instance: Instance)
 	local oreData = OreConfig.byName[oreType]
 
 	if oreData then
-		if nodeModel:GetAttribute("TierRequired") == nil then
-			nodeModel:SetAttribute("TierRequired", oreData.minPickaxeTier)
-		end
 		if nodeModel:GetAttribute("NodeHP") == nil then
 			nodeModel:SetAttribute("NodeHP", oreData.nodeHP)
 		end

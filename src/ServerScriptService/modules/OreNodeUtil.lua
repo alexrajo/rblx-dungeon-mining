@@ -60,7 +60,6 @@ end
 function OreNodeUtil.ApplyAttributes(model: Model, floorNumber: number, oreType: string, oreData: any)
 	model:SetAttribute("FloorNumber", floorNumber)
 	model:SetAttribute("OreType", oreType)
-	model:SetAttribute("TierRequired", oreData.minPickaxeTier)
 	model:SetAttribute("NodeHP", oreData.nodeHP)
 end
 
