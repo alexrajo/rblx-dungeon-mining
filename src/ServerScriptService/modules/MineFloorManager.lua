@@ -151,7 +151,7 @@ local function createRewardChest(position: Vector3, parent: Instance, floorNumbe
 	local chest = chestRef:Clone()
 	chest.Name = "RewardChest"
 	chest:SetAttribute("FloorNumber", floorNumber)
-	chest:PivotTo(CFrame.new(position))
+	chest:PivotTo(CFrame.new(position) * CFrame.Angles(0, math.rad(180), 0))
 	CollectionService:AddTag(chest, "MineRewardChest")
 	chest.Parent = parent
 
