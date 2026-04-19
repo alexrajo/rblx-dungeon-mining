@@ -2,12 +2,27 @@ local plr = game.Players.LocalPlayer
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
 
 local globalConfig = require(ReplicatedStorage:WaitForChild("GlobalConfig"))
 
 local HIT_DELAY = 0.27
+local ORE_HIT_SOUND_IDS = {
+	8666676588,
+	8666677396,
+	8666678078,
+	8666678762,
+	8666679694,
+	8666680446,
+	8666681117,
+	8666681736,
+	8666682639,
+	8666683381,
+	8666684072,
+	8666684617,
+}
 
 local mineAnim = Instance.new("Animation")
 mineAnim.AnimationId = "rbxassetid://135782976252428"
@@ -90,6 +105,18 @@ local function shakeNode(node: Instance)
 	end
 end
 
+local function playRandomOreHitSound()
+	local soundId = ORE_HIT_SOUND_IDS[math.random(1, #ORE_HIT_SOUND_IDS)]
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://" .. soundId
+	SoundService:PlayLocalSound(sound)
+
+	task.spawn(function()
+		sound.Ended:Wait()
+		sound:Destroy()
+	end)
+end
+
 local MineAction = {}
 
 function MineAction.Activate(tool: Tool?)
@@ -118,6 +145,7 @@ function MineAction.Activate(tool: Tool?)
 	}
 
 	local targetNode: Instance? = nil
+	local targetIsOreNode = false
 	local hitPosition = nil
 
 	for _, direction in ipairs(rayDirections) do
@@ -130,6 +158,7 @@ function MineAction.Activate(tool: Tool?)
 					and (current:IsA("Model") or current:IsA("BasePart"))
 				if isOreNode or isMineCrate then
 					targetNode = current
+					targetIsOreNode = isOreNode
 					hitPosition = result.Position
 					break
 				end
@@ -142,6 +171,10 @@ function MineAction.Activate(tool: Tool?)
 	-- Spawn the hit-registration and server call in the background so the
 	-- cooldown timer starts immediately regardless of server latency.
 	if targetNode ~= nil then
+		if targetIsOreNode then
+			playRandomOreHitSound()
+		end
+
 		task.spawn(function()
 			task.wait(HIT_DELAY)
 
