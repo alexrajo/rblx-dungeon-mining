@@ -92,6 +92,13 @@ local function unequipLocalTools()
 	end
 end
 
+local function clearLocalSelection()
+	pendingSelectedSlot = 0
+	pendingServerSelectedSlot = nil
+	unequipLocalTools()
+	setState(nil, 0)
+end
+
 local function equipLocalSlot(slotIndex: number): boolean
 	if slotIndex == 0 then
 		pendingSelectedSlot = 0
@@ -152,12 +159,21 @@ local function initialize()
 				table.insert(slotEntries, {name = child.Name, value = child.Value})
 			end
 		end
-		setState(HotbarConfig.NormalizeStoredSlots(slotEntries))
+		local previousSelectedSlot = state.selectedSlot
+		local previousSelectedEntryId = previousSelectedSlot ~= 0 and state.slots[previousSelectedSlot] or ""
+		local nextSlots = HotbarConfig.NormalizeStoredSlots(slotEntries)
+		setState(nextSlots)
+
+		if previousSelectedSlot ~= 0 then
+			local currentSelectedEntryId = state.slots[previousSelectedSlot] or ""
+			if currentSelectedEntryId == "" or currentSelectedEntryId ~= previousSelectedEntryId then
+				clearLocalSelection()
+				return
+			end
+		end
 
 		if state.selectedSlot ~= 0 and state.slots[state.selectedSlot] == "" then
-			pendingSelectedSlot = 0
-			unequipLocalTools()
-			setState(nil, 0)
+			clearLocalSelection()
 		else
 			retryPendingEquip()
 		end

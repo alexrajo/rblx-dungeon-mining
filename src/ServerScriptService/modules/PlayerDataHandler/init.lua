@@ -455,6 +455,7 @@ function PlayerDataHandler.AssignHotbarEntry(player: Player, slotIndex: number, 
 	end
 
 	local slots = PlayerDataHandler.GetHotbarSlots(player)
+	local previousEntryId = slots[slotIndex] or ""
 	for index, existingEntryId in ipairs(slots) do
 		if existingEntryId == entryId then
 			slots[index] = ""
@@ -463,6 +464,12 @@ function PlayerDataHandler.AssignHotbarEntry(player: Player, slotIndex: number, 
 
 	slots[slotIndex] = entryId
 	PlayerDataHandler.SetHotbarSlots(player, slots)
+
+	local selectedSlot = PlayerDataHandler.GetSelectedHotbarSlot(player)
+	if selectedSlot == slotIndex and previousEntryId ~= "" and previousEntryId ~= entryId then
+		PlayerDataHandler.SetSelectedHotbarSlot(player, 0)
+	end
+
 	return true
 end
 

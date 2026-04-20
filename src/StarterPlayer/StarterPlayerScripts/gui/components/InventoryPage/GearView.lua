@@ -115,6 +115,32 @@ function GearView:getFirstAvailableHotbarSlot(data): number?
 	return nil
 end
 
+function GearView:getExistingHotbarSlotForItemType(itemName: string, data): number?
+	local targetSlotName = GearConfig.GetSlotForItem(itemName)
+	if targetSlotName ~= "Pickaxe" and targetSlotName ~= "Weapon" then
+		return nil
+	end
+
+	local hotbarSlots = HotbarConfig.NormalizeStoredSlots(data.HotbarSlots or {})
+	for index, entryId in ipairs(hotbarSlots) do
+		local equippedItemName = HotbarConfig.ResolveEntryItemName(entryId, data)
+		if GearConfig.GetSlotForItem(equippedItemName) == targetSlotName then
+			return index
+		end
+	end
+
+	return nil
+end
+
+function GearView:getTargetHotbarSlot(itemName: string, data): (number?, boolean)
+	local existingSlot = self:getExistingHotbarSlotForItemType(itemName, data)
+	if existingSlot ~= nil then
+		return existingSlot, true
+	end
+
+	return self:getFirstAvailableHotbarSlot(data), false
+end
+
 function GearView:getEquipActionState(itemName: string?, data)
 	if type(itemName) ~= "string" or itemName == "" then
 		return nil
@@ -126,7 +152,7 @@ function GearView:getEquipActionState(itemName: string?, data)
 	end
 
 	if HotbarConfig.IsEntryHotbarEligible(itemName) then
-		local nextSlot = self:getFirstAvailableHotbarSlot(data)
+		local nextSlot, isSwap = self:getTargetHotbarSlot(itemName, data)
 		if nextSlot == nil then
 			return {
 				buttonText = "Equip",
@@ -138,7 +164,9 @@ function GearView:getEquipActionState(itemName: string?, data)
 		return {
 			buttonText = "Equip",
 			disabled = false,
-			hintText = "Equips to hotbar slot " .. tostring(nextSlot) .. ".",
+			hintText = isSwap
+				and ("Swaps with hotbar slot " .. tostring(nextSlot) .. ".")
+				or ("Equips to hotbar slot " .. tostring(nextSlot) .. "."),
 			slotIndex = nextSlot,
 			mode = "hotbar",
 		}
