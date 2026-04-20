@@ -67,7 +67,9 @@ function InventoryPopup:render()
 	local textGap = 6
 	local textWidth = popupWidth - 8 - iconSize - textGap
 
-	local quantityText = '<font color="' .. QUANTITY_COLOR .. '">+' .. tostring(amount) .. "</font>"
+	local quantityText = amount ~= nil
+		and '<font color="' .. QUANTITY_COLOR .. '">+' .. tostring(amount) .. "</font>"
+		or nil
 
 	-- Wrapper: fixed size + aspect ratio, clips so panel slides under the edge
 	return createElement("Frame", {
@@ -107,16 +109,16 @@ function InventoryPopup:render()
 				NameLabel = createElement(TextLabel, {
 					Text = itemName,
 					textSize = 13,
-					Size = UDim2.new(1, 0, 0.5, 0),
-					Position = UDim2.fromScale(0, 0),
-					AnchorPoint = Vector2.new(0, 0),
+					Size = UDim2.new(1, 0, quantityText ~= nil and 0.5 or 1, 0),
+					Position = UDim2.fromScale(0, quantityText ~= nil and 0 or 0.5),
+					AnchorPoint = Vector2.new(0, quantityText ~= nil and 0 or 0.5),
 					textProps = {
 						TextXAlignment = Enum.TextXAlignment.Left,
 						TextTruncate = Enum.TextTruncate.AtEnd,
 						TextScaled = false,
 					},
 				}),
-				QuantityLabel = createElement(TextLabel, {
+				QuantityLabel = quantityText and createElement(TextLabel, {
 					Text = quantityText,
 					textSize = 12,
 					Size = UDim2.new(1, 0, 0.5, 0),
@@ -127,7 +129,7 @@ function InventoryPopup:render()
 						TextTruncate = Enum.TextTruncate.AtEnd,
 						TextScaled = false,
 					},
-				}),
+				}) or nil,
 			}),
 		}),
 	})

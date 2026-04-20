@@ -108,13 +108,19 @@ function InventoryPopupManager:didMount()
 
 	-- New items added after load
 	local addedConn = inventoryFolder.ChildAdded:Connect(function(child)
-		if not child:IsA("ValueBase") then return end
-		local amount = child.Value
-		self._inventoryCache[child.Name] = amount
-		if amount > 0 then
-			self:_showPopup(child.Name, amount)
+		if child:IsA("ValueBase") then
+			local amount = child.Value
+			self._inventoryCache[child.Name] = amount
+			if amount > 0 then
+				self:_showPopup(child.Name, amount)
+			end
+			self:_connectChild(child)
+		elseif child:IsA("Folder") then
+			local nameValue = child:FindFirstChild("name")
+			if nameValue and nameValue:IsA("StringValue") and nameValue.Value ~= "" then
+				self:_showPopup(nameValue.Value, nil)
+			end
 		end
-		self:_connectChild(child)
 	end)
 	table.insert(self._connections, addedConn)
 end
