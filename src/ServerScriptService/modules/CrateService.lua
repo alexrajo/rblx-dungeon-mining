@@ -99,12 +99,6 @@ function CrateService.BreakCrate(player: Player, crate: Instance): boolean
 			end
 		end
 
-		APIService.GetEvent("SendNotification"):FireClient(player, {
-			Type = "reward",
-			Title = "Crate Broken!",
-			Description = getRewardDescription(itemRewards),
-		})
-
 		signalTutorialEvent:Fire(player, "getItem")
 	end
 

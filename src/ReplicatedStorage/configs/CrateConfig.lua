@@ -9,6 +9,12 @@ local CrateConfig = {
 			maxAmount = 5,
 			chance = 1.0,
 		},
+		{
+			itemName = "Healing Herb",
+			minAmount = 1,
+			maxAmount = 1,
+			chance = 0.1,
+		},
 	},
 }
 
