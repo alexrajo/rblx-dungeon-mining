@@ -73,6 +73,8 @@ local function attachEnemyBillboard(enemyModel: Model)
 	local humanoid = enemyModel:FindFirstChildOfClass("Humanoid") or enemyModel:WaitForChild("Humanoid", CHILD_WAIT_TIMEOUT)
 	if rootPart == nil or humanoid == nil then return end
 	if enemyModel.Parent == nil then return end
+	-- Re-check after yields: a concurrent coroutine or cleanup may have run
+	if mountedBillboards[enemyModel] ~= nil then return end
 
 	local billboardGui = Instance.new("BillboardGui")
 	billboardGui.Name = BILLBOARD_NAME
@@ -97,6 +99,17 @@ local function attachEnemyBillboard(enemyModel: Model)
 	updateEnemyBillboardVisibility(enemyModel)
 end
 
+-- Clean up stale billboards left by a previous script run (e.g. character respawn)
+for _, enemyModel in ipairs(CollectionService:GetTagged("Enemy")) do
+	local rootPart = enemyModel:FindFirstChild("HumanoidRootPart")
+	if rootPart then
+		local stale = rootPart:FindFirstChild(BILLBOARD_NAME)
+		if stale then
+			stale:Destroy()
+		end
+	end
+end
+
 for _, enemyModel in ipairs(CollectionService:GetTagged("Enemy")) do
 	task.defer(attachEnemyBillboard, enemyModel)
 end
@@ -109,4 +122,6 @@ CollectionService:GetInstanceRemovedSignal("Enemy"):Connect(function(enemyModel)
 	cleanupEnemyBillboard(enemyModel)
 end)
 
-currentFloorValue.Changed:Connect(updateAllEnemyBillboardVisibility)
+currentFloorValue:GetPropertyChangedSignal("Value"):Connect(function()
+	task.defer(updateAllEnemyBillboardVisibility)
+end)
