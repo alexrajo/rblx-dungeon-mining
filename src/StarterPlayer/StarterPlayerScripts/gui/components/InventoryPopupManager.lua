@@ -116,7 +116,7 @@ function InventoryPopupManager:didMount()
 			end
 			self:_connectChild(child)
 		elseif child:IsA("Folder") then
-			local nameValue = child:FindFirstChild("name")
+			local nameValue = child:WaitForChild("name") -- Need WaitForChild because of race condition where folder is added before name value. Would maybe be better to use stats context in the future, or make sure parent of folder is set last.
 			if nameValue and nameValue:IsA("StringValue") and nameValue.Value ~= "" then
 				self:_showPopup(nameValue.Value, nil)
 			end

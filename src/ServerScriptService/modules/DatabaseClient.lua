@@ -1,6 +1,3 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ProfileService = require(ReplicatedStorage.services.ProfileService)
-
 local DatabaseClient = {}
 DatabaseClient.__index = DatabaseClient
 
@@ -261,3 +258,4 @@ function DatabaseClient:ListenToDataValue(key: string, callback: (value: any) ->
 end
 
 return DatabaseClient
+
