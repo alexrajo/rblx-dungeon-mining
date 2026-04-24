@@ -113,6 +113,7 @@ function Toolbar:renderToolbar(screenData, statsData)
 					Position = UDim2.fromScale(0.5, 0.45),
 					Size = UDim2.fromScale(0.5, 0.5),
 					BackgroundTransparency = 1,
+                    ZIndex = -1,
 				}),
 				BombCount = BombConfig.IsBombItem(itemName) and bombCount ~= nil and createElement("Frame", {
 					BackgroundColor3 = Color3.fromRGB(0, 43, 106),

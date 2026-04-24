@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 local BombConfig = require(ReplicatedStorage.configs.BombConfig)
+local ConsumablesConfig = require(ReplicatedStorage.configs.ConsumablesConfig)
 local PlayerDataHandler = require(ServerScriptService.modules.PlayerDataHandler)
 
 local SLOT_TO_FOLDER: {[string]: string} = {
@@ -27,6 +28,10 @@ local function getToolFolderName(itemName: string): string?
 	if BombConfig.IsBombItem(itemName) then
 		return "Bombs"
 	end
+
+    if ConsumablesConfig.IsConsumableItem(itemName) then
+        return "Consumables"
+    end
 
 	local equipmentSlot = GearConfig.GetSlotForItem(itemName)
 	if equipmentSlot == nil then

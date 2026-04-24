@@ -69,6 +69,11 @@ GearConfig.items = {
 	["Mini Bomb"] = { slot = "Bomb", tier = 1 },
 	["Big Bomb"] = { slot = "Bomb", tier = 1 },
 	["Mega Bomb"] = { slot = "Bomb", tier = 1 },
+
+    -- Consumables
+    ["Health Potion"] = { slot = "Consumable" },
+    ["Speed Potion"] = { slot = "Consumable" },
+    ["Strength Potion"] = { slot = "Consumable" },
 }
 
 -- Map slot names to ProfileTemplate field names
@@ -124,7 +129,7 @@ end
 
 function GearConfig.IsStackable(itemName: string): boolean
 	local item = GearConfig.items[itemName]
-	return item ~= nil and item.slot == "Bomb"
+	return item ~= nil and (item.slot == "Bomb" or item.slot == "Consumable")
 end
 
 function GearConfig.GetTierStats(tier: number)
