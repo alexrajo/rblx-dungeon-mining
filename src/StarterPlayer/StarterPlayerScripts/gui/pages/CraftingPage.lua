@@ -3,6 +3,7 @@ local Services = ReplicatedStorage.services
 local Roact = require(Services.Roact)
 local APIService = require(Services.APIService)
 local CraftingRecipeService = require(Services.CraftingRecipeService)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 
 local RF_Craft = APIService.GetFunction("Craft")
 
@@ -11,22 +12,79 @@ local createElement = Roact.createElement
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
 local PageWrapper = require(ModuleIndex.PageWrapper)
 local Window = require(ModuleIndex.Window)
-local Button = require(ModuleIndex.Button)
 local TextButton = require(ModuleIndex.TextButton)
 local TextLabel = require(ModuleIndex.TextLabel)
-local Panel = require(ModuleIndex.Panel)
 local ItemCounter = require(ModuleIndex.ItemCounter)
 local InventoryUtils = require(ModuleIndex.InventoryUtils)
+local SelectablePanel = require(ModuleIndex.SelectablePanel)
+local Tab = require(ModuleIndex.Tab)
 
 local StatsContext = require(ModuleIndex.StatsContext)
 
 local CraftingPage = Roact.Component:extend("CraftingPage")
 
 local allRecipes = CraftingRecipeService.GetAllRecipes()
+local SECTION_PICKAXES = "Pickaxes"
+local SECTION_WEAPONS = "Weapons"
+local SECTION_ARMOR = "Armor"
+local SECTION_OTHER = "Other"
+local SECTION_NAMES = {SECTION_PICKAXES, SECTION_WEAPONS, SECTION_ARMOR, SECTION_OTHER}
+
+local function isArmorSlot(slotName: string?): boolean
+	return slotName == "Helmet"
+		or slotName == "Chestplate"
+		or slotName == "Leggings"
+		or slotName == "Boots"
+end
+
+local function recipeBelongsToSection(recipe, sectionName: string): boolean
+	local itemData = ItemConfig.GetItemData(recipe.name)
+	if itemData == nil then
+		return false
+	end
+
+	if sectionName == SECTION_PICKAXES then
+		return itemData.slot == "Pickaxe"
+	elseif sectionName == SECTION_WEAPONS then
+		return itemData.slot == "Weapon"
+	elseif sectionName == SECTION_ARMOR then
+		return isArmorSlot(itemData.slot)
+	elseif sectionName == SECTION_OTHER then
+		return itemData.category == ItemConfig.CATEGORY_BOMB
+			or itemData.category == ItemConfig.CATEGORY_CONSUMABLE
+	end
+
+	return false
+end
+
+local function getRecipesForSection(sectionName: string)
+	local recipes = {}
+	for _, recipe in ipairs(allRecipes) do
+		if recipeBelongsToSection(recipe, sectionName) then
+			table.insert(recipes, recipe)
+		end
+	end
+	return recipes
+end
+
+local function findRecipeByName(recipes, recipeName: string?)
+	if recipeName == nil then
+		return nil
+	end
+
+	for _, recipe in ipairs(recipes) do
+		if recipe.name == recipeName then
+			return recipe
+		end
+	end
+
+	return nil
+end
 
 function CraftingPage:init()
 	self:setState({
-		selectedRecipeIndex = nil
+		currentSection = SECTION_PICKAXES,
+		selectedRecipeName = nil,
 	})
 end
 
@@ -42,12 +100,13 @@ function CraftingPage:_renderContent(statsData)
 	local itemsPerRow = 6
 	local paddingPixels = 4
 
-	local selectedRecipeIndex = self.state.selectedRecipeIndex
-	local selectedRecipe = allRecipes[selectedRecipeIndex]
+	local currentSection = self.state.currentSection
+	local visibleRecipes = getRecipesForSection(currentSection)
+	local selectedRecipeName = self.state.selectedRecipeName
+	local selectedRecipe = findRecipeByName(visibleRecipes, selectedRecipeName)
 	local requiredIngredientComponents = {}
 
 	local canCraft = true
-	local inventory = statsData.Inventory or {}
 
 	-- Helper to get owned amount
 	local function getOwned(itemName)
@@ -69,33 +128,74 @@ function CraftingPage:_renderContent(statsData)
 		canCraft = false
 	end
 
-	local recipeComponents = {}
-	for i, recipe in ipairs(allRecipes) do
-		local component = createElement(Button, {
-			color = (i == selectedRecipeIndex and "yellow" or "gray"),
+	local tabComponents = {}
+	for i, sectionName in ipairs(SECTION_NAMES) do
+		tabComponents[sectionName] = createElement(Tab, {
+			text = sectionName,
+			selected = currentSection == sectionName,
+			LayoutOrder = i,
+			xSize = UDim.new(0.23, 0),
 			onClick = function()
 				self:setState({
-					selectedRecipeIndex = i
+					currentSection = sectionName,
+					selectedRecipeName = nil,
+				})
+			end,
+		})
+	end
+
+	local recipeComponents = {}
+	for i, recipe in ipairs(visibleRecipes) do
+		local imageId = ItemConfig.GetImageIdForItem(recipe.name)
+		recipeComponents[recipe.name] = createElement(SelectablePanel, {
+			selected = recipe.name == selectedRecipeName,
+			LayoutOrder = i,
+			onSelect = function()
+				self:setState({
+					selectedRecipeName = recipe.name,
 				})
 			end,
 		}, {
-			TextLabel = createElement(TextLabel, {
-				Text = recipe.name,
-				Size = UDim2.fromScale(0.9, 0.3),
+			Icon = createElement("ImageLabel", {
+				Image = "rbxassetid://" .. imageId,
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5)
+				Position = UDim2.fromScale(0.5, 0.45),
+				Size = UDim2.fromScale(0.58, 0.58),
+				BackgroundTransparency = 1,
+				ZIndex = 1,
 			}),
-			Category = createElement(TextLabel, {
-				Text = recipe.category or "",
-				Size = UDim2.fromScale(0.9, 0.2),
+			Name = createElement(TextLabel, {
+				Text = recipe.name,
+				textSize = 12,
+				Size = UDim2.new(1, -8, 0, 28),
 				AnchorPoint = Vector2.new(0.5, 1),
-				Position = UDim2.fromScale(0.5, 0.95)
-			})
+				Position = UDim2.new(0.5, 0, 1, -6),
+				ZIndex = 3,
+				textProps = {
+					TextScaled = true,
+					TextWrapped = true,
+				},
+			}),
 		})
-		table.insert(recipeComponents, component)
 	end
 
 	return createElement(PageWrapper, {isOpen = (currentPage == "CraftingPage")}, {
+		Tabs = createElement("Frame", {
+			BackgroundTransparency = 1,
+			BorderColor3 = Color3.fromRGB(27, 42, 53),
+			Size = UDim2.fromScale(0.6, 0.1),
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 0.15, 0),
+		}, {
+			UIListLayout = createElement("UIListLayout", {
+				Padding = UDim.new(0, 5),
+				FillDirection = Enum.FillDirection.Horizontal,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+			}),
+			TabComponents = Roact.createFragment(tabComponents),
+		}),
 		Window = createElement(Window, {title = "CRAFTING", Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), onExit = onExit}, {
 			RecipesView = createElement("Frame", {
 				Size = UDim2.new(0.6, -12, 1, -16),
