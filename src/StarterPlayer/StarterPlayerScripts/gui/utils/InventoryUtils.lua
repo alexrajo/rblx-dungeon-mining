@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BombConfig = require(ReplicatedStorage.configs.BombConfig)
+local ConsumablesConfig = require(ReplicatedStorage.configs.ConsumablesConfig)
 
 local InventoryUtils = {}
 
@@ -42,8 +43,8 @@ function InventoryUtils.ResolveEntryItemName(data, entryId: string?): string
 	return entryId
 end
 
-function InventoryUtils.GetBombInventoryCount(data, itemName: string): number?
-	if not BombConfig.IsBombItem(itemName) then
+function InventoryUtils.GetStackDisplayCount(data, itemName: string): number?
+	if not BombConfig.IsBombItem(itemName) and not ConsumablesConfig.IsStackable(itemName) then
 		return nil
 	end
 

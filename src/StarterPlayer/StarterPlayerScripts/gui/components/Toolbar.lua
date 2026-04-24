@@ -5,7 +5,6 @@ local Roact = require(ReplicatedStorage.services.Roact)
 local localServices = ReplicatedStorage:WaitForChild("local_services")
 local HotbarService = require(localServices:WaitForChild("HotbarService"))
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
-local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
 local SelectablePanel = require(ModuleIndex.SelectablePanel)
@@ -84,7 +83,7 @@ function Toolbar:renderToolbar(screenData, statsData)
 		if itemName ~= "" then
 			local imageId = HotbarConfig.GetImageId(itemName)
 			local isSelected = selectedSlot == i
-			local bombCount = InventoryUtils.GetBombInventoryCount(statsData, itemName)
+			local stackCount = InventoryUtils.GetStackDisplayCount(statsData, itemName)
 			visibleSlotCount += 1
 
 			slotButtons["Slot" .. tostring(i)] = createElement(SelectablePanel, {
@@ -115,7 +114,7 @@ function Toolbar:renderToolbar(screenData, statsData)
 					BackgroundTransparency = 1,
                     ZIndex = -1,
 				}),
-				BombCount = BombConfig.IsBombItem(itemName) and bombCount ~= nil and createElement("Frame", {
+				StackCount = stackCount ~= nil and createElement("Frame", {
 					BackgroundColor3 = Color3.fromRGB(0, 43, 106),
 					AnchorPoint = Vector2.new(1, 1),
 					Position = UDim2.new(1, -8, 1, -8),
@@ -126,7 +125,7 @@ function Toolbar:renderToolbar(screenData, statsData)
 						CornerRadius = UDim.new(0, 8),
 					}),
 					Text = createElement(TextLabel, {
-						Text = tostring(bombCount),
+						Text = tostring(stackCount),
 						textSize = 11,
 						Size = UDim2.fromScale(1, 1),
 						ZIndex = 6,

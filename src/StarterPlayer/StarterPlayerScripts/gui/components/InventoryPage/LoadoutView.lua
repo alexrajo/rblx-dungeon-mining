@@ -4,7 +4,6 @@ local Roact = require(Services.Roact)
 
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
-local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 
 local createElement = Roact.createElement
 
@@ -55,12 +54,10 @@ end
 
 function LoadoutSlotCard:render()
 	local itemName = self.props.itemName or ""
-	local bombCount = self.props.bombCount
+	local stackCount = self.props.stackCount
 	local imageId = ""
 	if itemName ~= "" then
-		imageId = BombConfig.IsBombItem(itemName)
-			and BombConfig.GetImageIdForItem(itemName)
-			or GearConfig.GetImageIdForItem(itemName)
+		imageId = HotbarConfig.GetImageId(itemName)
 	end
 	local hovering = self.state.hovering
 	local hasItem = itemName ~= ""
@@ -141,7 +138,7 @@ function LoadoutSlotCard:render()
 					},
 				}),
 			}) or nil,
-			BombCount = hasItem and bombCount ~= nil and createElement("Frame", {
+			StackCount = hasItem and stackCount ~= nil and createElement("Frame", {
 				BackgroundColor3 = Color3.fromRGB(0, 43, 106),
 				AnchorPoint = Vector2.new(1, 1),
 				Position = UDim2.new(1, -8, 1, -8),
@@ -152,7 +149,7 @@ function LoadoutSlotCard:render()
 					CornerRadius = UDim.new(0, 8),
 				}),
 				Text = createElement(TextLabel, {
-					Text = tostring(bombCount),
+					Text = tostring(stackCount),
 					textSize = 11,
 					Size = UDim2.fromScale(1, 1),
 					ZIndex = zIndex + 4,
@@ -290,7 +287,7 @@ function LoadoutView:renderHotbarColumn(data, layoutMetrics)
 			Size = UDim2.fromOffset(layoutMetrics.hotbarSlotSize, layoutMetrics.hotbarSlotSize),
 			badgeText = slotInfo.badgeText,
 			itemName = itemName,
-			bombCount = InventoryUtils.GetBombInventoryCount(data, itemName),
+			stackCount = InventoryUtils.GetStackDisplayCount(data, itemName),
 			onRemove = function()
 				if self.props.onClearHotbarSlot ~= nil then
 					self.props.onClearHotbarSlot(slotInfo.slotIndex)

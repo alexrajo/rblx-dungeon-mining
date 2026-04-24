@@ -10,6 +10,7 @@ ConsumablesConfig.items = {
 		effectType = "heal",
 		healAmount = 30,
 		imageId = "76280156712677",
+		stackable = true,
 	},
 	["Speed Potion"] = {
 		effectType = "speed",
@@ -18,12 +19,14 @@ ConsumablesConfig.items = {
 		speedBonus = 0.20,
 		duration = 30,
 		imageId = "76280156712677",
+		stackable = true,
 	},
 	["Strength Potion"] = {
 		effectType = "damage",
 		damageMultiplier = 1.25,
 		duration = 30,
 		imageId = "76280156712677",
+		stackable = true,
 	},
 }
 
@@ -33,6 +36,11 @@ end
 
 function ConsumablesConfig.IsConsumableItem(itemName: string?): boolean
 	return ConsumablesConfig.items[itemName] ~= nil
+end
+
+function ConsumablesConfig.IsStackable(itemName: string?): boolean
+	local item = ConsumablesConfig.items[itemName]
+	return item ~= nil and item.stackable ~= false
 end
 
 function ConsumablesConfig.GetImageIdForItem(itemName: string): string

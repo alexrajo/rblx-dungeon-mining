@@ -20,26 +20,36 @@ end)
 
 local endpoint = {}
 
-local function getSelectedConsumableItemName(player: Player): string?
+type SelectedConsumable = {
+	entryId: string,
+	itemName: string,
+}
+
+local function getSelectedConsumable(player: Player): SelectedConsumable?
 	local selectedSlot = PlayerDataHandler.GetSelectedHotbarSlot(player)
 	if selectedSlot <= 0 then
 		return nil
 	end
 
 	local hotbarSlots = PlayerDataHandler.GetHotbarSlots(player)
-	local itemName = hotbarSlots[selectedSlot]
+	local entryId = hotbarSlots[selectedSlot]
+	local itemName = PlayerDataHandler.ResolveInventoryEntryItemName(player, entryId)
 	if not ConsumablesConfig.IsConsumableItem(itemName) then
 		return nil
 	end
 
-	return itemName
+	return {
+		entryId = entryId,
+		itemName = itemName,
+	}
 end
 
 function endpoint.Call(player: Player)
-	local itemName = getSelectedConsumableItemName(player)
-	if itemName == nil then
+	local selectedConsumable = getSelectedConsumable(player)
+	if selectedConsumable == nil then
 		return { success = false, cooldown = 0.1, reason = "invalid_consumable" }
 	end
+	local itemName = selectedConsumable.itemName
 
 	local consumableData = ConsumablesConfig.GetConsumableData(itemName)
 	if consumableData == nil then
@@ -57,6 +67,10 @@ function endpoint.Call(player: Player)
 		return { success = false, cooldown = 0.1, reason = "missing_item" }
 	end
 
+	if not ConsumablesConfig.IsStackable(itemName) and PlayerDataHandler.GetItemInstance(player, selectedConsumable.entryId) == nil then
+		return { success = false, cooldown = 0.1, reason = "missing_item" }
+	end
+
 	local character = player.Character
 	if character == nil then
 		return { success = false, cooldown = 0.1 }
@@ -70,8 +84,11 @@ function endpoint.Call(player: Player)
 	-- Record accepted time before any state mutations
 	lastUseTime[player] = os.clock()
 
-	-- Consume one item from inventory
-	PlayerDataHandler.TakeItems(player, { [itemName] = 1 })
+	if ConsumablesConfig.IsStackable(itemName) then
+		PlayerDataHandler.TakeItems(player, { [itemName] = 1 })
+	else
+		PlayerDataHandler.TakeItemInstances(player, { selectedConsumable.entryId })
+	end
 
 	-- Apply effect based on type
 	local effectType = consumableData.effectType

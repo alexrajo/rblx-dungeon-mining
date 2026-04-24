@@ -69,6 +69,26 @@ function HotbarConfig.IsEntryIdHotbarEligible(entryId: string, playerData): bool
 	return itemName ~= "" and HotbarConfig.IsEntryHotbarEligible(itemName)
 end
 
+local function hasStackedInventoryItem(playerData, itemName: string): boolean
+	for _, item in ipairs(playerData.Inventory or {}) do
+		if item.name == itemName and type(item.value) == "number" and item.value > 0 then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function hasInventoryInstance(playerData, entryId: string, itemName: string): boolean
+	for _, item in ipairs(playerData.Inventory or {}) do
+		if item.id == entryId and item.name == itemName then
+			return true
+		end
+	end
+
+	return false
+end
+
 function HotbarConfig.IsEntryAvailable(entryId: string, playerData): boolean
 	local itemName = HotbarConfig.ResolveEntryItemName(entryId, playerData)
 	if itemName == "" or not HotbarConfig.IsEntryHotbarEligible(itemName) then
@@ -76,21 +96,15 @@ function HotbarConfig.IsEntryAvailable(entryId: string, playerData): boolean
 	end
 
 	if BombConfig.IsBombItem(itemName) then
-		for _, item in ipairs(playerData.Inventory or {}) do
-			if item.name == itemName and item.value > 0 then
-				return true
-			end
-		end
-		return false
+		return hasStackedInventoryItem(playerData, itemName)
 	end
 
 	if ConsumablesConfig.IsConsumableItem(itemName) then
-		for _, item in ipairs(playerData.Inventory or {}) do
-			if item.name == itemName and item.value > 0 then
-				return true
-			end
+		if ConsumablesConfig.IsStackable(itemName) then
+			return hasStackedInventoryItem(playerData, itemName)
 		end
-		return false
+
+		return hasInventoryInstance(playerData, entryId, itemName)
 	end
 
 	local tier = GearConfig.GetTierForItem(itemName) or 0

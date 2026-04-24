@@ -1,3 +1,7 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ConsumablesConfig = require(ReplicatedStorage.configs.ConsumablesConfig)
+
 local GearConfig = {}
 
 GearConfig.DEFAULT_IMAGE_ID = "76280156712677"
@@ -18,47 +22,47 @@ GearConfig.tiers = {
 -- Each item maps to a slot and tier
 GearConfig.items = {
 	-- Tier 1 (Wood) - starting gear
-	["Wood Pickaxe"]    = { slot = "Pickaxe", tier = 1 },
-	["Wood Sword"]      = { slot = "Weapon", tier = 1, damage = 5, attackCooldown = 0.55, criticalHitChance = 0.1, criticalHitDamage = 1.5, knockback = 40 },
+	["Wood Pickaxe"]    = { slot = "Pickaxe", tier = 1, imageId = "114032635237765" },
+	["Wood Sword"]      = { slot = "Weapon", tier = 1, damage = 5, attackCooldown = 0.55, criticalHitChance = 0.1, criticalHitDamage = 1.5, knockback = 40, imageId = "76034922098744" },
 	["Wood Helmet"]     = { slot = "Helmet", tier = 1 },
 	["Wood Chestplate"] = { slot = "Chestplate", tier = 1 },
 	["Wood Leggings"]   = { slot = "Leggings", tier = 1 },
 	["Wood Boots"]      = { slot = "Boots", tier = 1 },
 
 	-- Tier 2 (Copper)
-	["Copper Pickaxe"]    = { slot = "Pickaxe", tier = 2 },
-	["Copper Sword"]      = { slot = "Weapon", tier = 2, damage = 10, attackCooldown = 0.52, criticalHitChance = 0.1, criticalHitDamage = 1.55, knockback = 48 },
+	["Copper Pickaxe"]    = { slot = "Pickaxe", tier = 2, imageId = "114032635237765" },
+	["Copper Sword"]      = { slot = "Weapon", tier = 2, damage = 10, attackCooldown = 0.52, criticalHitChance = 0.1, criticalHitDamage = 1.55, knockback = 48, imageId = "89105765568068" },
 	["Copper Helmet"]     = { slot = "Helmet", tier = 2 },
 	["Copper Chestplate"] = { slot = "Chestplate", tier = 2 },
 	["Copper Leggings"]   = { slot = "Leggings", tier = 2 },
 	["Copper Boots"]      = { slot = "Boots", tier = 2 },
 
 	-- Tier 3 (Iron)
-	["Iron Pickaxe"]    = { slot = "Pickaxe", tier = 3 },
-	["Iron Sword"]      = { slot = "Weapon", tier = 3, damage = 18, attackCooldown = 0.48, criticalHitChance = 0.1, criticalHitDamage = 1.65, knockback = 56 },
+	["Iron Pickaxe"]    = { slot = "Pickaxe", tier = 3, imageId = "108606581190884" },
+	["Iron Sword"]      = { slot = "Weapon", tier = 3, damage = 18, attackCooldown = 0.48, criticalHitChance = 0.1, criticalHitDamage = 1.65, knockback = 56, imageId = "111950185917024" },
 	["Iron Helmet"]     = { slot = "Helmet", tier = 3 },
 	["Iron Chestplate"] = { slot = "Chestplate", tier = 3 },
 	["Iron Leggings"]   = { slot = "Leggings", tier = 3 },
 	["Iron Boots"]      = { slot = "Boots", tier = 3 },
 
 	-- Tier 4 (Gold)
-	["Gold Pickaxe"]    = { slot = "Pickaxe", tier = 4 },
-	["Gold Sword"]      = { slot = "Weapon", tier = 4, damage = 28, attackCooldown = 0.45, criticalHitChance = 0.14, criticalHitDamage = 1.8, knockback = 64 },
+	["Gold Pickaxe"]    = { slot = "Pickaxe", tier = 4, imageId = "103027523455339" },
+	["Gold Sword"]      = { slot = "Weapon", tier = 4, damage = 28, attackCooldown = 0.45, criticalHitChance = 0.14, criticalHitDamage = 1.8, knockback = 64, imageId = "91563305913237" },
 	["Gold Helmet"]     = { slot = "Helmet", tier = 4 },
 	["Gold Chestplate"] = { slot = "Chestplate", tier = 4 },
 	["Gold Leggings"]   = { slot = "Leggings", tier = 4 },
 	["Gold Boots"]      = { slot = "Boots", tier = 4 },
 
 	-- Tier 5 (Diamond)
-	["Diamond Pickaxe"]    = { slot = "Pickaxe", tier = 5 },
-	["Diamond Sword"]      = { slot = "Weapon", tier = 5, damage = 40, attackCooldown = 0.42, criticalHitChance = 0.18, criticalHitDamage = 2, knockback = 76 },
+	["Diamond Pickaxe"]    = { slot = "Pickaxe", tier = 5, imageId = "135622329861072" },
+	["Diamond Sword"]      = { slot = "Weapon", tier = 5, damage = 40, attackCooldown = 0.42, criticalHitChance = 0.18, criticalHitDamage = 2, knockback = 76, imageId = "108751817855245" },
 	["Diamond Helmet"]     = { slot = "Helmet", tier = 5 },
 	["Diamond Chestplate"] = { slot = "Chestplate", tier = 5 },
 	["Diamond Leggings"]   = { slot = "Leggings", tier = 5 },
 	["Diamond Boots"]      = { slot = "Boots", tier = 5 },
 
 	-- Tier 6 (Obsidian)
-	["Obsidian Pickaxe"]    = { slot = "Pickaxe", tier = 6 },
+	["Obsidian Pickaxe"]    = { slot = "Pickaxe", tier = 6, imageId = "70578331422402" },
 	["Obsidian Sword"]      = { slot = "Weapon", tier = 6, damage = 55, attackCooldown = 0.38, criticalHitChance = 0.22, criticalHitDamage = 2.2, knockback = 90 },
 	["Obsidian Helmet"]     = { slot = "Helmet", tier = 6 },
 	["Obsidian Chestplate"] = { slot = "Chestplate", tier = 6 },
@@ -66,12 +70,12 @@ GearConfig.items = {
 	["Obsidian Boots"]      = { slot = "Boots", tier = 6 },
 
 	-- Bombs
-	["Mini Bomb"] = { slot = "Bomb", tier = 1 },
-	["Big Bomb"] = { slot = "Bomb", tier = 1 },
-	["Mega Bomb"] = { slot = "Bomb", tier = 1 },
+	["Mini Bomb"] = { slot = "Bomb", tier = 1, imageId = "114615443431858" },
+	["Big Bomb"] = { slot = "Bomb", tier = 1, imageId = "88682277441307" },
+	["Mega Bomb"] = { slot = "Bomb", tier = 1, imageId = "114615443431858" },
 
     -- Consumables
-    ["Health Potion"] = { slot = "Consumable" },
+    ["Health Potion"] = { slot = "Consumable", imageId = "88490528639781" },
     ["Speed Potion"] = { slot = "Consumable" },
     ["Strength Potion"] = { slot = "Consumable" },
 }
@@ -129,7 +133,19 @@ end
 
 function GearConfig.IsStackable(itemName: string): boolean
 	local item = GearConfig.items[itemName]
-	return item ~= nil and (item.slot == "Bomb" or item.slot == "Consumable")
+	if item == nil then
+		return false
+	end
+
+	if item.slot == "Bomb" then
+		return true
+	end
+
+	if item.slot == "Consumable" then
+		return ConsumablesConfig.IsStackable(itemName)
+	end
+
+	return false
 end
 
 function GearConfig.GetTierStats(tier: number)
