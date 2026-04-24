@@ -5,15 +5,21 @@ local CrateConfig = {
 	loot = {
 		{
 			itemName = "Wood",
-			minAmount = 2,
-			maxAmount = 5,
-			chance = 1.0,
+			minAmount = 1,
+			maxAmount = 3,
+			chance = 0.5,
+		},
+		{
+			itemName = "Healing Herb",
+			minAmount = 1,
+			maxAmount = 1,
+			chance = 0.2,
 		},
 		{
 			itemName = "Health Potion",
 			minAmount = 1,
 			maxAmount = 1,
-			chance = 1.0,
+			chance = 0.1,
 		},
 	},
 }
