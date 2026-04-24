@@ -532,9 +532,9 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		enemyModel.PrimaryPart = rootPart
 		enemyModel:SetAttribute("FloorNumber", floorNumber)
 		enemyModel:SetAttribute("EnemyType", enemyType)
-		CollectionService:AddTag(enemyModel, "Enemy")
 
 		enemyModel.Parent = floorFolder
+		CollectionService:AddTag(enemyModel, "Enemy")
 	end
 
 	-- Add distributed lighting throughout the cave

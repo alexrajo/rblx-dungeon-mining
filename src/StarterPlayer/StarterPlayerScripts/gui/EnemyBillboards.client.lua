@@ -1,5 +1,6 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local Roact = require(ReplicatedStorage.services.Roact)
 
 local ModuleIndex = require(script.Parent.ModuleIndex)
@@ -14,6 +15,7 @@ local CHILD_WAIT_TIMEOUT = 5
 local mountedBillboards: {[Model]: {billboardGui: BillboardGui, handle: any}} = {}
 local playerDataFolder = ReplicatedStorage:WaitForChild("PlayerData"):WaitForChild(game.Players.LocalPlayer.Name)
 local currentFloorValue = playerDataFolder:WaitForChild("CurrentFloor")
+local attachEnemyBillboard
 
 local function getFloorNumberForInstance(instance: Instance?): number?
 	local current = instance
@@ -51,6 +53,12 @@ local function updateAllEnemyBillboardVisibility()
 	end
 end
 
+local function scanTaggedEnemies()
+	for _, enemyModel in ipairs(CollectionService:GetTagged("Enemy")) do
+		task.defer(attachEnemyBillboard, enemyModel)
+	end
+end
+
 local function cleanupEnemyBillboard(enemyModel: Model)
 	local mounted = mountedBillboards[enemyModel]
 	if mounted == nil then return end
@@ -64,7 +72,7 @@ local function cleanupEnemyBillboard(enemyModel: Model)
 	mountedBillboards[enemyModel] = nil
 end
 
-local function attachEnemyBillboard(enemyModel: Model)
+attachEnemyBillboard = function(enemyModel: Model)
 	if mountedBillboards[enemyModel] ~= nil then return end
 	if not enemyModel:IsA("Model") then return end
 	if enemyModel.Parent == nil then return end
@@ -110,9 +118,7 @@ for _, enemyModel in ipairs(CollectionService:GetTagged("Enemy")) do
 	end
 end
 
-for _, enemyModel in ipairs(CollectionService:GetTagged("Enemy")) do
-	task.defer(attachEnemyBillboard, enemyModel)
-end
+scanTaggedEnemies()
 
 CollectionService:GetInstanceAddedSignal("Enemy"):Connect(function(enemyModel)
 	task.defer(attachEnemyBillboard, enemyModel)
@@ -123,5 +129,12 @@ CollectionService:GetInstanceRemovedSignal("Enemy"):Connect(function(enemyModel)
 end)
 
 currentFloorValue:GetPropertyChangedSignal("Value"):Connect(function()
+	scanTaggedEnemies()
 	task.defer(updateAllEnemyBillboardVisibility)
+end)
+
+Workspace.ChildAdded:Connect(function(child)
+	if child.Name:match("^MineFloor_%d+$") then
+		task.defer(scanTaggedEnemies)
+	end
 end)
