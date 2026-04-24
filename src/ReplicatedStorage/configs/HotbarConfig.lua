@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 local BombConfig = require(ReplicatedStorage.configs.BombConfig)
 local ConsumablesConfig = require(ReplicatedStorage.configs.ConsumablesConfig)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 
 local HotbarConfig = {}
 
@@ -153,18 +154,10 @@ end
 
 function HotbarConfig.GetImageId(itemName: string): string
 	if itemName == "" then
-		return GearConfig.DEFAULT_IMAGE_ID
+		return ItemConfig.DEFAULT_IMAGE_ID
 	end
 
-	if BombConfig.IsBombItem(itemName) then
-		return BombConfig.GetImageIdForItem(itemName)
-	end
-
-	if ConsumablesConfig.IsConsumableItem(itemName) then
-		return ConsumablesConfig.GetImageIdForItem(itemName)
-	end
-
-	return GearConfig.GetImageIdForItem(itemName)
+	return ItemConfig.GetImageIdForItem(itemName)
 end
 
 return HotbarConfig

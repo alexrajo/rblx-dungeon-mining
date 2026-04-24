@@ -1,8 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Configs = ReplicatedStorage.configs
 local DropsConfig = require(Configs.DropsConfig)
-local GearConfig = require(Configs.GearConfig)
-local BombConfig = require(Configs.BombConfig)
+local ItemConfig = require(Configs.ItemConfig)
 local itemDefinitions = DropsConfig.itemDefinitions
 
 local ItemService = {}
@@ -13,13 +12,13 @@ function ItemService.GetItemDefinitionFromName(name)
 		return itemDefinition
 	end
 
-	local gearSlot = GearConfig.GetSlotForItem(name)
-	if gearSlot ~= nil then
-		local imageId = if BombConfig.IsBombItem(name)
-			then BombConfig.GetImageIdForItem(name)
-			else GearConfig.GetImageIdForItem(name)
+	local itemData = ItemConfig.GetItemData(name)
+	if itemData ~= nil then
 		return {
-			imageId = imageId,
+			imageId = ItemConfig.GetImageIdForItem(name),
+			slot = itemData.slot,
+			category = itemData.category,
+			stackable = itemData.stackable,
 		}
 	end
 

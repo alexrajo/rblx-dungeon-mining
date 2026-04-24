@@ -1,6 +1,10 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
+
 local BombConfig = {}
 
-BombConfig.DEFAULT_IMAGE_ID = "76280156712677"
+BombConfig.DEFAULT_IMAGE_ID = ItemConfig.DEFAULT_IMAGE_ID
 
 BombConfig.items = {
 	["Mini Bomb"] = {
@@ -8,21 +12,18 @@ BombConfig.items = {
 		enemyDamage = 30,
 		fuseTime = 2.0,
 		placementCooldown = 1.0,
-		imageId = BombConfig.DEFAULT_IMAGE_ID,
 	},
 	["Big Bomb"] = {
 		radius = 16,
 		enemyDamage = 60,
 		fuseTime = 2.5,
 		placementCooldown = 1.5,
-		imageId = BombConfig.DEFAULT_IMAGE_ID,
 	},
 	["Mega Bomb"] = {
 		radius = 24,
 		enemyDamage = 100,
 		fuseTime = 3.0,
 		placementCooldown = 2.0,
-		imageId = BombConfig.DEFAULT_IMAGE_ID,
 	},
 }
 
@@ -31,16 +32,11 @@ function BombConfig.GetBombData(itemName: string?)
 end
 
 function BombConfig.IsBombItem(itemName: string?): boolean
-	return BombConfig.items[itemName] ~= nil
+	return ItemConfig.IsCategory(itemName, ItemConfig.CATEGORY_BOMB)
 end
 
 function BombConfig.GetImageIdForItem(itemName: string): string
-	local item = BombConfig.items[itemName]
-	if item and item.imageId ~= nil then
-		return item.imageId
-	end
-
-	return BombConfig.DEFAULT_IMAGE_ID
+	return ItemConfig.GetImageIdForItem(itemName)
 end
 
 return BombConfig

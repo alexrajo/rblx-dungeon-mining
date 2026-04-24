@@ -8,6 +8,7 @@ local configs = ReplicatedStorage.configs
 local SellPriceConfig = require(configs.SellPriceConfig)
 local HotbarConfig = require(configs.HotbarConfig)
 local GearConfig = require(configs.GearConfig)
+local ItemConfig = require(configs.ItemConfig)
 
 local RF_SellItems = APIService.GetFunction("SellItems")
 
@@ -68,7 +69,7 @@ function SellPage:_renderItemCell(cellData, isSelected: boolean, isEquipped: boo
 	local itemName = cellData.name
 	local ownedAmount = cellData.owned
 	local itemConfig = ItemLookupService.GetItemDefinitionFromName(itemName) or {}
-	local imageId = itemConfig.imageId or "76280156712677"
+	local imageId = itemConfig.imageId or ItemConfig.DEFAULT_IMAGE_ID
 	local price = SellPriceConfig[itemName]
 
 	return createElement(SelectablePanel, {
@@ -242,7 +243,7 @@ function SellPage:_renderContent(statsData)
 	local detailChildren = {}
 	if selectedItem and selectedOwned > 0 then
 		local itemConfig = ItemLookupService.GetItemDefinitionFromName(selectedItem) or {}
-		local imageId = itemConfig.imageId or "76280156712677"
+		local imageId = itemConfig.imageId or ItemConfig.DEFAULT_IMAGE_ID
 
 		detailChildren.ItemName = createElement(TextLabel, {
 			Text = selectedItem,

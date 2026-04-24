@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = ReplicatedStorage.services
 local Roact = require(Services.Roact)
 local ItemLookupService = require(Services.ItemLookupService)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 
 local createElement = Roact.createElement
 
@@ -58,7 +59,7 @@ function InventoryPopup:render()
 	local layoutOrder = self.props.layoutOrder or 0
 
 	local itemDef = ItemLookupService.GetItemDefinitionFromName(itemName) or {}
-	local imageId = itemDef.imageId or "76280156712677"
+	local imageId = itemDef.imageId or ItemConfig.DEFAULT_IMAGE_ID
 
 	-- Derive pixel dimensions so layout is explicit
 	local popupHeight = math.floor(popupWidth / 2.5)

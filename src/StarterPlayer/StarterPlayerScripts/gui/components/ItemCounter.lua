@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Roact = require(ReplicatedStorage.services.Roact)
 local Services = ReplicatedStorage.services
 local ItemLookupService = require(Services.ItemLookupService)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 
 local createElement = Roact.createElement
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
@@ -25,7 +26,7 @@ function ItemCounter:render()
 	local useRedText = amountOwned ~= nil and amountOwned < amount
 	local counterText = amountOwned ~= nil and tostring(amountOwned).." / "..tostring(amount) or tostring(amount) 
 	
-	local imageId = itemConfig.imageId or "76280156712677"
+	local imageId = itemConfig.imageId or ItemConfig.DEFAULT_IMAGE_ID
 
 	return createElement(Panel, {Size = self.props.Size}, {
 		Icon = createElement("ImageLabel", {

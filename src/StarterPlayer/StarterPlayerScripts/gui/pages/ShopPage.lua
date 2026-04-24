@@ -5,7 +5,7 @@ local APIService = require(Services.APIService)
 local ItemLookupService = require(Services.ItemLookupService)
 
 local configs = ReplicatedStorage.configs
-local GearConfig = require(configs.GearConfig)
+local ItemConfig = require(configs.ItemConfig)
 local ShopConfig = require(configs.ShopConfig)
 
 local RF_BuyItems = APIService.GetFunction("BuyItems")
@@ -24,7 +24,7 @@ local StatsContext = require(ModuleIndex.StatsContext)
 local GearDetailUtils = require(script.Parent.Parent.components.InventoryPage.GearDetailUtils)
 
 local COIN_ICON_ID = "11953783945"
-local DEFAULT_IMAGE_ID = GearConfig.DEFAULT_IMAGE_ID
+local DEFAULT_IMAGE_ID = ItemConfig.DEFAULT_IMAGE_ID
 
 local ShopPage = Roact.Component:extend("ShopPage")
 

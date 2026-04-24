@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 local BombConfig = require(ReplicatedStorage.configs.BombConfig)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 
 local GearDetailUtils = {}
@@ -190,9 +191,7 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 		name = itemName,
 		slot = gearInfo.slot,
 		tier = gearInfo.tier,
-		imageId = BombConfig.IsBombItem(itemName)
-			and BombConfig.GetImageIdForItem(itemName)
-			or GearConfig.GetImageIdForItem(itemName),
+		imageId = ItemConfig.GetImageIdForItem(itemName),
 		equippedText = primaryStat and primaryStat.equippedText or "Equipped: None",
 		primaryStatText = primaryStat and primaryStat.statText or nil,
 		detailLines = detailLines,
