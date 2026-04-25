@@ -2,6 +2,9 @@ local MineLayerConfig = {
 	-- Global default ore density: fraction of available floor positions that spawn an ore node.
 	-- Individual layers may override this with their own oreDensity field.
 	defaultOreDensity = 0.04,
+	-- Global default enemy density: fraction of available floor positions that spawn an enemy.
+	-- Individual layers may override this with their own enemyDensity field.
+	defaultEnemyDensity = 0.005,
 	checkpointInterval = 5,
 
 	[1] = {
@@ -12,6 +15,7 @@ local MineLayerConfig = {
 		secondaryOre = "Copper",
 		enemies = { "Cave Slime", "Cave Bat" },
 		floorCompletionBonus = 10,
+        enemyDensity = 0.003, -- Override default enemy density for this layer
 	},
 	[2] = {
 		name = "Copper Caves",

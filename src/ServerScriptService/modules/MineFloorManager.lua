@@ -531,9 +531,10 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 	-- Spawn enemies on floor positions
 	local enemyTypes = layerData.enemies
-	local NUM_ENEMIES = math.min(3, #enemyTypes * 2)
+	local enemyDensity = if layerData.enemyDensity ~= nil then layerData.enemyDensity else MineLayerConfig.defaultEnemyDensity
+	local numEnemies = if enemyTypes ~= nil and #enemyTypes > 0 then math.floor(#floorPositions * enemyDensity + 0.5) else 0
 
-	for i = 1, NUM_ENEMIES do
+	for i = 1, numEnemies do
 		local floorPosition = takeSpawnPosition("enemies")
 		if floorPosition == nil then break end
 
