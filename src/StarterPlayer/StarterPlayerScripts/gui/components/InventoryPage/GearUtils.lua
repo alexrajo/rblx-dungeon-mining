@@ -14,7 +14,7 @@ local EQUIPPED_FIELDS = {
 	"EquippedBoots",
 }
 
-function GearUtils.GetOwnedGearEntries(data, slotFilter: ((string, {slot: string, tier: number}) -> boolean)?)
+function GearUtils.GetOwnedGearEntries(data, slotFilter: ((string, {slot: string}) -> boolean)?)
 	local equippedItems: {[string]: boolean} = {}
 	for _, fieldName in ipairs(EQUIPPED_FIELDS) do
 		local itemId = data[fieldName]
@@ -50,7 +50,6 @@ function GearUtils.GetOwnedGearEntries(data, slotFilter: ((string, {slot: string
 				name = itemName,
 				amount = amount,
 				slot = itemData.slot,
-				tier = itemData.tier,
 			})
 		end
 	end
@@ -58,9 +57,6 @@ function GearUtils.GetOwnedGearEntries(data, slotFilter: ((string, {slot: string
 	table.sort(gearEntries, function(a, b)
 		if a.slot ~= b.slot then
 			return a.slot < b.slot
-		end
-		if a.tier ~= b.tier then
-			return a.tier < b.tier
 		end
 		return a.name < b.name
 	end)

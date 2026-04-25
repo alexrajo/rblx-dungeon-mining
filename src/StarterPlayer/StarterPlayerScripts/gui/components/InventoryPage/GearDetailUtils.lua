@@ -55,8 +55,22 @@ local function getEquippedItemNameForSlot(slotName: string, statsData): string
 	return HotbarConfig.ResolveEntryItemName(equippedEntryId, statsData)
 end
 
+local function getStatValue(itemName: string, slotName: string, statField: string): number?
+	if slotName == "Weapon" and statField == "damage" then
+		return GearConfig.GetWeaponCombatStats(itemName).damage
+	elseif slotName == "Pickaxe" and statField == "pickaxePower" then
+		return GearConfig.GetMiningStats(itemName).pickaxePower
+	elseif GearConfig.IsArmorSlot(slotName) and statField == "armorDefense" then
+		return GearConfig.GetArmorStats(itemName).armorDefense
+	end
+
+	local gearInfo = GearConfig.GetItemData(itemName)
+	local statValue = gearInfo and gearInfo[statField]
+	return type(statValue) == "number" and statValue or nil
+end
+
 local function getPrimaryStatData(itemName: string, statsData)
-	local gearInfo = GearConfig.items[itemName]
+	local gearInfo = GearConfig.GetItemData(itemName)
 	if gearInfo == nil then
 		return nil
 	end
@@ -84,33 +98,15 @@ local function getPrimaryStatData(itemName: string, statsData)
 
 	local equippedItemName = getEquippedItemNameForSlot(gearInfo.slot, statsData)
 	local equippedStatValue = 0
-	local newStatValue = 0
+	local newStatValue = getStatValue(itemName, gearInfo.slot, statInfo.field)
+	if newStatValue == nil then
+		return nil
+	end
 
-	if gearInfo.slot == "Weapon" then
-		newStatValue = GearConfig.GetWeaponCombatStats(itemName).damage
-		if equippedItemName ~= "" then
-			equippedStatValue = GearConfig.GetWeaponCombatStats(equippedItemName).damage
-		end
-	else
-		local tierStats = GearConfig.tiers[gearInfo.tier]
-		if tierStats == nil then
-			return nil
-		end
-
-		local statValue = tierStats[statInfo.field]
-		if type(statValue) ~= "number" then
-			return nil
-		end
-
-		newStatValue = statValue
-
-		if equippedItemName ~= "" then
-			local equippedGearInfo = GearConfig.items[equippedItemName]
-			local equippedTierStats = equippedGearInfo and GearConfig.tiers[equippedGearInfo.tier]
-			local equippedValue = equippedTierStats and equippedTierStats[statInfo.field]
-			if type(equippedValue) == "number" then
-				equippedStatValue = equippedValue
-			end
+	if equippedItemName ~= "" then
+		local equippedValue = getStatValue(equippedItemName, gearInfo.slot, statInfo.field)
+		if equippedValue ~= nil then
+			equippedStatValue = equippedValue
 		end
 	end
 
@@ -125,19 +121,6 @@ local function getPrimaryStatData(itemName: string, statsData)
 		statText = string.format("%s: %d%s", statInfo.label, newStatValue, formatSignedDelta(delta)),
 		equippedText = string.format("Equipped: %s", equippedText),
 	}
-end
-
-local function getTierLabel(tier: number?): string
-	if type(tier) ~= "number" then
-		return "Unknown Tier"
-	end
-
-	local tierStats = GearConfig.GetTierStats(tier)
-	if tierStats == nil then
-		return string.format("Tier %d", tier)
-	end
-
-	return string.format("Tier %d %s", tier, tierStats.material)
 end
 
 function GearDetailUtils.GetPrimaryComparison(itemName: string, statsData)
@@ -166,7 +149,6 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 		table.insert(detailLines, string.format("Max Enemy Damage: %d", bombData.enemyDamage))
 		table.insert(detailLines, string.format("Fuse Time: %.1fs", bombData.fuseTime))
 	elseif gearInfo.slot == "Weapon" then
-		table.insert(detailLines, getTierLabel(gearInfo.tier))
 		local weaponStats = GearConfig.GetWeaponCombatStats(itemName)
 		table.insert(detailLines, string.format("Damage: %d", weaponStats.damage))
 		table.insert(detailLines, string.format("Cooldown: %.2fs", weaponStats.attackCooldown))
@@ -174,23 +156,19 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 		table.insert(detailLines, string.format("Crit Damage: %.2fx", weaponStats.criticalHitDamage))
 		table.insert(detailLines, string.format("Knockback: %d", weaponStats.knockback))
 	elseif gearInfo.slot == "Pickaxe" then
-		table.insert(detailLines, getTierLabel(gearInfo.tier))
-		local tierStats = GearConfig.GetTierStats(gearInfo.tier)
-		if tierStats ~= nil then
-			table.insert(detailLines, string.format("Mining Power: %d", tierStats.pickaxePower))
-		end
+		local miningStats = GearConfig.GetMiningStats(itemName)
+		table.insert(detailLines, string.format("Mining Power: %d", miningStats.pickaxePower))
 	else
-		table.insert(detailLines, getTierLabel(gearInfo.tier))
-		local tierStats = GearConfig.GetTierStats(gearInfo.tier)
-		if tierStats ~= nil then
-			table.insert(detailLines, string.format("Defense: %d", tierStats.armorDefense))
+		local armorStats = GearConfig.GetArmorStats(itemName)
+		table.insert(detailLines, string.format("Defense: %d", armorStats.armorDefense))
+		if gearInfo.slot == "Boots" then
+			table.insert(detailLines, string.format("Move Speed: +%d", GearConfig.GetMoveSpeedBonus(itemName)))
 		end
 	end
 
 	return {
 		name = itemName,
 		slot = gearInfo.slot,
-		tier = gearInfo.tier,
 		imageId = ItemConfig.GetImageIdForItem(itemName),
 		equippedText = primaryStat and primaryStat.equippedText or "Equipped: None",
 		primaryStatText = primaryStat and primaryStat.statText or nil,

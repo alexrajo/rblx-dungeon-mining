@@ -108,8 +108,7 @@ function HotbarConfig.IsEntryAvailable(entryId: string, playerData): boolean
 		return hasInventoryInstance(playerData, entryId, itemName)
 	end
 
-	local tier = GearConfig.GetTierForItem(itemName) or 0
-	if tier <= 0 then
+	if GearConfig.GetItemData(itemName) == nil then
 		return false
 	end
 

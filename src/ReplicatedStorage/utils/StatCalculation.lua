@@ -8,22 +8,11 @@ local function getWeaponDamage(weapon: any): number
 		return GearConfig.GetWeaponCombatStats(weapon).damage
 	end
 
-	if type(weapon) == "number" then
-		local tierStats = GearConfig.GetTierStats(weapon)
-		if tierStats and type(tierStats.material) == "string" then
-			return GearConfig.GetWeaponCombatStats(tierStats.material .. " Sword").damage
-		end
-	end
-
 	return GearConfig.GetWeaponCombatStats(nil).damage
 end
 
-function StatCalculation.GetMiningDamage(pickaxeTier: number): number
-	local tierStats = GearConfig.GetTierStats(pickaxeTier)
-	if tierStats then
-		return tierStats.pickaxePower
-	end
-	return 1
+function StatCalculation.GetMiningDamage(pickaxeItemName: string?): number
+	return GearConfig.GetMiningStats(pickaxeItemName).pickaxePower
 end
 
 function StatCalculation.GetCombatDamage(weapon: any, level: number): number
@@ -32,37 +21,24 @@ function StatCalculation.GetCombatDamage(weapon: any, level: number): number
 	return baseDamage + weaponDamage
 end
 
-function StatCalculation.GetPlayerDefense(helmetTier: number, chestplateTier: number, leggingsTier: number, bootsTier: number): number
-	local total = 0
-	if helmetTier > 0 then
-		local stats = GearConfig.GetTierStats(helmetTier)
-		if stats then total += stats.armorDefense end
-	end
-	if chestplateTier > 0 then
-		local stats = GearConfig.GetTierStats(chestplateTier)
-		if stats then total += stats.armorDefense end
-	end
-	if leggingsTier > 0 then
-		local stats = GearConfig.GetTierStats(leggingsTier)
-		if stats then total += stats.armorDefense end
-	end
-	if bootsTier > 0 then
-		local stats = GearConfig.GetTierStats(bootsTier)
-		if stats then total += stats.armorDefense end
-	end
-	return total
+function StatCalculation.GetPlayerDefense(
+	helmetItemName: string?,
+	chestplateItemName: string?,
+	leggingsItemName: string?,
+	bootsItemName: string?
+): number
+	return GearConfig.GetArmorStats(helmetItemName).armorDefense
+		+ GearConfig.GetArmorStats(chestplateItemName).armorDefense
+		+ GearConfig.GetArmorStats(leggingsItemName).armorDefense
+		+ GearConfig.GetArmorStats(bootsItemName).armorDefense
 end
 
 function StatCalculation.GetPlayerMaxHealth(_level: number): number
 	return 100
 end
 
-function StatCalculation.GetPlayerMoveSpeed(bootsTier: number): number
-	local baseSpeed = 16
-	if bootsTier > 0 then
-		baseSpeed += bootsTier
-	end
-	return baseSpeed
+function StatCalculation.GetPlayerMoveSpeed(bootsItemName: string?): number
+	return 16 + GearConfig.GetMoveSpeedBonus(bootsItemName)
 end
 
 function StatCalculation.GetLevelUpXPRequirement(currentLevel: number): number

@@ -402,7 +402,34 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 	-- Shuffle floor positions for random placement
 	shuffleArray(floorPositions)
 
+	local reservedSpawnPositionKeys = {}
+	local spawnablePositions = {}
+	for _, floorPosition in ipairs(floorPositions) do
+		local key = ("%d,%d,%d"):format(
+			math.round(floorPosition.X),
+			math.round(floorPosition.Y),
+			math.round(floorPosition.Z)
+		)
+		if not reservedSpawnPositionKeys[key] then
+			reservedSpawnPositionKeys[key] = true
+			table.insert(spawnablePositions, floorPosition)
+		end
+	end
+
 	local spawnIndex = 0
+	local exhaustedSpawnTypes = {}
+	local function takeSpawnPosition(spawnType: string): Vector3?
+		spawnIndex += 1
+		if spawnIndex <= #spawnablePositions then
+			return spawnablePositions[spawnIndex]
+		end
+
+		if not exhaustedSpawnTypes[spawnType] then
+			exhaustedSpawnTypes[spawnType] = true
+			warn("MineFloorManager: Not enough unique floor positions for " .. spawnType)
+		end
+		return nil
+	end
 
 	-- Compute ore node count from density and available floor positions
 	local oreDensity = layerData.oreDensity or MineLayerConfig.defaultOreDensity
@@ -432,9 +459,8 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		local oreData = OreConfig.byName[oreType]
 		if oreData == nil then continue end
 
-		spawnIndex = spawnIndex + 1
-		if spawnIndex > #floorPositions then
-			warn("MineFloorManager: Not enough floor positions for ore nodes")
+		local floorPosition = takeSpawnPosition("ore nodes")
+		if floorPosition == nil then
 			break
 		end
 
@@ -450,7 +476,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		OreNodeUtil.AnchorModel(node)
 
 		-- floorPositions are walkable air-cell centers; move down to the actual floor surface.
-		node:PivotTo(CFrame.new(OreNodeUtil.GetFloorPlacementPosition(floorPositions[spawnIndex])))
+		node:PivotTo(CFrame.new(OreNodeUtil.GetFloorPlacementPosition(floorPosition)))
 		OreNodeUtil.ApplyAttributes(node, floorNumber, oreType, oreData)
 
 		node.Parent = floorFolder
@@ -484,9 +510,8 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 	if crateRef ~= nil then
 		for i = 1, numCrates do
-			spawnIndex = spawnIndex + 1
-			if spawnIndex > #floorPositions then
-				warn("MineFloorManager: Not enough floor positions for mine crates")
+			local floorPosition = takeSpawnPosition("mine crates")
+			if floorPosition == nil then
 				break
 			end
 
@@ -495,7 +520,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 			crate:SetAttribute("FloorNumber", floorNumber)
 			crate:SetAttribute("CrateHP", CrateConfig.defaultHealth)
 
-			local floorSurfacePosition = floorPositions[spawnIndex] - FLOOR_POSITION_TO_SURFACE_OFFSET
+			local floorSurfacePosition = floorPosition - FLOOR_POSITION_TO_SURFACE_OFFSET
 			CrateService.PlaceOnFloor(crate, floorSurfacePosition)
 			CrateService.AnchorCrate(crate)
 
@@ -509,8 +534,8 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 	local NUM_ENEMIES = math.min(3, #enemyTypes * 2)
 
 	for i = 1, NUM_ENEMIES do
-		spawnIndex = spawnIndex + 1
-		if spawnIndex > #floorPositions then break end
+		local floorPosition = takeSpawnPosition("enemies")
+		if floorPosition == nil then break end
 
 		local enemyType = enemyTypes[math.random(1, #enemyTypes)]
 
@@ -520,7 +545,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 		local rootPart = Instance.new("Part")
 		rootPart.Name = "HumanoidRootPart"
 		rootPart.Size = Vector3.new(2, 2, 1)
-		rootPart.Position = floorPositions[spawnIndex] + Vector3.new(0, 1, 0)
+		rootPart.Position = floorPosition + Vector3.new(0, 1, 0)
 		rootPart.Anchored = false
 		rootPart.CanCollide = true
 		rootPart.BrickColor = BrickColor.new("Bright red")

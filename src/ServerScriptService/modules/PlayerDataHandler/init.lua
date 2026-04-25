@@ -183,6 +183,7 @@ local function initializeClient(player: Player)
 	TempStats:InitializePlayer(player)
 	ensureStarterGear(player)
 	sanitizeHotbarData(player)
+	PlayerDataHandler.ApplyPlayerMoveSpeed(player)
 end
 
 function addToStat(statName: string, defaultValue, player: Player, amount: number)
@@ -405,6 +406,9 @@ function PlayerDataHandler.EquipGear(player: Player, itemId: string, slot: strin
 	local fieldName = "Equipped" .. slot
 	setStat(fieldName, itemId, player)
 	sanitizeHotbarData(player)
+	if slot == "Boots" then
+		PlayerDataHandler.ApplyPlayerMoveSpeed(player)
+	end
 	return true
 end
 
@@ -415,6 +419,30 @@ function PlayerDataHandler.GetEquippedArmor(player: Player)
 		Leggings = getStat("EquippedLeggings", ProfileTemplate.EquippedLeggings, player),
 		Boots = getStat("EquippedBoots", ProfileTemplate.EquippedBoots, player),
 	}
+end
+
+function PlayerDataHandler.GetEquippedBootsItemName(player: Player): string
+	local bootsEntryId = getStat("EquippedBoots", ProfileTemplate.EquippedBoots, player)
+	if type(bootsEntryId) ~= "string" or bootsEntryId == "" then
+		return ""
+	end
+
+	return PlayerDataHandler.ResolveInventoryEntryItemName(player, bootsEntryId)
+end
+
+function PlayerDataHandler.ApplyPlayerMoveSpeed(player: Player)
+	local character = player.Character
+	if character == nil then
+		return
+	end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil then
+		return
+	end
+
+	local bootsItemName = PlayerDataHandler.GetEquippedBootsItemName(player)
+	humanoid.WalkSpeed = StatCalculation.GetPlayerMoveSpeed(bootsItemName ~= "" and bootsItemName or nil)
 end
 
 function PlayerDataHandler.ClearEquippedGear(player: Player, slot: string)
@@ -429,6 +457,9 @@ function PlayerDataHandler.ClearEquippedGear(player: Player, slot: string)
 
 	setStat(fieldName, "", player)
 	sanitizeHotbarData(player)
+	if slot == "Boots" then
+		PlayerDataHandler.ApplyPlayerMoveSpeed(player)
+	end
 	return true
 end
 

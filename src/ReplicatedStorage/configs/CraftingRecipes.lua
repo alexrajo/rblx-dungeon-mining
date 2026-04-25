@@ -1,5 +1,5 @@
 local recipes = {
-	-- Tier 2 (Copper) gear
+	-- Copper gear
 	{
 		name = "Copper Pickaxe",
 		category = "Tools",
@@ -31,7 +31,7 @@ local recipes = {
 		ingredients = { Copper = 6 },
 	},
 
-	-- Tier 3 (Iron) gear
+	-- Iron gear
 	{
 		name = "Iron Pickaxe",
 		category = "Tools",
@@ -63,7 +63,7 @@ local recipes = {
 		ingredients = { Iron = 8 },
 	},
 
-	-- Tier 4 (Gold) gear
+	-- Gold gear
 	{
 		name = "Gold Pickaxe",
 		category = "Tools",
@@ -95,7 +95,7 @@ local recipes = {
 		ingredients = { Gold = 10 },
 	},
 
-	-- Tier 5 (Diamond) gear
+	-- Diamond gear
 	{
 		name = "Diamond Pickaxe",
 		category = "Tools",
@@ -127,7 +127,7 @@ local recipes = {
 		ingredients = { Diamond = 12 },
 	},
 
-	-- Tier 6 (Obsidian) gear
+	-- Obsidian gear
 	{
 		name = "Obsidian Pickaxe",
 		category = "Tools",

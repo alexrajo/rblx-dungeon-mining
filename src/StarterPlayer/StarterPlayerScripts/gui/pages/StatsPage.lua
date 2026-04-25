@@ -61,28 +61,28 @@ function StatsPage:render()
 			local selectedSlotName = GearConfig.GetSlotForItem(selectedItemName)
 			local selectedPickaxe = selectedSlotName == "Pickaxe" and selectedItemName or ""
 			local selectedWeapon = selectedSlotName == "Weapon" and selectedItemName or ""
-			local pickaxeTier = GearConfig.GetTierForItem(selectedPickaxe)
 
-			local helmetTier = 0
-			local chestplateTier = 0
-			local leggingsTier = 0
-			local bootsTier = 0
+			local helmetItemName = ""
+			local chestplateItemName = ""
+			local leggingsItemName = ""
+			local bootsItemName = ""
 			if data.EquippedHelmet ~= "" then
-				helmetTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedHelmet, data)) or 0
+				helmetItemName = HotbarConfig.ResolveEntryItemName(data.EquippedHelmet, data)
 			end
 			if data.EquippedChestplate ~= "" then
-				chestplateTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedChestplate, data)) or 0
+				chestplateItemName = HotbarConfig.ResolveEntryItemName(data.EquippedChestplate, data)
 			end
 			if data.EquippedLeggings ~= "" then
-				leggingsTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedLeggings, data)) or 0
+				leggingsItemName = HotbarConfig.ResolveEntryItemName(data.EquippedLeggings, data)
 			end
 			if data.EquippedBoots ~= "" then
-				bootsTier = GearConfig.GetTierForItem(HotbarConfig.ResolveEntryItemName(data.EquippedBoots, data)) or 0
+				bootsItemName = HotbarConfig.ResolveEntryItemName(data.EquippedBoots, data)
 			end
 
-			local miningPower = pickaxeTier ~= nil and StatCalculation.GetMiningDamage(pickaxeTier) or 0
+			local miningPower = selectedPickaxe ~= "" and StatCalculation.GetMiningDamage(selectedPickaxe) or 0
 			local combatDamage = StatCalculation.GetCombatDamage(selectedWeapon ~= "" and selectedWeapon or nil, level)
-			local defense = StatCalculation.GetPlayerDefense(helmetTier, chestplateTier, leggingsTier, bootsTier)
+			local defense = StatCalculation.GetPlayerDefense(helmetItemName, chestplateItemName, leggingsItemName, bootsItemName)
+			local moveSpeed = StatCalculation.GetPlayerMoveSpeed(bootsItemName ~= "" and bootsItemName or nil)
 			local maxHP = StatCalculation.GetPlayerMaxHealth(level)
 			local maxFloor = data.MaxFloorReached or 0
 
@@ -104,9 +104,10 @@ function StatsPage:render()
 						MiningPower = createStatRow("Mining Power", tostring(miningPower), 3),
 						CombatDamage = createStatRow("Combat Damage", tostring(combatDamage), 4),
 						Defense = createStatRow("Defense", tostring(defense), 5),
-						Pickaxe = createStatRow("Pickaxe", selectedPickaxe ~= "" and selectedPickaxe or "None wielded", 6),
-						Weapon = createStatRow("Weapon", selectedWeapon ~= "" and selectedWeapon or "None wielded", 7),
-						MaxFloor = createStatRow("Deepest Floor", tostring(maxFloor), 8),
+						MoveSpeed = createStatRow("Move Speed", tostring(moveSpeed), 6),
+						Pickaxe = createStatRow("Pickaxe", selectedPickaxe ~= "" and selectedPickaxe or "None wielded", 7),
+						Weapon = createStatRow("Weapon", selectedWeapon ~= "" and selectedWeapon or "None wielded", 8),
+						MaxFloor = createStatRow("Deepest Floor", tostring(maxFloor), 9),
 					})
 				})
 			})

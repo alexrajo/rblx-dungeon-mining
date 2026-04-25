@@ -24,7 +24,7 @@ This document defines the game design for **Dungeon Mining**, a Roblox mining/cr
 
 1. Player starts in the **Hub Area** (surface camp/town).
 2. Player enters the mine and descends to a **mine layer**.
-3. Player **mines ore nodes** to collect resources (tier-gated by pickaxe).
+3. Player **mines ore nodes** to collect resources using pickaxes with explicit mining power.
 4. Player **fights monsters** that guard deeper areas or spawn over time.
 5. Player discovers **hidden ladders** to descend to the next floor.
 6. Player returns to the Hub Area to **craft** upgraded tools, weapons, and armor.
@@ -37,16 +37,16 @@ This document defines the game design for **Dungeon Mining**, a Roblox mining/cr
 
 ## Mine Layers & Progression
 
-The mine is divided into 6 distinct layers. Each layer spans multiple floors. Players must reach a minimum gear tier to survive each layer.
+The mine is divided into 6 distinct layers. Each layer spans multiple floors, with escalating enemy danger and richer resources.
 
-| Layer | Name            | Theme                                   | Floors | Min Gear Tier     | Primary Ore | Secondary Ore |
-| ----- | --------------- | --------------------------------------- | ------ | ----------------- | ----------- | ------------- |
-| 1     | Shallow Mines   | Rocky caves, dim torchlight             | 1–15   | Tier 1 (Wood)     | Copper      | Stone         |
-| 2     | Copper Caves    | Orange-tinted tunnels, dripping water   | 16–30  | Tier 2 (Copper)   | Iron        | Copper        |
-| 3     | Iron Depths     | Dark narrow tunnels, rusted supports    | 31–50  | Tier 3 (Iron)     | Gold        | Iron          |
-| 4     | Golden Caverns  | Glittering walls, underground rivers    | 51–70  | Tier 4 (Gold)     | Diamond     | Gold          |
-| 5     | Crystal Hollows | Bioluminescent crystals, open chambers  | 71–90  | Tier 5 (Diamond)  | Obsidian    | Diamond       |
-| 6     | Obsidian Core   | Lava flows, volcanic rock, intense heat | 91–120 | Tier 6 (Obsidian) | Mythril     | Obsidian      |
+| Layer | Name            | Theme                                   | Floors | Primary Ore | Secondary Ore |
+| ----- | --------------- | --------------------------------------- | ------ | ----------- | ------------- |
+| 1     | Shallow Mines   | Rocky caves, dim torchlight             | 1–15   | Copper      | Stone         |
+| 2     | Copper Caves    | Orange-tinted tunnels, dripping water   | 16–30  | Iron        | Copper        |
+| 3     | Iron Depths     | Dark narrow tunnels, rusted supports    | 31–50  | Gold        | Iron          |
+| 4     | Golden Caverns  | Glittering walls, underground rivers    | 51–70  | Diamond     | Gold          |
+| 5     | Crystal Hollows | Bioluminescent crystals, open chambers  | 71–90  | Obsidian    | Diamond       |
+| 6     | Obsidian Core   | Lava flows, volcanic rock, intense heat | 91–120 | Mythril     | Obsidian      |
 
 Each layer is **procedurally generated** — floor layouts, ore placement, enemy spawns, and ladder locations are randomized each run.
 
@@ -56,15 +56,15 @@ Each layer is **procedurally generated** — floor layouts, ore placement, enemy
 
 ### Ore Table
 
-| Ore      | Layer Found | Min Pickaxe Tier  | Rarity    | Base Value (Coins) |
-| -------- | ----------- | ----------------- | --------- | ------------------ |
-| Stone    | All layers  | Tier 1 (Wood)     | Common    | 1                  |
-| Copper   | Layer 1+    | Tier 1 (Wood)     | Common    | 5                  |
-| Iron     | Layer 2+    | Tier 2 (Copper)   | Common    | 12                 |
-| Gold     | Layer 3+    | Tier 3 (Iron)     | Uncommon  | 25                 |
-| Diamond  | Layer 4+    | Tier 4 (Gold)     | Rare      | 60                 |
-| Obsidian | Layer 5+    | Tier 5 (Diamond)  | Rare      | 120                |
-| Mythril  | Layer 6     | Tier 6 (Obsidian) | Very Rare | 250                |
+| Ore      | Layer Found | Rarity    | Base Value (Coins) |
+| -------- | ----------- | --------- | ------------------ |
+| Stone    | All layers  | Common    | 1                  |
+| Copper   | Layer 1+    | Common    | 5                  |
+| Iron     | Layer 2+    | Common    | 12                 |
+| Gold     | Layer 3+    | Uncommon  | 25                 |
+| Diamond  | Layer 4+    | Rare      | 60                 |
+| Obsidian | Layer 5+    | Rare      | 120                |
+| Mythril  | Layer 6     | Very Rare | 250                |
 
 ### Other Resources
 
@@ -74,27 +74,29 @@ Each layer is **procedurally generated** — floor layouts, ore placement, enemy
 | Slime Gel     | Slime drops            | Crafting potions        |
 | Bat Wing      | Bat drops              | Crafting potions        |
 | Bone Fragment | Skeleton drops         | Crafting weapons        |
-| Fire Essence  | Layer 6 enemies        | Crafting Tier 6 gear    |
+| Fire Essence  | Layer 6 enemies        | Crafting late-game gear |
 | Healing Herb  | Found on mine floors   | Crafting health potions |
 
 ---
 
-## Gear Tier Progression
+## Gear Progression
 
-### Tiers Overview
+### Gear Stats Overview
 
-| Tier | Material | Pickaxe Power | Weapon Damage | Armor Defense |
-| ---- | -------- | ------------- | ------------- | ------------- |
-| 1    | Wood     | 1             | 5             | 2             |
-| 2    | Copper   | 2             | 10            | 5             |
-| 3    | Iron     | 3             | 18            | 10            |
-| 4    | Gold     | 4             | 28            | 16            |
-| 5    | Diamond  | 5             | 40            | 24            |
-| 6    | Obsidian | 6             | 55            | 34            |
+Gear progression comes from explicit per-item stats in `GearConfig`, not from shared material-wide stat tables.
+
+| Material | Pickaxe Power | Weapon Damage | Armor Defense |
+| -------- | ------------- | ------------- | ------------- |
+| Wood     | 1             | 5             | 2             |
+| Copper   | 2             | 10            | 5             |
+| Iron     | 3             | 18            | 10            |
+| Gold     | 4             | 28            | 16            |
+| Diamond  | 5             | 40            | 24            |
+| Obsidian | 6             | 55            | 34            |
 
 ### Equipment Slots
 
-- **Pickaxe** — determines what ores can be mined and mining speed
+- **Pickaxe** — determines mining damage and mining speed
 - **Weapon** (Sword) — determines melee damage
 - **Helmet** — defense contribution
 - **Chestplate** — defense contribution (largest)
@@ -105,14 +107,13 @@ Each layer is **procedurally generated** — floor layouts, ore placement, enemy
 ## Mining Mechanics
 
 - **Click/tap** an ore node to swing the pickaxe.
-- Ore nodes have an **HP bar** that decreases with each hit. HP scales with ore tier.
-- **Mining power** (from pickaxe tier) determines damage per swing to the ore node.
-- If the player's pickaxe tier is **below** the ore's required tier, the ore cannot be damaged (visual/audio feedback: "pickaxe bounces off").
+- Ore nodes have an **HP bar** that decreases with each hit. HP scales by ore type.
+- **Mining power** from the equipped pickaxe item determines damage per swing to the ore node.
 - Mined ore goes directly into the player's **inventory**.
 - Ore nodes **respawn** after a configurable timer (server-side).
 - **Hold to auto-mine** on mobile/controller for accessibility.
 
-### Ore Node HP by Tier
+### Ore Node HP by Ore Type
 
 | Ore      | Node HP | Hits with Matching Pickaxe |
 | -------- | ------- | -------------------------- |
@@ -143,21 +144,21 @@ Crafting is done at a **Workbench** in the Hub Area. Players cannot craft inside
 
 | Item              | Ingredients                    | Result              |
 | ----------------- | ------------------------------ | ------------------- |
-| Copper Pickaxe    | 8x Copper, 3x Wood             | Tier 2 Pickaxe      |
-| Copper Sword      | 6x Copper, 2x Wood             | Tier 2 Weapon       |
-| Copper Helmet     | 5x Copper                      | Tier 2 Helmet       |
-| Copper Chestplate | 10x Copper                     | Tier 2 Chestplate   |
-| Copper Boots      | 6x Copper                      | Tier 2 Boots        |
-| Iron Pickaxe      | 10x Iron, 3x Wood              | Tier 3 Pickaxe      |
-| Iron Sword        | 8x Iron, 2x Wood               | Tier 3 Weapon       |
-| Iron Helmet       | 7x Iron                        | Tier 3 Helmet       |
-| Iron Chestplate   | 14x Iron                       | Tier 3 Chestplate   |
-| Iron Boots        | 8x Iron                        | Tier 3 Boots        |
+| Copper Pickaxe    | 8x Copper, 3x Wood             | Copper Pickaxe      |
+| Copper Sword      | 6x Copper, 2x Wood             | Copper Weapon       |
+| Copper Helmet     | 5x Copper                      | Copper Helmet       |
+| Copper Chestplate | 10x Copper                     | Copper Chestplate   |
+| Copper Boots      | 6x Copper                      | Copper Boots        |
+| Iron Pickaxe      | 10x Iron, 3x Wood              | Iron Pickaxe        |
+| Iron Sword        | 8x Iron, 2x Wood               | Iron Weapon         |
+| Iron Helmet       | 7x Iron                        | Iron Helmet         |
+| Iron Chestplate   | 14x Iron                       | Iron Chestplate     |
+| Iron Boots        | 8x Iron                        | Iron Boots          |
 | Health Potion     | 3x Healing Herb, 1x Slime Gel  | Restores 30 HP      |
 | Speed Potion      | 2x Healing Herb, 2x Bat Wing   | +20% speed for 30s  |
 | Strength Potion   | 2x Bone Fragment, 1x Slime Gel | +25% damage for 30s |
 
-_Pattern: Each tier follows the same recipe structure with its tier's ore. Quantities increase slightly per tier._
+_Pattern: Each material family follows the same recipe structure with its ore. Quantities increase slightly for later materials._
 
 ---
 
@@ -220,7 +221,7 @@ _Pattern: Each tier follows the same recipe structure with its tier's ore. Quant
 
 | Source                 | Amount                                  |
 | ---------------------- | --------------------------------------- |
-| Selling ores           | Varies by ore tier (see ore table)      |
+| Selling ores           | Varies by ore type (see ore table)      |
 | Monster drops          | 2–15 coins per kill (scales with layer) |
 | Floor completion bonus | 10 coins per floor                      |
 | Layer boss reward      | 100–500 coins (scales with layer)       |
@@ -300,7 +301,7 @@ TutorialStates = {{name = "Intro", value = false}},
 
 ## XP & Leveling
 
-- **XP sources:** Mining ore (+5–25 XP by tier), killing enemies (+10–50 XP by layer), completing floors (+20 XP)
+- **XP sources:** Mining ore (+5–25 XP by ore type), killing enemies (+10–50 XP by layer), completing floors (+20 XP)
 - **Level-up formula:** `requiredXP = 100 * level * (1.2 ^ (level - 1))`
 - **Level rewards:** +5 Max HP, +1 Base Damage per level
 - **Max level:** 50 (soft cap — XP continues but rewards diminish)

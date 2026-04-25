@@ -19,7 +19,6 @@ local StatCalculation = require(utils.StatCalculation)
 
 local configs = ReplicatedStorage.configs
 local OreConfig = require(configs.OreConfig)
-local GearConfig = require(configs.GearConfig)
 local globalConfig = require(ReplicatedStorage.GlobalConfig)
 
 -- Cross script communication
@@ -82,9 +81,6 @@ function endpoint.Call(player: Player, tool: Instance?, nodeInstance: Instance, 
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	if humanoidRootPart == nil then return { success = false, cooldown = 0.5 } end
 
-	-- Check pickaxe tier from the wielded tool.
-	local pickaxeTier = GearConfig.GetTierForItem(pickaxeItemName) or 1
-
 	if crateInstance ~= nil then
 		if not isOnPlayerFloor(player, crateInstance) then
 			return { success = false, cooldown = 0.1 }
@@ -98,7 +94,7 @@ function endpoint.Call(player: Player, tool: Instance?, nodeInstance: Instance, 
 
 		lastMineTime[player] = os.clock()
 
-		local miningDamage = StatCalculation.GetMiningDamage(pickaxeTier)
+		local miningDamage = StatCalculation.GetMiningDamage(pickaxeItemName)
 		local currentHP = crateInstance:GetAttribute("CurrentHP") or crateInstance:GetAttribute("CrateHP") or 1
 		currentHP -= miningDamage
 		crateInstance:SetAttribute("CurrentHP", currentHP)
@@ -134,7 +130,7 @@ function endpoint.Call(player: Player, tool: Instance?, nodeInstance: Instance, 
 	lastMineTime[player] = os.clock()
 
 	-- Calculate damage
-	local miningDamage = StatCalculation.GetMiningDamage(pickaxeTier)
+	local miningDamage = StatCalculation.GetMiningDamage(pickaxeItemName)
 
 	-- Reduce node HP
 	local currentHP = nodeModel:GetAttribute("CurrentHP") or nodeModel:GetAttribute("NodeHP") or oreData.nodeHP

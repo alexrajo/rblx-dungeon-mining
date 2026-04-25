@@ -23,7 +23,7 @@ local SellPriceConfig = {
 	["Speed Potion"] = 10,
 	["Strength Potion"] = 12,
 
-	-- Tier 1 (Wood) gear
+	-- Wood gear
 	["Wood Pickaxe"] = 2,
 	["Wood Sword"] = 2,
 	["Wood Helmet"] = 2,
@@ -31,7 +31,7 @@ local SellPriceConfig = {
 	["Wood Leggings"] = 2,
 	["Wood Boots"] = 2,
 
-	-- Tier 2 (Copper) gear
+	-- Copper gear
 	["Copper Pickaxe"] = 20,
 	["Copper Sword"] = 15,
 	["Copper Helmet"] = 12,
@@ -39,7 +39,7 @@ local SellPriceConfig = {
 	["Copper Leggings"] = 17,
 	["Copper Boots"] = 15,
 
-	-- Tier 3 (Iron) gear
+	-- Iron gear
 	["Iron Pickaxe"] = 60,
 	["Iron Sword"] = 48,
 	["Iron Helmet"] = 42,
@@ -47,7 +47,7 @@ local SellPriceConfig = {
 	["Iron Leggings"] = 60,
 	["Iron Boots"] = 48,
 
-	-- Tier 4 (Gold) gear
+	-- Gold gear
 	["Gold Pickaxe"] = 150,
 	["Gold Sword"] = 125,
 	["Gold Helmet"] = 112,
@@ -55,7 +55,7 @@ local SellPriceConfig = {
 	["Gold Leggings"] = 150,
 	["Gold Boots"] = 125,
 
-	-- Tier 5 (Diamond) gear
+	-- Diamond gear
 	["Diamond Pickaxe"] = 450,
 	["Diamond Sword"] = 360,
 	["Diamond Helmet"] = 330,
@@ -63,7 +63,7 @@ local SellPriceConfig = {
 	["Diamond Leggings"] = 420,
 	["Diamond Boots"] = 360,
 
-	-- Tier 6 (Obsidian) gear
+	-- Obsidian gear
 	["Obsidian Pickaxe"] = 1110,
 	["Obsidian Sword"] = 880,
 	["Obsidian Helmet"] = 800,
