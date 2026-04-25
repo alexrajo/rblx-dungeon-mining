@@ -2,6 +2,7 @@ local MineLayerConfig = {
 	-- Global default ore density: fraction of available floor positions that spawn an ore node.
 	-- Individual layers may override this with their own oreDensity field.
 	defaultOreDensity = 0.08,
+	checkpointInterval = 5,
 
 	[1] = {
 		name = "Shallow Mines",
@@ -10,7 +11,6 @@ local MineLayerConfig = {
 		primaryOre = "Stone",
 		secondaryOre = "Copper",
 		enemies = { "Cave Slime", "Cave Bat" },
-		checkpointInterval = 5,
 		floorCompletionBonus = 10,
 	},
 	[2] = {
@@ -19,9 +19,8 @@ local MineLayerConfig = {
 		floors = { min = 16, max = 30 },
 		primaryOre = "Stone",
 		secondaryOre = "Iron",
-        tertiaryOre = "Copper",
+		tertiaryOre = "Copper",
 		enemies = { "Goblin", "Shadow Bat" },
-		checkpointInterval = 5,
 		floorCompletionBonus = 10,
 	},
 	[3] = {
@@ -32,7 +31,6 @@ local MineLayerConfig = {
 		secondaryOre = "Gold",
 		tertiaryOre = "Iron",
 		enemies = { "Skeleton", "Rock Golem" },
-		checkpointInterval = 5,
 		floorCompletionBonus = 10,
 	},
 	[4] = {
@@ -43,7 +41,6 @@ local MineLayerConfig = {
 		secondaryOre = "Gold",
 		tertiaryOre = "Iron",
 		enemies = { "Gold Guardian", "Crystal Spider" },
-		checkpointInterval = 5,
 		floorCompletionBonus = 10,
 	},
 	[5] = {
@@ -54,7 +51,6 @@ local MineLayerConfig = {
 		secondaryOre = "Diamond",
 		tertiaryOre = "Gold",
 		enemies = { "Lava Slime", "Obsidian Knight" },
-		checkpointInterval = 5,
 		floorCompletionBonus = 10,
 	},
 	[6] = {
@@ -65,7 +61,6 @@ local MineLayerConfig = {
 		secondaryOre = "Obsidian",
 		tertiaryOre = "Diamond",
 		enemies = { "Fire Elemental", "Magma Wyrm" },
-		checkpointInterval = 5,
 		floorCompletionBonus = 10,
 	},
 }
@@ -77,6 +72,29 @@ function MineLayerConfig.GetLayerForFloor(floor: number): number?
 		end
 	end
 	return nil
+end
+
+function MineLayerConfig.IsCheckpointFloor(floor: number): boolean
+	if type(floor) ~= "number" then
+		return false
+	end
+
+	local sanitizedFloor = math.floor(floor)
+	return floor == sanitizedFloor and sanitizedFloor > 0 and sanitizedFloor % MineLayerConfig.checkpointInterval == 0
+end
+
+function MineLayerConfig.GetCheckpointFloorsUpTo(latestFloor: number): {number}
+	local floors = {}
+	if type(latestFloor) ~= "number" then
+		return floors
+	end
+
+	local sanitizedLatestFloor = math.floor(latestFloor)
+	for floor = MineLayerConfig.checkpointInterval, sanitizedLatestFloor, MineLayerConfig.checkpointInterval do
+		table.insert(floors, floor)
+	end
+
+	return floors
 end
 
 return MineLayerConfig

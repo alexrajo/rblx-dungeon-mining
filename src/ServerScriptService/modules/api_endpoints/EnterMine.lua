@@ -10,8 +10,8 @@ function endpoint.Call(player: Player, startFloor: number)
 	startFloor = math.floor(startFloor)
 	if startFloor < 1 then startFloor = 1 end
 
-	-- Validate checkpoint is unlocked (floor 1 is always available)
-	if not PlayerDataHandler.HasUnlockedCheckpoint(player, startFloor, true) then
+	-- Floor 1 is the mine entrance; other start floors must be unlocked checkpoints.
+	if startFloor ~= 1 and not PlayerDataHandler.HasUnlockedCheckpoint(player, startFloor) then
 		return { success = false, reason = "checkpoint_locked" }
 	end
 

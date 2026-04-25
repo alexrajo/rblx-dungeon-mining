@@ -3,7 +3,7 @@ return {
 	XP = 0,
 	Level = 1,
 	MaxFloorReached = 0,
-	UnlockedCheckpoints = {},
+	LatestCheckpointFloor = 0,
 	OpenedMineChests = {},
 	Inventory = {},
 	EquippedHelmet = "",

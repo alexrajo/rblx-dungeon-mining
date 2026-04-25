@@ -9,6 +9,7 @@ local ProfileStore = ProfileService.GetProfileStore("PlayerData", ProfileTemplat
 local APIService = require(Services.APIService)
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local MineLayerConfig = require(ReplicatedStorage.configs.MineLayerConfig)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -544,30 +545,26 @@ function PlayerDataHandler.SetSelectedHotbarSlot(player: Player, slotIndex: numb
 end
 
 -- Mine progression
-function PlayerDataHandler.UnlockCheckpoint(player: Player, floor: number)
-	local checkpoints = getStat("UnlockedCheckpoints", {}, player)
-	for _, entry in pairs(checkpoints) do
-		if entry.name == tostring(floor) then
-			return -- Already unlocked
-		end
+function PlayerDataHandler.SetLatestCheckpointFloor(player: Player, floor: number): boolean
+	if not MineLayerConfig.IsCheckpointFloor(floor) then
+		return false
 	end
-	table.insert(checkpoints, {name = tostring(floor), value = true})
-	setStat("UnlockedCheckpoints", checkpoints, player)
+
+	local current = getStat("LatestCheckpointFloor", 0, player)
+	if floor <= current then
+		return false
+	end
+
+	setStat("LatestCheckpointFloor", floor, player)
+	return true
 end
 
-function PlayerDataHandler.HasUnlockedCheckpoint(player: Player, floor: number, includeFloorOne: boolean?): boolean
-	if includeFloorOne == true and floor == 1 then
-		return true
-	end
+function PlayerDataHandler.GetLatestCheckpointFloor(player: Player): number
+	return getStat("LatestCheckpointFloor", 0, player)
+end
 
-	local checkpoints = getStat("UnlockedCheckpoints", {}, player)
-	for _, entry in pairs(checkpoints) do
-		if entry.name == tostring(floor) and entry.value == true then
-			return true
-		end
-	end
-
-	return false
+function PlayerDataHandler.HasUnlockedCheckpoint(player: Player, floor: number): boolean
+	return MineLayerConfig.IsCheckpointFloor(floor) and floor <= PlayerDataHandler.GetLatestCheckpointFloor(player)
 end
 
 function PlayerDataHandler.SetMaxFloorReached(player: Player, floor: number)

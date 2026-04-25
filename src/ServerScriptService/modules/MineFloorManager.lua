@@ -740,9 +740,7 @@ function MineFloorManager.DescendFloor(player: Player)
 	-- Check for checkpoint
 	local layerNum, layerData = MineFloorManager.GetLayerForFloor(nextFloor)
 	if layerData then
-		local checkpointInterval = layerData.checkpointInterval or 5
-		if nextFloor % checkpointInterval == 0 or nextFloor == layerData.floors.min then
-			PlayerDataHandler.UnlockCheckpoint(player, nextFloor)
+		if MineLayerConfig.IsCheckpointFloor(nextFloor) and PlayerDataHandler.SetLatestCheckpointFloor(player, nextFloor) then
 
 			local notificationEvent = APIService.GetEvent("SendNotification")
 			notificationEvent:FireClient(player, {

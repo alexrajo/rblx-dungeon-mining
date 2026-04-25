@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Services = ReplicatedStorage.services
 local Roact = require(Services.Roact)
 local APIService = require(Services.APIService)
+local MineLayerConfig = require(ReplicatedStorage.configs.MineLayerConfig)
 
 local createElement = Roact.createElement
 
@@ -20,23 +21,6 @@ local MineElevatorPage = Roact.Component:extend("MineElevatorPage")
 local GRID_COLUMNS = 4
 local GRID_PADDING = 8
 local BUTTON_HEIGHT = 96
-
-local function getUnlockedFloors(unlockedCheckpoints): {number}
-	local floors = {}
-
-	for _, entry in ipairs(unlockedCheckpoints or {}) do
-		if entry.value == true then
-			local floor = tonumber(entry.name)
-			if floor ~= nil then
-				table.insert(floors, floor)
-			end
-		end
-	end
-
-	table.sort(floors)
-
-	return floors
-end
 
 function MineElevatorPage:_renderFloorButton(floorNumber: number)
 	local closeAllPages = self.props.closeAllPages
@@ -88,7 +72,7 @@ function MineElevatorPage:render()
 
 	return createElement(StatsContext.context.Consumer, {
 		render = function(data)
-			local unlockedFloors = getUnlockedFloors(data.UnlockedCheckpoints)
+			local unlockedFloors = MineLayerConfig.GetCheckpointFloorsUpTo(data.LatestCheckpointFloor)
 			local gridChildren = {}
 
 			for index, floorNumber in ipairs(unlockedFloors) do

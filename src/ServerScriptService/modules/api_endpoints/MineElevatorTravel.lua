@@ -16,7 +16,7 @@ function endpoint.Call(player: Player, targetFloor: number)
 		return { success = false, reason = "invalid_floor" }
 	end
 
-	if not PlayerDataHandler.HasUnlockedCheckpoint(player, targetFloor, true) then
+	if not PlayerDataHandler.HasUnlockedCheckpoint(player, targetFloor) then
 		return { success = false, reason = "checkpoint_locked" }
 	end
 
