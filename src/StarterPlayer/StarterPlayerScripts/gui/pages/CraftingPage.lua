@@ -20,6 +20,7 @@ local SelectablePanel = require(ModuleIndex.SelectablePanel)
 local Tab = require(ModuleIndex.Tab)
 
 local StatsContext = require(ModuleIndex.StatsContext)
+local GearDetailUtils = require(script.Parent.Parent.components.InventoryPage.GearDetailUtils)
 
 local CraftingPage = Roact.Component:extend("CraftingPage")
 
@@ -104,6 +105,7 @@ function CraftingPage:_renderContent(statsData)
 	local visibleRecipes = getRecipesForSection(currentSection)
 	local selectedRecipeName = self.state.selectedRecipeName
 	local selectedRecipe = findRecipeByName(visibleRecipes, selectedRecipeName)
+	local selectedItemDetails = selectedRecipe and GearDetailUtils.GetPopupDetails(selectedRecipe.name, statsData) or nil
 	local requiredIngredientComponents = {}
 
 	local canCraft = true
@@ -179,6 +181,22 @@ function CraftingPage:_renderContent(statsData)
 		})
 	end
 
+	local itemStatComponents = {}
+	if selectedItemDetails ~= nil then
+		for index, lineText in ipairs(selectedItemDetails.detailLines or {}) do
+			itemStatComponents["Stat" .. tostring(index)] = createElement(TextLabel, {
+				Text = lineText,
+				textSize = 13,
+				Size = UDim2.new(1, 0, 0, 17),
+				LayoutOrder = index,
+				textProps = {
+					TextScaled = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+				},
+			})
+		end
+	end
+
 	return createElement(PageWrapper, {isOpen = (currentPage == "CraftingPage")}, {
 		Tabs = createElement("Frame", {
 			BackgroundTransparency = 1,
@@ -245,11 +263,37 @@ function CraftingPage:_renderContent(statsData)
 					Position = UDim2.fromScale(0.5, 0.02),
 					textSize = 18
 				}),
+				EmptyLabel = (selectedRecipe == nil) and createElement(TextLabel, {
+					Text = "Select a recipe",
+					Size = UDim2.fromScale(0.8, 0.2),
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 0.45),
+					textSize = 18,
+				}) or nil,
+				Stats = selectedRecipe and createElement("Frame", {
+					BackgroundTransparency = 1,
+					Size = UDim2.new(0.9, 0, 0.26, 0),
+					AnchorPoint = Vector2.new(0.5, 0),
+					Position = UDim2.fromScale(0.5, 0.12),
+				}, {
+					Lines = createElement("Frame", {
+						BackgroundTransparency = 1,
+						Size = UDim2.fromScale(1, 1),
+					}, {
+						UIListLayout = createElement("UIListLayout", {
+							FillDirection = Enum.FillDirection.Vertical,
+							HorizontalAlignment = Enum.HorizontalAlignment.Left,
+							SortOrder = Enum.SortOrder.LayoutOrder,
+							Padding = UDim.new(0, 1),
+						}),
+						StatsFragment = Roact.createFragment(itemStatComponents),
+					}),
+				}) or nil,
 				Ingredients = createElement("Frame", {
 					BackgroundTransparency = 1,
-					Size = UDim2.new(0.9, 0, 0.55, 0),
+					Size = UDim2.new(0.9, 0, 0.34, 0),
 					AnchorPoint = Vector2.new(0.5, 0),
-					Position = UDim2.fromScale(0.5, 0.12)
+					Position = UDim2.fromScale(0.5, 0.43)
 				}, {
 					UIGridLayout = createElement("UIGridLayout", {
 						HorizontalAlignment = Enum.HorizontalAlignment.Center,
