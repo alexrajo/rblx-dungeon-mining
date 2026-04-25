@@ -13,7 +13,6 @@ local ScreenContext = require(ModuleIndex.ScreenContext)
 local POPUP_DURATION = 3
 local SLIDE_OUT_DURATION = 0.35
 local MAX_POPUPS = 5
-local CONTAINER_MAX_WIDTH = 230
 local CONTAINER_HEIGHT = 530  -- room for 5 popups at max size + gaps
 
 local InventoryPopupManager = Roact.Component:extend("InventoryPopupManager")
@@ -31,13 +30,17 @@ function InventoryPopupManager:_getPopupWidth(): number
 	local screenData = self._screenData
 	if screenData == nil then return 175 end
 	local isAtleast = screenData.IsAtleast
-	if isAtleast("md") then
+	if isAtleast("lg") then
 		return 220
-	elseif isAtleast("sm") then
-		return 195
 	else
-		return 175
+		return 145
 	end
+end
+
+function InventoryPopupManager:_getContainerWidth(): number
+	local screenData = self._screenData
+	if screenData == nil then return 230 end
+	return screenData.IsAtleast("lg") and 230 or 155
 end
 
 function InventoryPopupManager:_showPopup(itemName: string, amount: number)
@@ -140,7 +143,7 @@ function InventoryPopupManager:render()
 			local yOffset = (device == "mobile") and -100 or -20
 
 			return createElement("Frame", {
-				Size = UDim2.fromOffset(CONTAINER_MAX_WIDTH, CONTAINER_HEIGHT),
+				Size = UDim2.fromOffset(self:_getContainerWidth(), CONTAINER_HEIGHT),
 				AnchorPoint = Vector2.new(0, 1),
 				Position = UDim2.new(0, 10, 1, yOffset),
 				BackgroundTransparency = 1,

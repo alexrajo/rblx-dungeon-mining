@@ -40,7 +40,7 @@ function InventoryPopup:didMount()
 		local slideOutTween = TweenService:Create(
 			panel,
 			TweenInfo.new(SLIDE_OUT_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-			{ Position = UDim2.new(-1, 0, 0, 0) }
+			{ Position = UDim2.new(-1.5, 0, 0, 0) }
 		)
 		slideOutTween:Play()
 	end)
@@ -76,7 +76,7 @@ function InventoryPopup:render()
 	return createElement("Frame", {
 		Size = UDim2.fromOffset(popupWidth, popupHeight),
 		BackgroundTransparency = 1,
-		ClipsDescendants = true,
+		ClipsDescendants = false,
 		LayoutOrder = layoutOrder,
 	}, {
 		-- Panel starts off-screen left; tweened into view in didMount
