@@ -11,6 +11,8 @@ local mineChestOpenedEvent = APIService.GetEvent("MineChestOpened")
 local OPEN_ANIMATION_ID = "rbxassetid://74713289282918"
 local OPENED_ANIMATION_ID = "rbxassetid://94346372242641"
 local PROMPT_NAME = "MineRewardChestPrompt"
+local ANIMATOR_WAIT_TIMEOUT = 3
+local APPEARANCE_RETRY_DELAY = 0.25
 
 type ChestState = {
 	openingTrack: AnimationTrack?,
@@ -18,6 +20,7 @@ type ChestState = {
 	finishConnection: RBXScriptConnection?,
 	isOpenVisual: boolean,
 	openSequence: number,
+	pendingAppearanceRetry: boolean,
 }
 
 local trackedChests: {[Model]: ChestState} = {}
@@ -27,6 +30,7 @@ local openAnimation = Instance.new("Animation")
 openAnimation.AnimationId = OPEN_ANIMATION_ID
 local openedAnimation = Instance.new("Animation")
 openedAnimation.AnimationId = OPENED_ANIMATION_ID
+local updateChestAppearance: (Model, boolean?) -> ()
 
 local function hasOpenedChestForFloor(floorNumber: number): boolean
 	if openedFloorOverrides[floorNumber] == true then
@@ -55,20 +59,56 @@ local function getPrompt(chestModel: Model): ProximityPrompt?
 	return nil
 end
 
+local function waitForChildOfClass(parent: Instance, className: string, timeout: number): Instance?
+	local child = parent:FindFirstChildOfClass(className)
+	local startTime = os.clock()
+
+	while child == nil and parent.Parent ~= nil and os.clock() - startTime < timeout do
+		task.wait()
+		child = parent:FindFirstChildOfClass(className)
+	end
+
+	return child
+end
+
 local function getAnimator(chestModel: Model): Animator?
-	local animationController = chestModel:FindFirstChildOfClass("AnimationController")
+	local animationController = waitForChildOfClass(chestModel, "AnimationController", ANIMATOR_WAIT_TIMEOUT)
 	if animationController == nil then
 		warn("MineRewardChestController: Chest model is missing AnimationController", chestModel:GetFullName())
 		return nil
 	end
+	if not animationController:IsA("AnimationController") then
+		warn("MineRewardChestController: Chest AnimationController child is not an AnimationController", chestModel:GetFullName())
+		return nil
+	end
 
-	local animator = animationController:FindFirstChildOfClass("Animator")
+	local animator = waitForChildOfClass(animationController, "Animator", ANIMATOR_WAIT_TIMEOUT)
 	if animator == nil then
 		warn("MineRewardChestController: Chest AnimationController is missing Animator", chestModel:GetFullName())
 		return nil
 	end
+	if not animator:IsA("Animator") then
+		warn("MineRewardChestController: Chest Animator child is not an Animator", chestModel:GetFullName())
+		return nil
+	end
 
 	return animator
+end
+
+local function queueAppearanceRetry(chestModel: Model, state: ChestState)
+	if state.pendingAppearanceRetry then
+		return
+	end
+
+	state.pendingAppearanceRetry = true
+	task.delay(APPEARANCE_RETRY_DELAY, function()
+		if trackedChests[chestModel] ~= state then
+			return
+		end
+
+		state.pendingAppearanceRetry = false
+		updateChestAppearance(chestModel, false)
+	end)
 end
 
 local function getOpeningTrack(chestModel: Model, state: ChestState): AnimationTrack?
@@ -142,7 +182,6 @@ end
 
 local function playOpenedLoop(chestModel: Model, state: ChestState)
 	disconnectFinishConnection(state)
-	state.isOpenVisual = true
 
 	if state.openingTrack ~= nil then
 		state.openingTrack:Stop(0)
@@ -150,8 +189,11 @@ local function playOpenedLoop(chestModel: Model, state: ChestState)
 
 	local openedTrack = getOpenedTrack(chestModel, state)
 	if openedTrack == nil then
+		queueAppearanceRetry(chestModel, state)
 		return
 	end
+
+	state.isOpenVisual = true
 
 	if not openedTrack.IsPlaying then
 		openedTrack:Play(0)
@@ -161,6 +203,7 @@ end
 local function playOpeningThenOpenedLoop(chestModel: Model, state: ChestState)
 	local openingTrack = getOpeningTrack(chestModel, state)
 	if openingTrack == nil then
+		queueAppearanceRetry(chestModel, state)
 		return
 	end
 
@@ -184,7 +227,7 @@ local function playOpeningThenOpenedLoop(chestModel: Model, state: ChestState)
 	openingTrack:Play(0)
 end
 
-local function updateChestAppearance(chestModel: Model, shouldAnimateOpen: boolean?)
+function updateChestAppearance(chestModel: Model, shouldAnimateOpen: boolean?)
 	local state = trackedChests[chestModel]
 	if state == nil then
 		return
@@ -260,12 +303,34 @@ local function trackChest(instance: Instance)
 		finishConnection = nil,
 		isOpenVisual = false,
 		openSequence = 0,
+		pendingAppearanceRetry = false,
 	}
 	updateChestAppearance(chestModel, false)
 
 	chestModel:GetAttributeChangedSignal("FloorNumber"):Connect(function()
 		updateChestAppearance(chestModel, false)
 	end)
+
+	chestModel.ChildAdded:Connect(function(child)
+		if child:IsA("AnimationController") then
+			updateChestAppearance(chestModel, false)
+
+			child.ChildAdded:Connect(function(grandchild)
+				if grandchild:IsA("Animator") then
+					updateChestAppearance(chestModel, false)
+				end
+			end)
+		end
+	end)
+
+	local animationController = chestModel:FindFirstChildOfClass("AnimationController")
+	if animationController ~= nil then
+		animationController.ChildAdded:Connect(function(child)
+			if child:IsA("Animator") then
+				updateChestAppearance(chestModel, false)
+			end
+		end)
+	end
 
 	local primaryPart = chestModel.PrimaryPart
 	if primaryPart ~= nil then
