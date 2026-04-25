@@ -1,6 +1,6 @@
 local drop = {
 	{
-		itemName = "Stone",
+		itemName = "Mythril",
 		minAmount = 1,
 		maxAmount = 1,
 		chance = 1,

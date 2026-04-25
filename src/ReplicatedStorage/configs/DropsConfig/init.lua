@@ -43,6 +43,36 @@ local dropsConfig = {
 	types = {}
 }
 
+function dropsConfig.RollLoot(dropType: string): {[string]: number}
+	local rewards = {}
+	local loot = dropsConfig.types[dropType]
+	if loot == nil then
+		return rewards
+	end
+
+	for _, entry in ipairs(loot) do
+		local itemName = entry.itemName
+		if type(itemName) ~= "string" or itemName == "" then
+			continue
+		end
+
+		local chance = if type(entry.chance) == "number" then entry.chance else 1
+		if math.random() > chance then
+			continue
+		end
+
+		local minAmount = if type(entry.minAmount) == "number" then entry.minAmount else 1
+		local maxAmount = if type(entry.maxAmount) == "number" then entry.maxAmount else minAmount
+		minAmount = math.max(1, math.floor(minAmount))
+		maxAmount = math.max(minAmount, math.floor(maxAmount))
+
+		local amount = math.random(minAmount, maxAmount)
+		rewards[itemName] = (rewards[itemName] or 0) + amount
+	end
+
+	return rewards
+end
+
 for _, m in pairs(script:GetChildren()) do
 	if m:IsA("ModuleScript") then
 		if dropsConfig.types[m.Name] ~= nil then

@@ -71,32 +71,31 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 
 	local dropType = nodeModel:GetAttribute("DropType")
 	local itemRewards = {}
-	if dropType then
-		local drops = dropsConfig.types[dropType]
-		if drops then
-			for dropName, dropChance in pairs(drops) do
-				if math.random() <= dropChance then
-					itemRewards[dropName] = (itemRewards[dropName] or 0) + 1
-				end
-			end
-		end
+	if type(dropType) == "string" then
+		itemRewards = dropsConfig.RollLoot(dropType)
 	else
 		itemRewards[oreType] = 1
 	end
 
-	if RE_ItemDrop then
-		for itemName, amount in pairs(itemRewards) do
-			local itemDefinition = ItemLookupService.GetItemDefinitionFromName(itemName)
-			if itemDefinition then
-				RE_ItemDrop:FireClient(player, amount, nodePosition, itemDefinition)
+	local hasItemRewards = next(itemRewards) ~= nil
+	if hasItemRewards then
+		if RE_ItemDrop then
+			for itemName, amount in pairs(itemRewards) do
+				local itemDefinition = ItemLookupService.GetItemDefinitionFromName(itemName)
+				if itemDefinition then
+					RE_ItemDrop:FireClient(player, amount, nodePosition, itemDefinition)
+				end
 			end
 		end
 	end
 
 	PlayerDataHandler.GiveXP(player, xpReward)
-	PlayerDataHandler.GiveItems(player, itemRewards)
 
-	signalTutorialEvent:Fire(player, "getItem")
+	if hasItemRewards then
+		PlayerDataHandler.GiveItems(player, itemRewards)
+
+		signalTutorialEvent:Fire(player, "getItem")
+	end
 
 	if revealsLadder and originalParent and originalParent.Parent then
 		createLadder(revealPosition, originalParent, floorNumber)
