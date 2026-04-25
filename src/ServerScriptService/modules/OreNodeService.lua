@@ -10,6 +10,7 @@ local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
+local ItemLookupService = require(Services.ItemLookupService)
 
 local configs = ReplicatedStorage.configs
 local OreConfig = require(configs.OreConfig)
@@ -85,7 +86,7 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 
 	if RE_ItemDrop then
 		for itemName, amount in pairs(itemRewards) do
-			local itemDefinition = dropsConfig.itemDefinitions[itemName]
+			local itemDefinition = ItemLookupService.GetItemDefinitionFromName(itemName)
 			if itemDefinition then
 				RE_ItemDrop:FireClient(player, amount, nodePosition, itemDefinition)
 			end

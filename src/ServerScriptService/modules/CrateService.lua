@@ -8,10 +8,10 @@ local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
+local ItemLookupService = require(Services.ItemLookupService)
 
 local configs = ReplicatedStorage.configs
 local CrateConfig = require(configs.CrateConfig)
-local dropsConfig = require(configs.DropsConfig)
 
 local CrateService = {}
 
@@ -92,7 +92,7 @@ function CrateService.BreakCrate(player: Player, crate: Instance): boolean
 
 		if RE_ItemDrop then
 			for itemName, amount in pairs(itemRewards) do
-				local itemDefinition = dropsConfig.itemDefinitions[itemName]
+				local itemDefinition = ItemLookupService.GetItemDefinitionFromName(itemName)
 				if itemDefinition then
 					RE_ItemDrop:FireClient(player, amount, cratePosition, itemDefinition)
 				end

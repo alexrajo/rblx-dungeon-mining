@@ -6,10 +6,10 @@ local PlayerDataHandler = require(modules.PlayerDataHandler)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
+local ItemLookupService = require(Services.ItemLookupService)
 
 local configs = ReplicatedStorage.configs
 local EnemyConfig = require(configs.EnemyConfig)
-local dropsConfig = require(configs.DropsConfig)
 
 local RE_CoinDrop = APIService.GetEvent("DropCoins")
 local RE_ItemDrop = APIService.GetEvent("DropItems")
@@ -57,7 +57,7 @@ function EnemyLootHandler.HandleDeath(enemyModel: Model)
 		PlayerDataHandler.GiveItems(player, itemRewards)
 		if RE_ItemDrop then
 			for itemName, amount in pairs(itemRewards) do
-				local itemDefinition = dropsConfig.itemDefinitions[itemName]
+				local itemDefinition = ItemLookupService.GetItemDefinitionFromName(itemName)
 				if itemDefinition then
 					RE_ItemDrop:FireClient(player, amount, dropPosition, itemDefinition)
 				end
