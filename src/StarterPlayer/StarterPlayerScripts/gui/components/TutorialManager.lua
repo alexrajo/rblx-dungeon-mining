@@ -9,11 +9,14 @@ local Roact = require(ReplicatedStorage.services.Roact)
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
 local nextTutorialStepEvent = APIService.GetEvent("SendNextTutorialStep")
+local skipTutorialEvent = APIService.GetEvent("SkipTutorial")
 
 local createElement = Roact.createElement
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
 local Panel = require(ModuleIndex.Panel)
 local TextLabel = require(ModuleIndex.TextLabel)
+local TextButton = require(ModuleIndex.TextButton)
+local ConfirmationModal = require(ModuleIndex.ConfirmationModal)
 
 local TutorialManager = Roact.Component:extend("TutorialManager")
 local OPEN_TWEEN_INFO = TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
@@ -44,6 +47,7 @@ function TutorialManager:init()
 	self:setState({
 		currentTutorial = nil,
 		currentStep = nil,
+		showSkipConfirm = false,
 	})
 end
 
@@ -274,6 +278,7 @@ function TutorialManager:_moveToStep(step, tutorialName)
 			self:setState({
 				currentTutorial = nil,
 				currentStep = nil,
+				showSkipConfirm = false,
 			})
 			return
 		end
@@ -281,6 +286,7 @@ function TutorialManager:_moveToStep(step, tutorialName)
 		self:setState({
 			currentTutorial = tutorialName,
 			currentStep = step,
+			showSkipConfirm = false,
 		})
 
 		task.wait()
@@ -310,6 +316,8 @@ function TutorialManager:render()
     if self.state.currentStep ~= nil then
         descriptionText = self.state.currentStep.description
 	end
+	local showTutorial = self.state.currentStep ~= nil
+	local showSkipConfirm = showTutorial and self.state.showSkipConfirm
 
 	return createElement("Frame", { Size = UDim2.fromScale(1, 1), Position = UDim2.fromScale(0, 0), BackgroundTransparency = 1, ZIndex = 200 }, {
 		OutlineOverlay = createElement("Frame", {
@@ -331,9 +339,42 @@ function TutorialManager:render()
 			Panel = createElement(Panel, {Size = UDim2.fromScale(1, 1)}, {
 				Title = createElement(TextLabel, {Text = "Tutorial", Size = UDim2.new(1, -16, 0, 24), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0), textSize = 24}),
 				-- Disable RichText so the foreground label and shadow label wrap identically for multi-line tutorial text.
-				Description = createElement(TextLabel, {Text = descriptionText, Size = UDim2.new(1, -16, 1, -20), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), textSize = 16, RichText = false, textProps = {TextWrapped = true}})
-			})
-		})
+				Description = createElement(TextLabel, {Text = descriptionText, Size = UDim2.new(1, -16, 1, -20), AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -8), textSize = 16, RichText = false, textProps = {TextWrapped = true}}),
+			}),
+			SkipButton = createElement(TextButton, {
+				text = "Skip tutorial",
+				size = "xs",
+				color = "red",
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, 8, 1, 4),
+				customSize = UDim2.fromOffset(130, 30),
+				disableHoverScaleTween = true,
+				onClick = function()
+					self:setState({showSkipConfirm = true})
+				end,
+			}),
+		}),
+		SkipConfirmation = createElement(ConfirmationModal, {
+			visible = showSkipConfirm,
+			title = "Skip tutorial?",
+			message = "Are you sure you want to skip this tutorial? You will not receive its completion reward.",
+			confirmText = "SKIP",
+			cancelText = "CANCEL",
+			confirmColor = "red",
+			cancelColor = "gray",
+			onConfirm = function()
+				if self.state.currentTutorial == nil then
+					self:setState({showSkipConfirm = false})
+					return
+				end
+
+				self:setState({showSkipConfirm = false})
+				skipTutorialEvent:FireServer()
+			end,
+			onCancel = function()
+				self:setState({showSkipConfirm = false})
+			end,
+		}),
     })
 end
 

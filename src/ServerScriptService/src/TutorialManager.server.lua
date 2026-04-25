@@ -136,7 +136,9 @@ function skipTutorial(player: Player)
 		return
 	end
 
-	sendNextStepClientEvent:FireClient(player, COMPLETED_STEP, playerState.currentTutorial)
+	local activeTutorialName = playerState.currentTutorial
+	PlayerDataHandler.CompleteTutorial(player, activeTutorialName, nil)
+	sendNextStepClientEvent:FireClient(player, COMPLETED_STEP, activeTutorialName)
 
 	playerState.currentTutorial = nil
 	playerState.currentStep = 0

@@ -22,6 +22,7 @@ local ModuleIndex = {
 	MineTransitionOverlay = components.MineTransitionOverlay,
 	NotificationPanel = components.NotificationPanel,
 	TutorialManager = components.TutorialManager,
+	ConfirmationModal = components.ConfirmationModal,
 	ItemCounter = components.ItemCounter,
 	Tab = components.Tab,
 	Clickable = components.Clickable,
