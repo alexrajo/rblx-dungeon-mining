@@ -9,11 +9,13 @@ local localPlayer = Players.LocalPlayer
 local mineChestOpenedEvent = APIService.GetEvent("MineChestOpened")
 
 local OPEN_ANIMATION_ID = "rbxassetid://74713289282918"
+local OPENED_ANIMATION_ID = "rbxassetid://94346372242641"
 local PROMPT_NAME = "MineRewardChestPrompt"
-local TRACK_LENGTH_TIMEOUT = 3
 
 type ChestState = {
-	track: AnimationTrack?,
+	openingTrack: AnimationTrack?,
+	openedTrack: AnimationTrack?,
+	finishConnection: RBXScriptConnection?,
 	isOpenVisual: boolean,
 	openSequence: number,
 }
@@ -23,6 +25,8 @@ local openedMineChestsFolder: Folder? = nil
 local openedFloorOverrides: {[number]: boolean} = {}
 local openAnimation = Instance.new("Animation")
 openAnimation.AnimationId = OPEN_ANIMATION_ID
+local openedAnimation = Instance.new("Animation")
+openedAnimation.AnimationId = OPENED_ANIMATION_ID
 
 local function hasOpenedChestForFloor(floorNumber: number): boolean
 	if openedFloorOverrides[floorNumber] == true then
@@ -51,11 +55,7 @@ local function getPrompt(chestModel: Model): ProximityPrompt?
 	return nil
 end
 
-local function getAnimationTrack(chestModel: Model, state: ChestState): AnimationTrack?
-	if state.track ~= nil then
-		return state.track
-	end
-
+local function getAnimator(chestModel: Model): Animator?
 	local animationController = chestModel:FindFirstChildOfClass("AnimationController")
 	if animationController == nil then
 		warn("MineRewardChestController: Chest model is missing AnimationController", chestModel:GetFullName())
@@ -68,39 +68,99 @@ local function getAnimationTrack(chestModel: Model, state: ChestState): Animatio
 		return nil
 	end
 
+	return animator
+end
+
+local function getOpeningTrack(chestModel: Model, state: ChestState): AnimationTrack?
+	if state.openingTrack ~= nil then
+		return state.openingTrack
+	end
+
+	local animator = getAnimator(chestModel)
+	if animator == nil then
+		return nil
+	end
+
 	local track = animator:LoadAnimation(openAnimation)
 	track.Priority = Enum.AnimationPriority.Action
 	track.Looped = false
-	state.track = track
+	state.openingTrack = track
 
 	return track
 end
 
-local function waitForTrackLength(track: AnimationTrack): number
-	local startTime = os.clock()
-	while track.Length <= 0 and os.clock() - startTime < TRACK_LENGTH_TIMEOUT do
-		task.wait()
+local function getOpenedTrack(chestModel: Model, state: ChestState): AnimationTrack?
+	if state.openedTrack ~= nil then
+		return state.openedTrack
 	end
 
-	return track.Length
+	local animator = getAnimator(chestModel)
+	if animator == nil then
+		return nil
+	end
+
+	local track = animator:LoadAnimation(openedAnimation)
+	track.Priority = Enum.AnimationPriority.Action
+	track.Looped = true
+	state.openedTrack = track
+
+	return track
 end
 
-local function holdChestOpen(chestModel: Model, state: ChestState)
-	local track = getAnimationTrack(chestModel, state)
-	if track == nil then
+local function disconnectFinishConnection(state: ChestState)
+	if state.finishConnection ~= nil then
+		state.finishConnection:Disconnect()
+		state.finishConnection = nil
+	end
+end
+
+local function stopChestAnimations(state: ChestState)
+	disconnectFinishConnection(state)
+	state.openSequence += 1
+	state.isOpenVisual = false
+
+	if state.openingTrack ~= nil then
+		state.openingTrack:Stop(0)
+	end
+	if state.openedTrack ~= nil then
+		state.openedTrack:Stop(0)
+	end
+end
+
+local function destroyChestState(state: ChestState)
+	disconnectFinishConnection(state)
+
+	if state.openingTrack ~= nil then
+		state.openingTrack:Stop(0)
+		state.openingTrack:Destroy()
+	end
+	if state.openedTrack ~= nil then
+		state.openedTrack:Stop(0)
+		state.openedTrack:Destroy()
+	end
+end
+
+local function playOpenedLoop(chestModel: Model, state: ChestState)
+	disconnectFinishConnection(state)
+	state.isOpenVisual = true
+
+	if state.openingTrack ~= nil then
+		state.openingTrack:Stop(0)
+	end
+
+	local openedTrack = getOpenedTrack(chestModel, state)
+	if openedTrack == nil then
 		return
 	end
 
-	state.isOpenVisual = true
-	local length = waitForTrackLength(track)
-	track:Play(0, 1, 0)
-	track.TimePosition = if length > 0 then length else 0
-	track:AdjustSpeed(0)
+	if not openedTrack.IsPlaying then
+		openedTrack:Play(0)
+	end
 end
 
-local function playChestOpen(chestModel: Model, state: ChestState)
-	local track = getAnimationTrack(chestModel, state)
-	if track == nil then
+local function playOpeningThenOpenedLoop(chestModel: Model, state: ChestState)
+	local openingTrack = getOpeningTrack(chestModel, state)
+	if openingTrack == nil then
 		return
 	end
 
@@ -108,24 +168,20 @@ local function playChestOpen(chestModel: Model, state: ChestState)
 	local sequence = state.openSequence
 	state.isOpenVisual = true
 
-	track:Stop(0)
-	track:Play(0, 1, 1)
-	track.TimePosition = 0
+	disconnectFinishConnection(state)
+	if state.openedTrack ~= nil then
+		state.openedTrack:Stop(0)
+	end
 
-	task.spawn(function()
-		local length = waitForTrackLength(track)
-		if length > 0 then
-			task.wait(math.max(length - track.TimePosition - 0.03, 0))
-		else
-			task.wait()
-		end
-
+	openingTrack:Stop(0)
+	state.finishConnection = openingTrack.Stopped:Connect(function()
 		if trackedChests[chestModel] ~= state or state.openSequence ~= sequence then
 			return
 		end
 
-		holdChestOpen(chestModel, state)
+		playOpenedLoop(chestModel, state)
 	end)
+	openingTrack:Play(0)
 end
 
 local function updateChestAppearance(chestModel: Model, shouldAnimateOpen: boolean?)
@@ -145,16 +201,14 @@ local function updateChestAppearance(chestModel: Model, shouldAnimateOpen: boole
 		prompt.Enabled = not isOpened
 	end
 
-	if isOpened and not state.isOpenVisual then
-		if shouldAnimateOpen == true then
-			playChestOpen(chestModel, state)
-		else
-			task.spawn(function()
-				if trackedChests[chestModel] == state then
-					holdChestOpen(chestModel, state)
-				end
-			end)
+	if not isOpened then
+		if state.isOpenVisual then
+			stopChestAnimations(state)
 		end
+	elseif shouldAnimateOpen == true then
+		playOpeningThenOpenedLoop(chestModel, state)
+	elseif not state.isOpenVisual then
+		playOpenedLoop(chestModel, state)
 	end
 end
 
@@ -201,7 +255,9 @@ local function trackChest(instance: Instance)
 	end
 
 	trackedChests[chestModel] = {
-		track = nil,
+		openingTrack = nil,
+		openedTrack = nil,
+		finishConnection = nil,
 		isOpenVisual = false,
 		openSequence = 0,
 	}
@@ -234,9 +290,8 @@ local function trackChest(instance: Instance)
 
 	chestModel.Destroying:Connect(function()
 		local state = trackedChests[chestModel]
-		if state ~= nil and state.track ~= nil then
-			state.track:Stop(0)
-			state.track:Destroy()
+		if state ~= nil then
+			destroyChestState(state)
 		end
 		trackedChests[chestModel] = nil
 	end)
@@ -248,6 +303,10 @@ end
 
 CollectionService:GetInstanceAddedSignal("MineRewardChest"):Connect(trackChest)
 CollectionService:GetInstanceRemovedSignal("MineRewardChest"):Connect(function(instance)
+	local state = trackedChests[instance]
+	if state ~= nil then
+		destroyChestState(state)
+	end
 	trackedChests[instance] = nil
 end)
 
