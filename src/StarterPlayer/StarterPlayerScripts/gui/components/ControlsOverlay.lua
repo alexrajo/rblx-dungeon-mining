@@ -34,6 +34,8 @@ function ControlsOverlay:didMount()
 end
 
 function ControlsOverlay:willUnmount()
+	HotbarActionService.StopHoldingMine()
+
 	if self.hotbarDisconnect then
 		self.hotbarDisconnect()
 	end
@@ -65,6 +67,7 @@ function ControlsOverlay:renderMobile(screenData, statsData)
 
 	local isAtleast: (string) -> boolean = screenData.IsAtleast
 	local buttonSize = isAtleast("md") and "2xl" or "xl"
+	local actionName = HotbarConfig.GetActionName(itemName)
 
 	return createElement("Frame", {
 		Position = self.props.Position,
@@ -80,9 +83,15 @@ function ControlsOverlay:renderMobile(screenData, statsData)
 			imageId = HotbarConfig.GetImageId(itemName),
 			text = itemName,
 			textSize = 18,
-			onClick = function()
+			onClick = actionName ~= "Mine" and function()
 				HotbarActionService.ActivateSelected()
-			end,
+			end or nil,
+			onPressDown = actionName == "Mine" and function()
+				HotbarActionService.StartHoldingMine()
+			end or nil,
+			onPressUp = actionName == "Mine" and function()
+				HotbarActionService.StopHoldingMine()
+			end or nil,
 		}),
 	})
 end
