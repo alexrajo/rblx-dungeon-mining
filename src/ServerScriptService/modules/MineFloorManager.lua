@@ -2,6 +2,7 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
@@ -17,6 +18,8 @@ local OreConfig = require(configs.OreConfig)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
+
+local EnemyNPCRefsFolder = ServerStorage.NPCs.Enemies
 
 -- Mine area offset — the mine exists far below the hub
 local MINE_ORIGIN = Vector3.new(0, -500, 0)
@@ -540,22 +543,31 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 		local enemyType = enemyTypes[math.random(1, #enemyTypes)]
 
-		local enemyModel = Instance.new("Model")
-		enemyModel.Name = enemyType
+        local enemyRef = EnemyNPCRefsFolder:FindFirstChild(enemyType)
+        local enemyModel
 
-		local rootPart = Instance.new("Part")
-		rootPart.Name = "HumanoidRootPart"
-		rootPart.Size = Vector3.new(2, 2, 1)
-		rootPart.Position = floorPosition + Vector3.new(0, 1, 0)
-		rootPart.Anchored = false
-		rootPart.CanCollide = true
-		rootPart.BrickColor = BrickColor.new("Bright red")
-		rootPart.Parent = enemyModel
+        if enemyRef == nil or enemyRef:FindFirstChild("HumanoidRootPart") == nil then
+            enemyModel = Instance.new("Model")
+            enemyModel.Name = enemyType
+    
+            local rootPart = Instance.new("Part")
+            rootPart.Name = "HumanoidRootPart"
+            rootPart.Size = Vector3.new(2, 2, 1)
+            rootPart.Position = floorPosition + Vector3.new(0, 1, 0)
+            rootPart.Anchored = false
+            rootPart.CanCollide = true
+            rootPart.BrickColor = BrickColor.new("Bright red")
+            rootPart.Parent = enemyModel
+		    enemyModel.PrimaryPart = rootPart
 
-		local humanoid = Instance.new("Humanoid")
-		humanoid.Parent = enemyModel
+            local humanoid = Instance.new("Humanoid")
+            humanoid.Parent = enemyModel
+        else
+            enemyModel = enemyRef:Clone()
+            enemyModel:PivotTo(CFrame.new(floorPosition + Vector3.new(0, 1, 0)))
+        end
 
-		enemyModel.PrimaryPart = rootPart
+
 		enemyModel:SetAttribute("FloorNumber", floorNumber)
 		enemyModel:SetAttribute("EnemyType", enemyType)
 
