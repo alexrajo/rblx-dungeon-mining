@@ -1,5 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 
 local APIService = require(ReplicatedStorage.services.APIService)
 
@@ -8,6 +9,22 @@ local RISE_END_Y = 4.5
 local X_SPREAD = 1.5
 local NORMAL_DAMAGE_COLOR = Color3.fromRGB(255, 60, 60)
 local CRITICAL_DAMAGE_COLOR = Color3.fromRGB(255, 215, 80)
+local HIT_CONFIRM_SOUND_IDS = {
+	140706011418118,
+	128275263747292,
+}
+
+local function playHitConfirmSound()
+	local soundId = HIT_CONFIRM_SOUND_IDS[math.random(1, #HIT_CONFIRM_SOUND_IDS)]
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://" .. soundId
+	SoundService:PlayLocalSound(sound)
+
+	task.spawn(function()
+		sound.Ended:Wait()
+		sound:Destroy()
+	end)
+end
 
 local function spawnIndicator(enemyModel: Model, damage: number, isCritical: boolean)
 	local hrp = enemyModel:FindFirstChild("HumanoidRootPart")
@@ -85,6 +102,10 @@ local function spawnIndicator(enemyModel: Model, damage: number, isCritical: boo
 end
 
 APIService.GetEvent("VisualizeAttackHit").OnClientEvent:Connect(function(hitData: {{enemy: Model, damage: number, isCritical: boolean?}})
+	if #hitData > 0 then
+		playHitConfirmSound()
+	end
+
 	for _, hit in ipairs(hitData) do
 		task.spawn(spawnIndicator, hit.enemy, hit.damage, hit.isCritical == true)
 	end
