@@ -14,6 +14,7 @@ local attackBehaviors = enemyBehaviors.Attack
 local DEFAULT_MOVEMENT_BEHAVIOR = "DefaultGround"
 local DEFAULT_ATTACK_BEHAVIOR = "DefaultMelee"
 local UPDATE_INTERVAL = 0.1
+local FACE_TARGET_RESPONSIVENESS = 20
 
 local enemy = script.Parent
 local humanoid: Humanoid = enemy:FindFirstChildOfClass("Humanoid")
@@ -60,6 +61,21 @@ local stats = {
 }
 
 humanoid.WalkSpeed = stats.walkSpeed
+humanoid.AutoRotate = false
+
+local facingAttachment = Instance.new("Attachment")
+facingAttachment.Name = "EnemyFacingAttachment"
+facingAttachment.Parent = root
+
+local facingOrientation = Instance.new("AlignOrientation")
+facingOrientation.Name = "EnemyFacingOrientation"
+facingOrientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
+facingOrientation.Attachment0 = facingAttachment
+facingOrientation.RigidityEnabled = false
+facingOrientation.Responsiveness = FACE_TARGET_RESPONSIVENESS
+facingOrientation.MaxTorque = math.huge
+facingOrientation.Enabled = false
+facingOrientation.Parent = root
 
 local movementBehaviorName = enemy:GetAttribute("MovementBehavior") or DEFAULT_MOVEMENT_BEHAVIOR
 local attackBehaviorName = enemy:GetAttribute("AttackBehavior") or DEFAULT_ATTACK_BEHAVIOR
@@ -150,6 +166,28 @@ local function stopMovement()
 	humanoid:Move(Vector3.zero)
 end
 
+local function stopFacing()
+	facingOrientation.Enabled = false
+end
+
+local function faceTarget(targetPosition: Vector3?)
+	if targetPosition == nil then
+		stopFacing()
+		return
+	end
+
+	local rootPosition = root.Position
+	local flatTargetPosition = Vector3.new(targetPosition.X, rootPosition.Y, targetPosition.Z)
+	local flatDiff = flatTargetPosition - rootPosition
+	if flatDiff.Magnitude <= 0.001 then
+		stopFacing()
+		return
+	end
+
+	facingOrientation.CFrame = CFrame.lookAt(rootPosition, flatTargetPosition)
+	facingOrientation.Enabled = true
+end
+
 local function getClosestVisiblePlayer()
 	local players = Players:GetPlayers()
 	for _, player in ipairs(players) do
@@ -238,6 +276,7 @@ humanoid.Died:Once(function()
 	root.Anchored = true
 
 	stopMovement()
+	stopFacing()
 
 	if type(movementBehavior.Cleanup) == "function" then
 		movementBehavior.Cleanup(context)
@@ -295,6 +334,7 @@ while alive do
 
 		if targetPosition == nil then
 			stopMovement()
+			stopFacing()
 			task.wait(0.25)
 			continue
 		end
@@ -304,10 +344,12 @@ while alive do
 	if distance > stats.maxInterestDistance then
 		targetPlayer = nil
 		stopMovement()
+		stopFacing()
 		task.wait(UPDATE_INTERVAL)
 		continue
 	end
 
+	faceTarget(targetPosition)
 	movementBehavior.Update(context, dt, targetCharacter, targetPosition)
 	attackBehavior.Update(context, dt, targetCharacter, targetPosition)
 

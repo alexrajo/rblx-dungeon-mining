@@ -1,17 +1,22 @@
-local LEAP_INTERVAL = 1.1
-local LEAP_HORIZONTAL_SPEED = 24
+local WALK_HOP_INTERVAL = 0.7
+local WALK_HOP_HORIZONTAL_SPEED = 10
 local LEAP_VERTICAL_SPEED = 32
 
 local SlimeLeap = {}
 
 function SlimeLeap.Init(context)
-	context.state.nextLeapAt = 0
-	context.state.leapInterval = context.enemy:GetAttribute("LeapInterval") or LEAP_INTERVAL
-	context.state.leapHorizontalSpeed = context.enemy:GetAttribute("LeapHorizontalSpeed") or LEAP_HORIZONTAL_SPEED
+	context.state.nextWalkHopAt = 0
+	context.state.walkHopInterval = context.enemy:GetAttribute("WalkHopInterval") or WALK_HOP_INTERVAL
+	context.state.walkHopHorizontalSpeed = context.enemy:GetAttribute("WalkHopHorizontalSpeed") or WALK_HOP_HORIZONTAL_SPEED
 	context.state.leapVerticalSpeed = context.enemy:GetAttribute("LeapVerticalSpeed") or LEAP_VERTICAL_SPEED
 end
 
 function SlimeLeap.Update(context, _dt, _targetCharacter, targetPosition)
+	if context.state.slimeAttackMovementLocked then
+		context.humanoid:Move(Vector3.zero)
+		return
+	end
+
 	if targetPosition == nil then
 		context.humanoid:Move(Vector3.zero)
 		return
@@ -27,15 +32,15 @@ function SlimeLeap.Update(context, _dt, _targetCharacter, targetPosition)
 	end
 
 	local now = os.clock()
-	if now < context.state.nextLeapAt or distance <= 0.001 then
+	if now < context.state.nextWalkHopAt or distance <= 0.001 then
 		context.humanoid:Move(Vector3.zero)
 		return
 	end
 
-	context.state.nextLeapAt = now + context.state.leapInterval
+	context.state.nextWalkHopAt = now + context.state.walkHopInterval
 	context.humanoid.Jump = true
 
-	local horizontalVelocity = flatDiff.Unit * context.state.leapHorizontalSpeed
+	local horizontalVelocity = flatDiff.Unit * context.state.walkHopHorizontalSpeed
 	context.root.AssemblyLinearVelocity = Vector3.new(
 		horizontalVelocity.X,
 		context.state.leapVerticalSpeed,
