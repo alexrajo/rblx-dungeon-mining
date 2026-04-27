@@ -30,6 +30,7 @@ local SelectHotbarSlotEndpoint = require(EndpointFolder.SelectHotbarSlot)
 local BuyItemsEndpoint = require(EndpointFolder.BuyItems)
 local MineElevatorTravelEndpoint = require(EndpointFolder.MineElevatorTravel)
 local ToolEquipHandler = require(ServerModules.ToolEquipHandler)
+local ArmorAttachmentService = require(ServerModules.ArmorAttachmentService)
 
 -- Cross script communication
 local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
@@ -64,6 +65,7 @@ MineTransitionService.Init()
 
 -- Tool equipping
 ToolEquipHandler.Initialize()
+ArmorAttachmentService.Initialize()
 
 -- Tutorial
 function startTutorial(...)
