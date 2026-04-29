@@ -544,6 +544,39 @@ function PlayerDataHandler.SetSelectedHotbarSlot(player: Player, slotIndex: numb
 	return true
 end
 
+-- Quests
+function PlayerDataHandler.GetActiveQuests(player: Player)
+	return getStat("ActiveQuests", ProfileTemplate.ActiveQuests, player)
+end
+
+function PlayerDataHandler.SetActiveQuests(player: Player, activeQuests)
+	setStat("ActiveQuests", activeQuests, player)
+end
+
+function PlayerDataHandler.GetQuestObjectiveProgress(player: Player)
+	return getStat("QuestObjectiveProgress", ProfileTemplate.QuestObjectiveProgress, player)
+end
+
+function PlayerDataHandler.SetQuestObjectiveProgress(player: Player, objectiveProgress)
+	setStat("QuestObjectiveProgress", objectiveProgress, player)
+end
+
+function PlayerDataHandler.GetQuestCompletions(player: Player)
+	return getStat("QuestCompletions", ProfileTemplate.QuestCompletions, player)
+end
+
+function PlayerDataHandler.SetQuestCompletions(player: Player, questCompletions)
+	setStat("QuestCompletions", questCompletions, player)
+end
+
+function PlayerDataHandler.GetQuestClaims(player: Player)
+	return getStat("QuestClaims", ProfileTemplate.QuestClaims, player)
+end
+
+function PlayerDataHandler.SetQuestClaims(player: Player, questClaims)
+	setStat("QuestClaims", questClaims, player)
+end
+
 -- Mine progression
 function PlayerDataHandler.SetLatestCheckpointFloor(player: Player, floor: number): boolean
 	if not MineLayerConfig.IsCheckpointFloor(floor) then

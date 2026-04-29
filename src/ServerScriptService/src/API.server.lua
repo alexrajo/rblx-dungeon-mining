@@ -10,6 +10,7 @@ local PlayerDataHandler = require(ServerModules.PlayerDataHandler)
 
 local MineFloorManager = require(ServerModules.MineFloorManager)
 local MineTransitionService = require(ServerModules.MineTransitionService)
+local QuestService = require(ServerModules.QuestService)
 
 -- Endpoint handlers
 local EndpointFolder = ServerModules.api_endpoints
@@ -29,6 +30,11 @@ local ClearEquippedGearEndpoint = require(EndpointFolder.ClearEquippedGear)
 local SelectHotbarSlotEndpoint = require(EndpointFolder.SelectHotbarSlot)
 local BuyItemsEndpoint = require(EndpointFolder.BuyItems)
 local MineElevatorTravelEndpoint = require(EndpointFolder.MineElevatorTravel)
+local StartQuestEndpoint = require(EndpointFolder.StartQuest)
+local TrackQuestEndpoint = require(EndpointFolder.TrackQuest)
+local UntrackQuestEndpoint = require(EndpointFolder.UntrackQuest)
+local AbandonQuestEndpoint = require(EndpointFolder.AbandonQuest)
+local ClaimQuestRewardEndpoint = require(EndpointFolder.ClaimQuestReward)
 local ToolEquipHandler = require(ServerModules.ToolEquipHandler)
 local ArmorAttachmentService = require(ServerModules.ArmorAttachmentService)
 
@@ -44,6 +50,11 @@ APIService:CreateFunctionEndpoint("SellOre", SellOreEndpoint.Call)
 APIService:CreateFunctionEndpoint("SellItems", SellItemsEndpoint.Call)
 APIService:CreateFunctionEndpoint("BuyItems", BuyItemsEndpoint.Call)
 APIService:CreateFunctionEndpoint("MineElevatorTravel", MineElevatorTravelEndpoint.Call)
+APIService:CreateFunctionEndpoint("StartQuest", StartQuestEndpoint.Call)
+APIService:CreateFunctionEndpoint("TrackQuest", TrackQuestEndpoint.Call)
+APIService:CreateFunctionEndpoint("UntrackQuest", UntrackQuestEndpoint.Call)
+APIService:CreateFunctionEndpoint("AbandonQuest", AbandonQuestEndpoint.Call)
+APIService:CreateFunctionEndpoint("ClaimQuestReward", ClaimQuestRewardEndpoint.Call)
 APIService:CreateEventEndpoint("EquipGear", EquipGearEndpoint.Call)
 APIService:CreateFunctionEndpoint("Craft", CraftEndpoint.Call)
 APIService:CreateFunctionEndpoint("Attack", AttackEndpoint.Call)
@@ -62,6 +73,7 @@ APIService:CreateEventEndpoint("SelectHotbarSlot", SelectHotbarSlotEndpoint.Call
 -- Initialize mine floor preloading
 MineFloorManager.Init()
 MineTransitionService.Init()
+QuestService.Init()
 
 -- Tool equipping
 ToolEquipHandler.Initialize()

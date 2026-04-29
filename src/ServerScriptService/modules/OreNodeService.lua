@@ -6,6 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local OreNodeUtil = require(modules.OreNodeUtil)
+local QuestService = require(modules.QuestService)
 local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
@@ -93,6 +94,9 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 
 	if hasItemRewards then
 		PlayerDataHandler.GiveItems(player, itemRewards)
+		QuestService.Signal(player, "collectItem", {
+			items = itemRewards,
+		})
 
 		signalTutorialEvent:Fire(player, "getItem")
 	end

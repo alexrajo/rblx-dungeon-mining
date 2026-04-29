@@ -29,6 +29,7 @@ local ModuleIndex = {
 	HealthBar = components.HealthBar,
 	FloorIndicator = components.FloorIndicator,
 	EnemyBillboard = components.EnemyBillboard,
+	QuestTracker = components.QuestTracker,
 
 	SellConfirmationDialog = components.SellConfirmationDialog,
 	InventoryPopup = components.InventoryPopup,
@@ -41,6 +42,7 @@ local ModuleIndex = {
 	StatsContext = contexts.StatsContext,
 	ScreenContext = contexts.ScreenContext,
 	InventoryUtils = utils.InventoryUtils,
+	QuestDataUtils = utils.QuestDataUtils,
 
 	TutorialSteps = components.Tutorials,
 }

@@ -9,6 +9,7 @@ local PlayerDataHandler = require(modules.PlayerDataHandler)
 local CaveUtil = require(modules.CaveUtil)
 local CrateService = require(modules.CrateService)
 local OreNodeUtil = require(modules.OreNodeUtil)
+local QuestService = require(modules.QuestService)
 
 local configs = ReplicatedStorage.configs
 local CrateConfig = require(configs.CrateConfig)
@@ -728,6 +729,9 @@ function MineFloorManager.EnterMine(player: Player, startFloor: number)
 	-- Update player state
 	PlayerDataHandler.SetInMine(player, true)
 	PlayerDataHandler.SetCurrentFloor(player, startFloor)
+	QuestService.Signal(player, "reachFloor", {
+		floor = startFloor,
+	})
 	setPlayerThemeForFloor(player, startFloor)
 
 	-- Teleport player and keep them frozen until the transition service releases them.
@@ -783,6 +787,9 @@ function MineFloorManager.DescendFloor(player: Player)
 
 	-- Update player state
 	PlayerDataHandler.SetCurrentFloor(player, nextFloor)
+	QuestService.Signal(player, "reachFloor", {
+		floor = nextFloor,
+	})
 	setPlayerThemeForFloor(player, nextFloor)
 
 	-- Teleport player and keep them frozen until the transition service releases them.
@@ -814,6 +821,9 @@ function MineFloorManager.TravelToCheckpoint(player: Player, targetFloor: number
 	movePlayerToFloor(player, currentFloor, targetFloor)
 	PlayerDataHandler.SetInMine(player, true)
 	PlayerDataHandler.SetCurrentFloor(player, targetFloor)
+	QuestService.Signal(player, "reachFloor", {
+		floor = targetFloor,
+	})
 	setPlayerThemeForFloor(player, targetFloor)
 
 	teleportToFloor(player, targetFloor)

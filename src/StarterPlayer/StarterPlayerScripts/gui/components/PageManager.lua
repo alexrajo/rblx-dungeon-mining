@@ -5,6 +5,7 @@ local TweenService = game:GetService("TweenService")
 local Services = ReplicatedStorage.services
 local Roact = require(Services.Roact)
 local APIService = require(Services.APIService)
+local PageNavigationService = require(ReplicatedStorage.local_services.PageNavigationService)
 
 -- Use collection service to do tag specific operations
 local CollectionService = game:GetService("CollectionService")
@@ -55,17 +56,28 @@ function PageManager:closeAllPages()
 	self:setState({
 		currentPage = "",
 		currentShopId = Roact.None,
+		currentQuestId = Roact.None,
 	})
 end
 
-function PageManager:openPage(pageName: string, shopId: string?)
-	if self.state.currentPage == pageName then return end
+function PageManager:openPage(pageName: string, shopId: string?, questId: string?)
+	if self.state.currentPage == pageName then
+		if questId ~= nil then
+			self:setState({
+				currentQuestId = questId,
+				currentQuestNavigationId = (self.state.currentQuestNavigationId or 0) + 1,
+			})
+		end
+		return
+	end
 
     signalTutorialEvent:FireServer("openPage_"..pageName)
 
 	self:setState({
 		currentPage = pageName,
 		currentShopId = shopId or Roact.None,
+		currentQuestId = questId or Roact.None,
+		currentQuestNavigationId = questId ~= nil and ((self.state.currentQuestNavigationId or 0) + 1) or self.state.currentQuestNavigationId,
 	})
 end
 
@@ -85,6 +97,8 @@ function PageManager:init()
 	self:setState({
 		currentPage = "None",
 		currentShopId = Roact.None,
+		currentQuestId = Roact.None,
+		currentQuestNavigationId = 0,
 	})
 end
 
@@ -104,6 +118,8 @@ function PageManager:render()
 				end,
 				currentPageBinding = currentPageBinding,
 				currentShopId = self.state.currentShopId,
+				currentQuestId = self.state.currentQuestId,
+				currentQuestNavigationId = self.state.currentQuestNavigationId,
 			})
 		end)
 		if success then
@@ -127,6 +143,10 @@ end
 function PageManager:didMount()
 	self.connections["openMineElevator"] = openMineElevatorEvent.OnClientEvent:Connect(function()
 		self:openPage("MineElevator")
+	end)
+
+	self.connections["openQuestLog"] = PageNavigationService.OnOpenQuestLog(function(questId: string?)
+		self:openPage("QuestPage", nil, questId)
 	end)
 
 	self.connections["checkActivationCircles"] = game:GetService("RunService").Heartbeat:Connect(function()

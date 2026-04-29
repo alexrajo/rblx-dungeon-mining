@@ -53,7 +53,7 @@ function Sidebar:renderContent(screenData)
 		or UDim2.new(0.15, 0, 0.5, 0)
 	
 	local itemsPerRow = isAtleast("md") and 4 or 2
-	local numItems = 3
+	local numItems = 4
 	local numRows = math.ceil(numItems/itemsPerRow)
 	local paddingPixels = 12
 	
@@ -160,6 +160,26 @@ function Sidebar:renderContent(screenData)
 				}),
 				TextLabel = createElement(TextLabel, {
 					Text = "Craft",
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 1),
+					ZIndex = 2
+				})
+			}),
+			["3_Quests"] = createElement(Button, {
+				color = "green",
+				onClick = function()
+					togglePage("QuestPage")
+				end
+			}, {
+				Icon = createElement("ImageLabel", {
+					AnchorPoint = Vector2.new(0.5, 0.5),
+					Position = UDim2.fromScale(0.5, 0.5),
+					Size = UDim2.new(0.68, 0, 0.68, 0),
+					BackgroundTransparency = 1,
+					Image = "rbxassetid://128278194793478"
+				}),
+				TextLabel = createElement(TextLabel, {
+					Text = "Quests",
 					AnchorPoint = Vector2.new(0.5, 0.5),
 					Position = UDim2.fromScale(0.5, 1),
 					ZIndex = 2

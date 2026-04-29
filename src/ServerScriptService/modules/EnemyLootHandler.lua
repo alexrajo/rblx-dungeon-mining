@@ -3,6 +3,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local QuestService = require(modules.QuestService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -34,6 +35,9 @@ function EnemyLootHandler.HandleDeath(enemyModel: Model)
 
 	-- Award XP
 	PlayerDataHandler.GiveXP(player, enemyData.xpReward or 10)
+	QuestService.Signal(player, "killEnemy", {
+		enemyType = enemyType,
+	})
 
 	-- Process drops
 	local itemRewards = {}

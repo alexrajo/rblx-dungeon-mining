@@ -4,6 +4,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local QuestService = require(modules.QuestService)
 local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
@@ -89,6 +90,9 @@ function CrateService.BreakCrate(player: Player, crate: Instance): boolean
 
 	if next(itemRewards) then
 		PlayerDataHandler.GiveItems(player, itemRewards)
+		QuestService.Signal(player, "collectItem", {
+			items = itemRewards,
+		})
 
 		if RE_ItemDrop then
 			for itemName, amount in pairs(itemRewards) do

@@ -18,6 +18,10 @@ return {
 		{name = "5", value = ""},
 	},
 	SelectedHotbarSlot = 0,
+	ActiveQuests = {},
+	QuestObjectiveProgress = {},
+	QuestCompletions = {},
+	QuestClaims = {},
 	UnlockedRecipes = {},
 	TutorialStates = {{name = "Intro", value = false}},
 }
