@@ -27,6 +27,7 @@ local ModuleIndex = {
 	Tab = components.Tab,
 	Clickable = components.Clickable,
 	HealthBar = components.HealthBar,
+	ActiveEffectsBar = components.ActiveEffectsBar,
 	FloorIndicator = components.FloorIndicator,
 	EnemyBillboard = components.EnemyBillboard,
 	QuestTracker = components.QuestTracker,

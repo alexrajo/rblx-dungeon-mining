@@ -71,6 +71,7 @@ function TextLabel:render()
 
 	return createElement("Frame", {
 		BackgroundTransparency = self.props.BackgroundTransparency ~= nil and self.props.BackgroundTransparency or 1,
+		LayoutOrder = self.props.LayoutOrder,
 		Position = self.props.Position ~= nil and self.props.Position or UDim2.fromScale(0, 0),
 		AnchorPoint = self.props.AnchorPoint ~= nil and self.props.AnchorPoint or Vector2.zero,
 		Size = self.props.Size,

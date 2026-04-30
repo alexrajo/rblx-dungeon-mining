@@ -91,16 +91,20 @@ function endpoint.Call(player: Player)
 	end
 
 	-- Apply effect based on type
-	local effectType = consumableData.effectType
-
-	if effectType == "heal" then
+	if consumableData.healAmount ~= nil then
 		humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + consumableData.healAmount)
+	elseif consumableData.effectId ~= nil then
+		local effectData = ConsumablesConfig.GetEffectData(itemName)
+		if effectData == nil then
+			return { success = false, cooldown = 0.1, reason = "invalid_consumable" }
+		end
 
-	elseif effectType == "speed" then
-		BuffsManager.ApplySpeedBuff(player, consumableData.speedBonus, consumableData.duration)
+		local effectValue = consumableData[effectData.modifierKey]
+		if type(effectValue) ~= "number" or type(consumableData.duration) ~= "number" then
+			return { success = false, cooldown = 0.1, reason = "invalid_consumable" }
+		end
 
-	elseif effectType == "damage" then
-		BuffsManager.ApplyDamageMultiplier(player, consumableData.damageMultiplier, consumableData.duration)
+		BuffsManager.ApplyEffect(player, consumableData.effectId, effectValue, consumableData.duration)
 	end
 
 	return { success = true, cooldown = ConsumablesConfig.USE_COOLDOWN }

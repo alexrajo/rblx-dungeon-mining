@@ -34,6 +34,7 @@ local DEFAULT_VALUE = {
 	CurrentFloor = 0,
 	InMine = false,
 	ActiveTheme = "default",
+	ActiveEffects = {},
 }
 local StatsContext = Roact.createContext(DEFAULT_VALUE)
 local StatsController = Roact.Component:extend("StatsController")

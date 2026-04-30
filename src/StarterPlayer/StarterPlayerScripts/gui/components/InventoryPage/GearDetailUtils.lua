@@ -140,13 +140,13 @@ local function getConsumableDetailLines(itemName: string)
 
 	local detailLines = {}
 
-	if consumableData.effectType == "heal" then
+	if consumableData.healAmount ~= nil then
 		table.insert(detailLines, string.format("Restores: %d HP", consumableData.healAmount or 0))
-	elseif consumableData.effectType == "speed" then
+	elseif consumableData.effectId == "speed" then
 		local speedPercent = math.floor((consumableData.speedBonus or 0) * 100 + 0.5)
 		table.insert(detailLines, string.format("Move Speed: +%d%%", speedPercent))
 		table.insert(detailLines, formatDuration(consumableData.duration))
-	elseif consumableData.effectType == "damage" then
+	elseif consumableData.effectId == "damage" then
 		local damagePercent = math.floor(((consumableData.damageMultiplier or 1) - 1) * 100 + 0.5)
 		table.insert(detailLines, string.format("Damage: +%d%%", damagePercent))
 		table.insert(detailLines, formatDuration(consumableData.duration))

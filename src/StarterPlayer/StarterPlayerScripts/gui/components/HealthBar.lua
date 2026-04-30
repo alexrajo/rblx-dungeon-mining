@@ -7,6 +7,7 @@ local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
 local ProgressBar = require(ModuleIndex.ProgressBar)
 local TextLabel = require(ModuleIndex.TextLabel)
 local StatsContext = require(ModuleIndex.StatsContext)
+local ActiveEffectsBar = require(ModuleIndex.ActiveEffectsBar)
 
 local HealthBar = Roact.Component:extend("HealthBar")
 
@@ -55,24 +56,43 @@ function HealthBar:render()
 			local inMine = data.InMine == true
 			local currentFloor = data.CurrentFloor or 0
 			local showFloor = inMine and currentFloor > 0
+			local showEffects = type(data.ActiveEffects) == "table" and #data.ActiveEffects > 0
+			local totalHeight = 25
+
+			if showEffects then
+				totalHeight += 32 + 4
+			end
+
+			if showFloor then
+				totalHeight += 18 + 4
+			end
 
 			return createElement("Frame", {
 				BackgroundTransparency = 1,
 				Position = UDim2.new(0, 10, 0, 10),
-				Size = UDim2.new(0, 200, 0, showFloor and 47 or 25),
+				Size = UDim2.new(0, 200, 0, totalHeight),
 			}, {
+				ListLayout = createElement("UIListLayout", {
+					FillDirection = Enum.FillDirection.Vertical,
+					HorizontalAlignment = Enum.HorizontalAlignment.Left,
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					Padding = UDim.new(0, 4),
+				}),
 				Health = createElement(ProgressBar, {
 					progress = progress,
 					text = "HP: " .. health .. "/" .. maxHealth,
 					width = UDim.new(0, 200),
 					Size = UDim2.new(0, 200, 0, 25),
+					LayoutOrder = 1,
 				}),
+				Effects = showEffects and createElement(ActiveEffectsBar, {
+					LayoutOrder = 2,
+				}) or nil,
 				Floor = showFloor and createElement(TextLabel, {
 					Text = "Floor " .. currentFloor,
 					Size = UDim2.new(0, 200, 0, 18),
-					Position = UDim2.new(0, 0, 0, 29),
-					AnchorPoint = Vector2.new(0, 0),
 					textSize = 17,
+					LayoutOrder = 3,
 					textProps = {
 						TextXAlignment = Enum.TextXAlignment.Left,
 					},

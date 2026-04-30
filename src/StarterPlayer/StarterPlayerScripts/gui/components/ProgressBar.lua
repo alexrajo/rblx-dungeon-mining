@@ -99,6 +99,7 @@ function ProgressBar:render()
 	return Roact.createElement("Frame", {
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,
+		LayoutOrder = self.props.LayoutOrder,
 		Size = UDim2.new(width, height),
 		Position = self.props.Position or UDim2.new(0, 0, 0, 0),
 		AnchorPoint = self.props.AnchorPoint or Vector2.new(0, 0)

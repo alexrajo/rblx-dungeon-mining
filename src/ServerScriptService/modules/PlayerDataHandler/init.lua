@@ -443,7 +443,11 @@ function PlayerDataHandler.ApplyPlayerMoveSpeed(player: Player)
 	end
 
 	local bootsItemName = PlayerDataHandler.GetEquippedBootsItemName(player)
-	humanoid.WalkSpeed = StatCalculation.GetPlayerMoveSpeed(bootsItemName ~= "" and bootsItemName or nil)
+	local baseWalkSpeed = StatCalculation.GetPlayerMoveSpeed(bootsItemName ~= "" and bootsItemName or nil)
+	humanoid.WalkSpeed = baseWalkSpeed
+
+	local BuffsManager = require(game.ServerScriptService.modules.BuffsManager)
+	BuffsManager.RefreshCharacterState(player, baseWalkSpeed)
 end
 
 function PlayerDataHandler.ClearEquippedGear(player: Player, slot: string)

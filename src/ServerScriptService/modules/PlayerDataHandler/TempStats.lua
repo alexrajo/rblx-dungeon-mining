@@ -7,6 +7,7 @@ local tempStatsNames = {
 	"CurrentFloor",
 	"InMine",
 	"ActiveTheme",
+	"ActiveEffects",
 }
 
 local module = {}
@@ -41,9 +42,13 @@ function module:InitializePlayer(player: Player)
 	activeTheme.Name = "ActiveTheme"
 	activeTheme.Parent = playerDataFolder
 	activeTheme.Value = "default"
+
+	local activeEffects = Instance.new("Folder")
+	activeEffects.Name = "ActiveEffects"
+	activeEffects.Parent = playerDataFolder
 end
 
-function module:GetTempStat(player: Player, tempStatName: string): ValueBase
+function module:GetTempStat(player: Player, tempStatName: string): Instance
 	-- Prevent getting non temp stats using this method
 	if not tableUtils.TableContains(tempStatsNames, tempStatName) then return end
 

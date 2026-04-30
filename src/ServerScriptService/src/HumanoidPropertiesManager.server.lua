@@ -1,12 +1,10 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
-
-local utils = ReplicatedStorage.utils
-local StatCalculation = require(utils.StatCalculation)
+local StatCalculation = require(ReplicatedStorage.utils.StatCalculation)
 
 function updateCharacter(player: Player, character: Model)
 	local humanoid = character:FindFirstChild("Humanoid")
@@ -16,8 +14,7 @@ function updateCharacter(player: Player, character: Model)
 	humanoid.MaxHealth = maxHealth
 	humanoid.Health = maxHealth
 
-	local bootsItemName = PlayerDataHandler.GetEquippedBootsItemName(player)
-	humanoid.WalkSpeed = StatCalculation.GetPlayerMoveSpeed(bootsItemName ~= "" and bootsItemName or nil)
+	PlayerDataHandler.ApplyPlayerMoveSpeed(player)
 end
 
 function playerAdded(player: Player)
