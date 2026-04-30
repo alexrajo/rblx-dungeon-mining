@@ -6,6 +6,11 @@ QuestConfig.objectiveTypes = {
 	REACH_FLOOR = "reachFloor",
 }
 
+QuestConfig.collectCountModes = {
+	GAINED_SINCE_START = "gainedSinceStart",
+	CURRENT_TOTAL = "currentTotal",
+}
+
 QuestConfig.quests = {
 	mine_stone_01 = {
 		id = "mine_stone_01",

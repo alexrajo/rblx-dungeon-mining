@@ -102,6 +102,10 @@ local function getSnapshotProgress(player: Player, objective): number?
 	return nil
 end
 
+local function getCollectCountMode(objective): string
+	return objective.countMode or QuestConfig.collectCountModes.GAINED_SINCE_START
+end
+
 local function buildProgressEntry(questId: string, objective)
 	local goal = math.max(1, math.floor(objective.targetAmount or 1))
 	return {
@@ -111,6 +115,8 @@ local function buildProgressEntry(questId: string, objective)
 		value = 0,
 		goal = goal,
 		completed = false,
+		baseline = 0,
+		lastObserved = 0,
 	}
 end
 
@@ -208,9 +214,45 @@ local function refreshSnapshotObjectives(player: Player)
 		end
 
 		for _, objective in ipairs(quest.objectives or {}) do
-			local snapshotValue = getSnapshotProgress(player, objective)
-			if snapshotValue ~= nil then
-				setObjectiveProgress(player, activeQuest.id, objective, snapshotValue)
+			if objective.type == QuestConfig.objectiveTypes.COLLECT_ITEM then
+				local currentCount = PlayerDataHandler.GetItemCount(player, objective.targetName)
+				local progressEntries = cloneArray(PlayerDataHandler.GetQuestObjectiveProgress(player))
+				local progressIndex, progressEntry = getProgressEntry(progressEntries, activeQuest.id, objective.id)
+				if progressEntry == nil then
+					progressEntry = buildProgressEntry(activeQuest.id, objective)
+					progressEntry.baseline = currentCount
+					progressEntry.lastObserved = currentCount
+					table.insert(progressEntries, progressEntry)
+					progressIndex = #progressEntries
+					PlayerDataHandler.SetQuestObjectiveProgress(player, progressEntries)
+				end
+
+				local mode = getCollectCountMode(objective)
+				if mode == QuestConfig.collectCountModes.CURRENT_TOTAL then
+					setObjectiveProgress(player, activeQuest.id, objective, currentCount)
+				else
+					local baseline = type(progressEntry.baseline) == "number" and progressEntry.baseline or currentCount
+					local lastObserved = type(progressEntry.lastObserved) == "number" and progressEntry.lastObserved or currentCount
+					local gainedAmount = math.max(0, currentCount - lastObserved)
+					local nextValue = (type(progressEntry.value) == "number" and progressEntry.value or 0) + gainedAmount
+
+					progressEntries = cloneArray(PlayerDataHandler.GetQuestObjectiveProgress(player))
+					progressIndex, progressEntry = getProgressEntry(progressEntries, activeQuest.id, objective.id)
+					if progressEntry ~= nil and progressIndex ~= nil then
+						local updatedProgress = table.clone(progressEntry)
+						updatedProgress.baseline = baseline
+						updatedProgress.lastObserved = currentCount
+						progressEntries[progressIndex] = updatedProgress
+						PlayerDataHandler.SetQuestObjectiveProgress(player, progressEntries)
+					end
+
+					setObjectiveProgress(player, activeQuest.id, objective, nextValue)
+				end
+			else
+				local snapshotValue = getSnapshotProgress(player, objective)
+				if snapshotValue ~= nil then
+					setObjectiveProgress(player, activeQuest.id, objective, snapshotValue)
+				end
 			end
 		end
 	end
@@ -273,6 +315,11 @@ function QuestService.StartQuest(player: Player, questId: string)
 
 	for _, objective in ipairs(quest.objectives or {}) do
 		local progressEntry = buildProgressEntry(questId, objective)
+		if objective.type == QuestConfig.objectiveTypes.COLLECT_ITEM then
+			local currentCount = PlayerDataHandler.GetItemCount(player, objective.targetName)
+			progressEntry.baseline = currentCount
+			progressEntry.lastObserved = currentCount
+		end
 		table.insert(progressEntries, progressEntry)
 	end
 	PlayerDataHandler.SetQuestObjectiveProgress(player, progressEntries)
