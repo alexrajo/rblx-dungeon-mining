@@ -3,7 +3,11 @@ local Roact = require(ReplicatedStorage.services.Roact)
 
 local SelectablePanel = Roact.Component:extend("SelectablePanel")
 
+local CLICK_SOUND_ID = 1897534957
+
 function SelectablePanel:init()
+	self.clickSoundRef = Roact.createRef()
+
 	self:setState({
 		hovering = false
 	})
@@ -18,6 +22,13 @@ function SelectablePanel:render()
 		local externalOnClick = self.props.onSelect
 		if externalOnClick ~= nil then
 			externalOnClick()
+		end
+	end
+
+	local function onPressDown()
+		local clickSound = self.clickSoundRef:getValue()
+		if clickSound ~= nil then
+			clickSound:Play()
 		end
 	end
 	
@@ -50,6 +61,7 @@ function SelectablePanel:render()
 	props.selected = nil
 	props.onSelect = nil
 	props[Roact.Event.Activated] = onClick
+	props[Roact.Event.MouseButton1Down] = onPressDown
 	props[Roact.Event.MouseEnter] = onHoverBegin
 	props[Roact.Event.MouseLeave] = onHoverEnd
 	
@@ -123,6 +135,11 @@ function SelectablePanel:render()
 		UIAspectRatioConstraint = self.props.aspectRatio ~= nil and Roact.createElement("UIAspectRatioConstraint", {
 			AspectRatio = self.props.aspectRatio,
 			DominantAxis = self.props.dominantAxis or Enum.DominantAxis.Width
+		}),
+
+		ClickSoundEffect = Roact.createElement("Sound", {
+			SoundId = "http://roblox.com/asset/?id="..CLICK_SOUND_ID,
+			[Roact.Ref] = self.clickSoundRef
 		})
 	})
 end

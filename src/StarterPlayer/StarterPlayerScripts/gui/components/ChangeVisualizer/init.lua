@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local Roact = require(ReplicatedStorage.services.Roact)
 
@@ -13,7 +14,18 @@ local StatRetrieval = require(ReplicatedStorage:WaitForChild("utils"):WaitForChi
 
 local ChangeVisualizer = Roact.Component:extend("ChangeVisualizer")
 
+local COIN_EARNED_SOUND_ID = 330274138
 local NOTIFICATION_DURATION = 3
+
+local function playCoinEarnedSound()
+	local sound = Instance.new("Sound")
+	sound.SoundId = "rbxassetid://" .. COIN_EARNED_SOUND_ID
+	SoundService:PlayLocalSound(sound)
+
+	sound.Ended:Connect(function()
+		sound:Destroy()
+	end)
+end
 
 function ChangeVisualizer:init()
 	self.containerRef = Roact.createRef()
@@ -25,11 +37,16 @@ end
 function ChangeVisualizer:manageCoinsUpdate(newVal)
 	local prevCoins = self.state.Coins
 	if newVal == prevCoins then return end
+	local coinDelta = newVal - prevCoins
+
+	if coinDelta > 0 then
+		playCoinEarnedSound()
+	end
 
 	local notification = {
 		id = tick(),
 		change = {
-			Coins = newVal - prevCoins
+			Coins = coinDelta
 		},
 		xPosition = math.random(1, 100)/100
 	}
