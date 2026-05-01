@@ -4,6 +4,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
+local BreakEffectService = require(modules.BreakEffectService)
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local OreNodeUtil = require(modules.OreNodeUtil)
 local QuestService = require(modules.QuestService)
@@ -106,6 +107,7 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 	end
 
 	WorldSoundService.PlayOneShotAtPosition(ORE_NODE_BREAK_SOUND_ID, nodePosition)
+	BreakEffectService.PlaySmokePuff(nodePosition)
 	nodeModel:Destroy()
 
 	return true

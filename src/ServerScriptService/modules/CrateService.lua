@@ -3,6 +3,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
+local BreakEffectService = require(modules.BreakEffectService)
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local QuestService = require(modules.QuestService)
 local WorldSoundService = require(modules.WorldSoundService)
@@ -107,6 +108,7 @@ function CrateService.BreakCrate(player: Player, crate: Instance): boolean
 	end
 
 	WorldSoundService.PlayOneShotAtPosition(CRATE_BREAK_SOUND_ID, cratePosition)
+	BreakEffectService.PlaySmokePuff(cratePosition)
 	crate:Destroy()
 
 	return true
