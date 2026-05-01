@@ -11,6 +11,7 @@ local ModuleIndex = {
 	Window = components.Window,
 	Panel = components.Panel,
 	SelectablePanel = components.SelectablePanel,
+	SelectableItemTile = components.SelectableItemTile,
 	PageWrapper = components.PageWrapper,
 	Sidebar = components.Sidebar,
 	ProgressBar = components.ProgressBar,

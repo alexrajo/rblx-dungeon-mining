@@ -16,7 +16,7 @@ local TextButton = require(ModuleIndex.TextButton)
 local TextLabel = require(ModuleIndex.TextLabel)
 local ItemCounter = require(ModuleIndex.ItemCounter)
 local InventoryUtils = require(ModuleIndex.InventoryUtils)
-local SelectablePanel = require(ModuleIndex.SelectablePanel)
+local SelectableItemTile = require(ModuleIndex.SelectableItemTile)
 local Tab = require(ModuleIndex.Tab)
 
 local StatsContext = require(ModuleIndex.StatsContext)
@@ -149,7 +149,9 @@ function CraftingPage:_renderContent(statsData)
 	local recipeComponents = {}
 	for i, recipe in ipairs(visibleRecipes) do
 		local imageId = ItemConfig.GetImageIdForItem(recipe.name)
-		recipeComponents[recipe.name] = createElement(SelectablePanel, {
+		recipeComponents[recipe.name] = createElement(SelectableItemTile, {
+			itemName = recipe.name,
+			imageId = imageId,
 			selected = recipe.name == selectedRecipeName,
 			LayoutOrder = i,
 			onSelect = function()
@@ -157,27 +159,6 @@ function CraftingPage:_renderContent(statsData)
 					selectedRecipeName = recipe.name,
 				})
 			end,
-		}, {
-			Icon = createElement("ImageLabel", {
-				Image = "rbxassetid://" .. imageId,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.45),
-				Size = UDim2.fromScale(0.58, 0.58),
-				BackgroundTransparency = 1,
-				ZIndex = 1,
-			}),
-			Name = createElement(TextLabel, {
-				Text = recipe.name,
-				textSize = 12,
-				Size = UDim2.new(1, -8, 0, 28),
-				AnchorPoint = Vector2.new(0.5, 1),
-				Position = UDim2.new(0.5, 0, 1, -6),
-				ZIndex = 3,
-				textProps = {
-					TextScaled = true,
-					TextWrapped = true,
-				},
-			}),
 		})
 	end
 

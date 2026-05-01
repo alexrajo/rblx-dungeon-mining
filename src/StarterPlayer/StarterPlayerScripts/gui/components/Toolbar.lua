@@ -7,8 +7,7 @@ local HotbarService = require(localServices:WaitForChild("HotbarService"))
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
-local SelectablePanel = require(ModuleIndex.SelectablePanel)
-local TextLabel = require(ModuleIndex.TextLabel)
+local SelectableItemTile = require(ModuleIndex.SelectableItemTile)
 local ScreenContext = require(ModuleIndex.ScreenContext)
 local StatsContext = require(ModuleIndex.StatsContext)
 local InventoryUtils = require(ModuleIndex.InventoryUtils)
@@ -86,76 +85,22 @@ function Toolbar:renderToolbar(screenData, statsData)
 			local stackCount = InventoryUtils.GetStackDisplayCount(statsData, itemName)
 			visibleSlotCount += 1
 
-			slotButtons["Slot" .. tostring(i)] = createElement(SelectablePanel, {
+			slotButtons["Slot" .. tostring(i)] = createElement(SelectableItemTile, {
+				itemName = itemName,
+				imageId = imageId,
+				amount = stackCount,
+				slotNumber = i,
 				selected = isSelected,
 				Size = UDim2.fromOffset(slotSize, slotSize),
 				aspectRatio = 1,
 				LayoutOrder = i,
+				iconSize = UDim2.fromScale(0.5, 0.5),
+				nameSize = UDim2.new(1, -8, 0, 20),
+				namePosition = UDim2.new(0.5, 0, 1, -14),
+				showSelectionTint = true,
 				onSelect = function()
 					HotbarService.SelectSlot(i)
 				end,
-			}, {
-				SlotNumber = createElement(TextLabel, {
-					Text = tostring(i),
-					textSize = 14,
-					Size = UDim2.new(0, 18, 0, 18),
-					Position = UDim2.new(0, 10, 0, 10),
-					AnchorPoint = Vector2.zero,
-					textProps = {
-						TextScaled = true,
-						TextXAlignment = Enum.TextXAlignment.Left,
-					},
-				}),
-				Icon = createElement("ImageLabel", {
-					Image = "rbxassetid://" .. imageId,
-					AnchorPoint = Vector2.new(0.5, 0.5),
-					Position = UDim2.fromScale(0.5, 0.45),
-					Size = UDim2.fromScale(0.5, 0.5),
-					BackgroundTransparency = 1,
-                    ZIndex = -1,
-				}),
-				StackCount = stackCount ~= nil and createElement("Frame", {
-					BackgroundColor3 = Color3.fromRGB(0, 43, 106),
-					AnchorPoint = Vector2.new(1, 1),
-					Position = UDim2.new(1, -8, 1, -8),
-					Size = UDim2.fromOffset(24, 18),
-					ZIndex = 5,
-				}, {
-					UICorner = createElement("UICorner", {
-						CornerRadius = UDim.new(0, 8),
-					}),
-					Text = createElement(TextLabel, {
-						Text = tostring(stackCount),
-						textSize = 11,
-						Size = UDim2.fromScale(1, 1),
-						ZIndex = 6,
-						textProps = {
-							TextScaled = true,
-						},
-					}),
-				}) or nil,
-				Name = createElement(TextLabel, {
-					Text = itemName,
-					textSize = 12,
-					Size = UDim2.new(1, -8, 0, 20),
-					Position = UDim2.new(0.5, 0, 1, -14),
-					AnchorPoint = Vector2.new(0.5, 1),
-					textProps = {
-						TextScaled = true,
-						TextWrapped = true,
-					},
-				}),
-				SelectionTint = isSelected and createElement("Frame", {
-					BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-					BackgroundTransparency = 0.85,
-					Size = UDim2.new(1, -8, 1, -8),
-					Position = UDim2.fromOffset(4, 4),
-					ZIndex = 4,
-				}, {
-					UICorner = createElement("UICorner", {
-						CornerRadius = UDim.new(0, 6),
-					}),
-				}),
 			})
 		end
 	end

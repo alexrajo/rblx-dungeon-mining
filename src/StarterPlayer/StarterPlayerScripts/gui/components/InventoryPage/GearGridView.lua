@@ -4,9 +4,8 @@ local Roact = require(ReplicatedStorage.services.Roact)
 local createElement = Roact.createElement
 
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
+local SelectableItemTile = require(ModuleIndex.SelectableItemTile)
 local ItemCounter = require(ModuleIndex.ItemCounter)
-local SelectablePanel = require(ModuleIndex.SelectablePanel)
-local TextLabel = require(ModuleIndex.TextLabel)
 
 local GearGridView = Roact.Component:extend("GearGridView")
 
@@ -56,34 +55,9 @@ function GearGridView:didUpdate()
 	self:_reportSelectedCellLayout()
 end
 
-local function createGearCellContent(gearEntry)
-	return createElement("Frame", {
-		BackgroundTransparency = 1,
-		Size = UDim2.fromScale(1, 1),
-	}, {
-		Item = createElement(ItemCounter, {
-			name = gearEntry.name,
-			amount = gearEntry.amount,
-			Size = UDim2.fromScale(1, 1),
-		}),
-		Name = createElement(TextLabel, {
-			Text = gearEntry.name,
-			textSize = 12,
-			Size = UDim2.new(1, -8, 0, 28),
-			Position = UDim2.new(0.5, 0, 1, -6),
-			AnchorPoint = Vector2.new(0.5, 1),
-			ZIndex = 3,
-			textProps = {
-				TextScaled = true,
-				TextWrapped = true,
-			},
-		}),
-	})
-end
-
 function GearGridView:render()
 	local itemsPerRow = self.props.itemsPerRow or 6
-	local paddingPixels = 4
+	local paddingPixels = self.props.paddingPixels or 4
 	local gearEntries = self.props.gearEntries or {}
 	local interactive = self.props.interactive == true
 	local selectedEntryId = self.props.selectedEntryId
@@ -91,7 +65,6 @@ function GearGridView:render()
 
 	for _, gearEntry in ipairs(gearEntries) do
 		local elementKey = gearEntry.id or gearEntry.name
-		local content = createGearCellContent(gearEntry)
 		local cellRef = self:_getCellRef(elementKey)
 
 		if interactive then
@@ -100,7 +73,9 @@ function GearGridView:render()
 				Size = UDim2.fromScale(1, 1),
 				[Roact.Ref] = cellRef,
 			}, {
-				Cell = createElement(SelectablePanel, {
+				Cell = createElement(SelectableItemTile, {
+					itemName = gearEntry.name,
+					amount = gearEntry.amount,
 					Size = UDim2.fromScale(1, 1),
 					selected = selectedEntryId == elementKey,
 					onSelect = function()
@@ -108,8 +83,6 @@ function GearGridView:render()
 							self.props.onItemSelected(gearEntry)
 						end
 					end,
-				}, {
-					Content = content,
 				}),
 			})
 		else
@@ -118,7 +91,11 @@ function GearGridView:render()
 				Size = UDim2.fromScale(1, 1),
 				[Roact.Ref] = cellRef,
 			}, {
-				Content = content,
+				Content = createElement(ItemCounter, {
+					name = gearEntry.name,
+					amount = gearEntry.amount,
+					Size = UDim2.fromScale(1, 1),
+				}),
 			})
 		end
 	end

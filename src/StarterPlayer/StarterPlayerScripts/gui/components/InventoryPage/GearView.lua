@@ -25,6 +25,8 @@ local GearView = Roact.Component:extend("GearView")
 
 local POPUP_SIZE = Vector2.new(260, 236)
 local POPUP_MARGIN = 8
+local GRID_ITEMS_PER_ROW = 6
+local GRID_PADDING_PIXELS = 4
 
 function GearView:init()
 	self.rootRef = Roact.createRef()
@@ -228,12 +230,13 @@ function GearView:render()
 					GearGrid = createElement(GearGridView, {
 						Visible = self.props.Visible,
 						gearEntries = gearEntries,
-						itemsPerRow = 5,
+						itemsPerRow = GRID_ITEMS_PER_ROW,
+						paddingPixels = GRID_PADDING_PIXELS,
 						interactive = true,
 						selectedEntryId = self.state.selectedEntryId,
-						Size = UDim2.new(0.66, -8, 1, 0),
-						Position = UDim2.fromScale(0, 0),
-						AnchorPoint = Vector2.zero,
+						Size = UDim2.new(0.6, -12, 1, -16),
+						Position = UDim2.new(0, 8, 0.5, 0),
+						AnchorPoint = Vector2.new(0, 0.5),
 						onItemSelected = function(gearEntry)
 							self:setState({
 								selectedEntryId = gearEntry.id,
@@ -251,9 +254,9 @@ function GearView:render()
 					Loadout = createElement(LoadoutView, {
 						Visible = self.props.Visible,
 						data = data,
-						Size = UDim2.new(0.34, 0, 1, 0),
-						Position = UDim2.fromScale(1, 0),
-						AnchorPoint = Vector2.new(1, 0),
+						Size = UDim2.new(0.4, -12, 1, -16),
+						Position = UDim2.new(1, -8, 0.5, 0),
+						AnchorPoint = Vector2.new(1, 0.5),
 						onClearHotbarSlot = function(slotIndex)
 							clearHotbarSlotEvent:FireServer(slotIndex)
 						end,
