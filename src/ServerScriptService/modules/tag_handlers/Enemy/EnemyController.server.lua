@@ -136,6 +136,24 @@ if animations then
 	end
 end
 
+local function playIdleAnimation()
+	if animationTracks.walk and animationTracks.walk.IsPlaying then
+		animationTracks.walk:Stop()
+	end
+	if animationTracks.idle and not animationTracks.idle.IsPlaying then
+		animationTracks.idle:Play()
+	end
+end
+
+local function playWalkAnimation()
+	if animationTracks.idle and animationTracks.idle.IsPlaying then
+		animationTracks.idle:Stop()
+	end
+	if animationTracks.walk and not animationTracks.walk.IsPlaying then
+		animationTracks.walk:Play()
+	end
+end
+
 local context = {
 	enemy = enemy,
 	humanoid = humanoid,
@@ -257,6 +275,10 @@ end
 
 local alive = humanoid.Health > 0
 local runningConnection: RBXScriptConnection? = nil
+local hasMovementIdleBehavior = type(movementBehavior.EnterIdle) == "function"
+	or type(movementBehavior.UpdateIdle) == "function"
+	or type(movementBehavior.ExitIdle) == "function"
+local isIdle = false
 
 if type(movementBehavior.Init) == "function" then
 	movementBehavior.Init(context)
@@ -264,6 +286,39 @@ end
 
 if type(attackBehavior.Init) == "function" then
 	attackBehavior.Init(context)
+end
+
+local function enterIdle()
+	stopMovement()
+	stopFacing()
+	playIdleAnimation()
+
+	if not hasMovementIdleBehavior or isIdle then
+		return
+	end
+
+	isIdle = true
+	if type(movementBehavior.EnterIdle) == "function" then
+		movementBehavior.EnterIdle(context)
+	end
+end
+
+local function updateIdle(dt: number)
+	enterIdle()
+	if type(movementBehavior.UpdateIdle) == "function" then
+		movementBehavior.UpdateIdle(context, dt)
+	end
+end
+
+local function exitIdle()
+	if not isIdle then
+		return
+	end
+
+	isIdle = false
+	if type(movementBehavior.ExitIdle) == "function" then
+		movementBehavior.ExitIdle(context)
+	end
 end
 
 humanoid.Died:Once(function()
@@ -303,18 +358,15 @@ humanoid.Died:Once(function()
 	end)
 end)
 
-runningConnection = humanoid.Running:Connect(function(speed)
-	local walkTrack = animationTracks.walk
-	if walkTrack == nil then
-		return
-	end
-
-	if speed <= 0 then
-		walkTrack:Stop()
-	else
-		walkTrack:Play()
-	end
-end)
+if not hasMovementIdleBehavior then
+	runningConnection = humanoid.Running:Connect(function(speed)
+		if speed <= 0 then
+			playIdleAnimation()
+		else
+			playWalkAnimation()
+		end
+	end)
+end
 
 local targetPlayer: Player? = nil
 local lastUpdateAt = os.clock()
@@ -333,8 +385,7 @@ while alive do
 		targetPosition = getTargetPosition(targetCharacter)
 
 		if targetPosition == nil then
-			stopMovement()
-			stopFacing()
+			updateIdle(dt)
 			task.wait(0.25)
 			continue
 		end
@@ -343,13 +394,16 @@ while alive do
 	local distance = (targetPosition - root.Position).Magnitude
 	if distance > stats.maxInterestDistance then
 		targetPlayer = nil
-		stopMovement()
-		stopFacing()
+		updateIdle(dt)
 		task.wait(UPDATE_INTERVAL)
 		continue
 	end
 
+	exitIdle()
 	faceTarget(targetPosition)
+	if hasMovementIdleBehavior then
+		playWalkAnimation()
+	end
 	movementBehavior.Update(context, dt, targetCharacter, targetPosition)
 	attackBehavior.Update(context, dt, targetCharacter, targetPosition)
 
