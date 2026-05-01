@@ -40,7 +40,9 @@ function TextButton:render()
 			Size = UDim2.new(1, 0, 1, -5),
 			ZIndex = 2,
 			textSize = SIZES[size].font,
-			Text = self.props.text
+			Text = self.props.text,
+			textProps = self.props.textProps,
+			RichText = self.props.RichText,
 		})
 	})
 end

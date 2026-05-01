@@ -11,6 +11,7 @@ local PlayerDataHandler = require(ServerModules.PlayerDataHandler)
 local MineFloorManager = require(ServerModules.MineFloorManager)
 local MineTransitionService = require(ServerModules.MineTransitionService)
 local QuestService = require(ServerModules.QuestService)
+local ConversationService = require(ServerModules.ConversationService)
 
 -- Endpoint handlers
 local EndpointFolder = ServerModules.api_endpoints
@@ -69,6 +70,9 @@ APIService:CreateEventEndpoint("AssignHotbarSlot", AssignHotbarSlotEndpoint.Call
 APIService:CreateEventEndpoint("ClearHotbarSlot", ClearHotbarSlotEndpoint.Call)
 APIService:CreateEventEndpoint("ClearEquippedGear", ClearEquippedGearEndpoint.Call)
 APIService:CreateEventEndpoint("SelectHotbarSlot", SelectHotbarSlotEndpoint.Call)
+APIService:CreateEventEndpoint("AdvanceConversation", ConversationService.AdvanceConversation)
+APIService:CreateEventEndpoint("SelectConversationResponse", ConversationService.SelectResponse)
+APIService:CreateEventEndpoint("LeaveConversation", ConversationService.LeaveConversation)
 
 -- Initialize mine floor preloading
 MineFloorManager.Init()

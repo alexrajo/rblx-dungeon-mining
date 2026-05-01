@@ -28,3 +28,9 @@ APIService:CreateEventEndpoint("MineChestOpened")
 
 -- Event to open the mine elevator checkpoint selector UI on the client
 APIService:CreateEventEndpoint("OpenMineElevator")
+
+-- Event to show or update the active conversation UI on the client
+APIService:CreateEventEndpoint("ShowConversationStep")
+
+-- Event to close the active conversation UI on the client
+APIService:CreateEventEndpoint("EndConversation")

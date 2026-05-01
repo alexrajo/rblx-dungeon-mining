@@ -16,6 +16,7 @@ local ChangeVisualizer = require(ModuleIndex.ChangeVisualizer)
 local NotificationManager = require(ModuleIndex.NotificationManager)
 local MineTransitionOverlay = require(ModuleIndex.MineTransitionOverlay)
 local TutorialManager = require(ModuleIndex.TutorialManager)
+local ConversationManager = require(ModuleIndex.ConversationManager)
 local HealthBar = require(ModuleIndex.HealthBar)
 local InventoryPopupManager = require(ModuleIndex.InventoryPopupManager)
 local QuestTracker = require(ModuleIndex.QuestTracker)
@@ -45,6 +46,7 @@ function Root:render()
 					ChangeVisualizer = createElement(ChangeVisualizer),
 					Notifications = createElement(NotificationManager),
 					TutorialManager = createElement(TutorialManager),
+					ConversationManager = createElement(ConversationManager),
 					HealthBar = createElement(HealthBar),
 					QuestTracker = createElement(QuestTracker),
 					InventoryPopupManager = createElement(InventoryPopupManager),
