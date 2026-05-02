@@ -13,37 +13,15 @@ local ItemLookupService = require(Services.ItemLookupService)
 local configs = ReplicatedStorage.configs
 local EnemyConfig = require(configs.EnemyConfig)
 
-local RE_CoinDrop = APIService.GetEvent("DropCoins")
 local RE_ItemDrop = APIService.GetEvent("DropItems")
 
 local EnemyLootHandler = {}
 
-local function rollCoinDrop(drop): number
-	if drop.name ~= "Coins" then
-		return 0
-	end
-
-	local amount = drop.amount
-	if type(amount) == "number" then
-		return math.max(0, math.floor(amount))
-	end
-
-	local minAmount = drop.minAmount
-	local maxAmount = drop.maxAmount
-	if type(minAmount) == "number" and type(maxAmount) == "number" then
-		return math.random(math.floor(minAmount), math.floor(maxAmount))
-	end
-
-	return 0
-end
-
-local function rollRewards(enemyData): ({[string]: number}, number)
+local function rollRewards(enemyData): {[string]: number}
 	local itemRewards = {}
-	local coinReward = 0
 
 	for _, drop in ipairs(enemyData.drops or {}) do
 		if drop.name == "Coins" then
-			coinReward += rollCoinDrop(drop)
 			continue
 		end
 
@@ -58,7 +36,7 @@ local function rollRewards(enemyData): ({[string]: number}, number)
 		end
 	end
 
-	return itemRewards, coinReward
+	return itemRewards
 end
 
 local function awardEnemyDeath(player: Player, enemyType: string, enemyData, dropPosition: Vector3)
@@ -67,14 +45,7 @@ local function awardEnemyDeath(player: Player, enemyType: string, enemyData, dro
 		enemyType = enemyType,
 	})
 
-	local itemRewards, coinReward = rollRewards(enemyData)
-	if coinReward > 0 then
-		PlayerDataHandler.GiveCoins(player, coinReward)
-		if RE_CoinDrop then
-			RE_CoinDrop:FireClient(player, coinReward, dropPosition)
-		end
-	end
-
+	local itemRewards = rollRewards(enemyData)
 	if next(itemRewards) then
 		PlayerDataHandler.GiveItems(player, itemRewards)
 		if RE_ItemDrop then
