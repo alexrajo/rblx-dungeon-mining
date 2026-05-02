@@ -6,6 +6,7 @@ local Workspace = game:GetService("Workspace")
 local modules = ServerScriptService.modules
 local EnemyLootHandler = require(modules.EnemyLootHandler)
 local MineTransitionService = require(modules.MineTransitionService)
+local BossEnemyService = require(modules.BossEnemyService)
 
 local enemyBehaviors = modules.EnemyBehaviors
 local movementBehaviors = enemyBehaviors.Movement
@@ -352,6 +353,7 @@ humanoid.Died:Once(function()
 	end
 
 	EnemyLootHandler.HandleDeath(enemy)
+	BossEnemyService.ScheduleRespawn(enemy)
 
 	task.delay(3, function()
 		enemy:Destroy()

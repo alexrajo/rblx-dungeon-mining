@@ -12,6 +12,7 @@ local DEFAULT_VALUE = {
 	XP = 0,
 	MaxFloorReached = 0,
 	LatestCheckpointFloor = 0,
+	LatestCompletedBossFloor = 0,
 	Inventory = {},
 	EquippedHelmet = "",
 	EquippedChestplate = "",

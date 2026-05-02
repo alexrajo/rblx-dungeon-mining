@@ -23,15 +23,15 @@ local FADE_TWEEN_INFO = TweenInfo.new(FADE_DURATION, Enum.EasingStyle.Sine, Enum
 
 local MineTransitionOverlay = Roact.Component:extend("MineTransitionOverlay")
 
-local function isIntermissionFloor(floorNumber: number): boolean
+local function isBossFloor(floorNumber: number): boolean
 	local layerNumber = MineLayerConfig.GetLayerForFloor(floorNumber)
 	local layerData = if layerNumber ~= nil then MineLayerConfig[layerNumber] else nil
 	return layerData ~= nil and floorNumber == layerData.floors.max
 end
 
 local function getExpectedReadyInstance(floorNumber: number): (string, string)
-	if isIntermissionFloor(floorNumber) then
-		return "IntermissionRoom", "Floor"
+	if isBossFloor(floorNumber) then
+		return "BossRoom", "Floor"
 	end
 
 	if MineRewardFloorConfig.IsRewardFloor(floorNumber) then

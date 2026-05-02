@@ -6,6 +6,7 @@ local modules = ServerScriptService.modules
 local CrateService = require(modules.CrateService)
 local OreNodeService = require(modules.OreNodeService)
 local OreNodeUtil = require(modules.OreNodeUtil)
+local BossEnemyService = require(modules.BossEnemyService)
 
 local configs = ReplicatedStorage.configs
 local BombConfig = require(configs.BombConfig)
@@ -125,6 +126,7 @@ function BombService.ResolveExplosion(player: Player, bombItemName: string, posi
 			lastAttacker.Value = player
 		end
 
+		BossEnemyService.RecordDamage(enemyModel :: Model, player, damage)
 		humanoid:TakeDamage(damage)
 	end
 end

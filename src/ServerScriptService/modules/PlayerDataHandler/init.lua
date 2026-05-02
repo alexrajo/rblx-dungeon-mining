@@ -600,6 +600,29 @@ function PlayerDataHandler.GetLatestCheckpointFloor(player: Player): number
 	return getStat("LatestCheckpointFloor", 0, player)
 end
 
+function PlayerDataHandler.SetLatestCompletedBossFloor(player: Player, floor: number): boolean
+	if type(floor) ~= "number" then
+		return false
+	end
+
+	local sanitizedFloor = math.floor(floor)
+	if sanitizedFloor ~= floor or sanitizedFloor <= 0 then
+		return false
+	end
+
+	local current = getStat("LatestCompletedBossFloor", 0, player)
+	if sanitizedFloor <= current then
+		return false
+	end
+
+	setStat("LatestCompletedBossFloor", sanitizedFloor, player)
+	return true
+end
+
+function PlayerDataHandler.GetLatestCompletedBossFloor(player: Player): number
+	return getStat("LatestCompletedBossFloor", 0, player)
+end
+
 function PlayerDataHandler.HasUnlockedCheckpoint(player: Player, floor: number): boolean
 	return MineLayerConfig.IsCheckpointFloor(floor) and floor <= PlayerDataHandler.GetLatestCheckpointFloor(player)
 end

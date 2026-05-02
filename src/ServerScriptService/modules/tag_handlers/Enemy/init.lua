@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local configs = ReplicatedStorage.configs
 local EnemyConfig = require(configs.EnemyConfig)
+local BossEnemyService = require(ServerScriptService.modules.BossEnemyService)
 
 local controllerScriptRef = script.EnemyController
 controllerScriptRef.Enabled = false
@@ -40,6 +42,10 @@ function TagHandler.Apply(instance: Instance)
 		local lastAttacker = Instance.new("ObjectValue")
 		lastAttacker.Name = "LastAttacker"
 		lastAttacker.Parent = instance
+	end
+
+	if instance:IsA("Model") and BossEnemyService.IsBossEnemy(instance) then
+		BossEnemyService.ConfigureBoss(instance)
 	end
 
 	-- Clone and enable the controller script

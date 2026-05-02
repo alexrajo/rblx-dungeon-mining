@@ -10,6 +10,7 @@ local PlayerDataHandler = require(modules.PlayerDataHandler)
 local HotbarToolValidator = require(modules.HotbarToolValidator)
 local BuffsManager = require(modules.BuffsManager)
 local CrateService = require(modules.CrateService)
+local BossEnemyService = require(modules.BossEnemyService)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -125,6 +126,9 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 		-- Confirm Enemy tag (server re-validates client claim)
 		local enemyModel = findTaggedAncestor(targetInstance, "Enemy")
 		if enemyModel == nil then continue end
+		if not isOnPlayerFloor(player, enemyModel) then
+			continue
+		end
 
 		-- Validate distance
 		local enemyRoot = enemyModel:FindFirstChild("HumanoidRootPart")
@@ -153,6 +157,7 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 			lastAttacker.Value = player
 		end
 
+		BossEnemyService.RecordDamage(enemyModel :: Model, player, damage)
 		enemyHumanoid:TakeDamage(damage)
 		applyKnockback(humanoidRootPart, enemyRoot, weaponStats.knockback)
 		totalDamage += damage

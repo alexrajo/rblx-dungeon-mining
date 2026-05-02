@@ -6,6 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local BossEnemyService = require(modules.BossEnemyService)
 local CaveUtil = require(modules.CaveUtil)
 local CrateService = require(modules.CrateService)
 local OreNodeUtil = require(modules.OreNodeUtil)
@@ -73,7 +74,7 @@ local REWARD_ROOM_EXIT_LADDER_OFFSET = Vector3.new(-12, 1, 14)
 local REWARD_ROOM_DESCEND_LADDER_OFFSET = Vector3.new(12, 3, -14)
 local REWARD_ROOM_CHEST_OFFSET = Vector3.new(0, 2, 0)
 local FLOOR_POSITION_TO_SURFACE_OFFSET = Vector3.new(0, 4, 0)
-local DEFAULT_INTERMISSION_ROOM = "Default"
+local DEFAULT_BOSS_ROOM = "Default"
 
 local function createFixedSpawn(position: Vector3): FloorSpawn
 	return {
@@ -301,6 +302,15 @@ local function findSpawnPart(model: Model): BasePart?
 	return nil
 end
 
+local function findBossSpawnPart(model: Model): BasePart?
+	local spawnPart = model:FindFirstChild("BossSpawn", true)
+	if spawnPart ~= nil and spawnPart:IsA("BasePart") then
+		return spawnPart
+	end
+
+	return nil
+end
+
 local function pivotModelPrimaryPartTo(model: Model, targetPrimaryPartCFrame: CFrame)
 	local primaryPart = model.PrimaryPart
 	if primaryPart == nil then
@@ -313,7 +323,7 @@ local function pivotModelPrimaryPartTo(model: Model, targetPrimaryPartCFrame: CF
 	model:PivotTo(targetPivot)
 end
 
-local function applyFloorNumberToIntermissionLadders(roomModel: Model, floorNumber: number)
+local function applyFloorNumberToBossRoomLadders(roomModel: Model, floorNumber: number)
 	local taggedAncestors = {}
 	for _, descendant in ipairs(roomModel:GetDescendants()) do
 		if CollectionService:HasTag(descendant, "MineLadder") then
@@ -338,50 +348,58 @@ local function applyFloorNumberToIntermissionLadders(roomModel: Model, floorNumb
 	end
 end
 
-local function createIntermissionRoom(floorOrigin: Vector3, parent: Instance, floorNumber: number, roomName: string): FloorSpawn?
-	local intermissionRoomsFolder = ServerStorage:FindFirstChild("IntermissionRooms")
-	if intermissionRoomsFolder == nil then
-		warn("MineFloorManager: Missing ServerStorage.IntermissionRooms folder")
+local function createBossRoom(floorOrigin: Vector3, parent: Instance, floorNumber: number, roomName: string, bossEnemyType: string?): FloorSpawn?
+	local bossRoomsFolder = ServerStorage:FindFirstChild("BossRooms")
+	if bossRoomsFolder == nil then
+		warn("MineFloorManager: Missing ServerStorage.BossRooms folder")
 		return nil
 	end
 
-	local roomRef = intermissionRoomsFolder:FindFirstChild(roomName)
-	if roomRef == nil and roomName ~= DEFAULT_INTERMISSION_ROOM then
-		warn("MineFloorManager: Missing intermission room", roomName, "for floor", floorNumber, "- using Default")
-		roomRef = intermissionRoomsFolder:FindFirstChild(DEFAULT_INTERMISSION_ROOM)
+	local roomRef = bossRoomsFolder:FindFirstChild(roomName)
+	if roomRef == nil and roomName ~= DEFAULT_BOSS_ROOM then
+		warn("MineFloorManager: Missing boss room", roomName, "for floor", floorNumber, "- using Default")
+		roomRef = bossRoomsFolder:FindFirstChild(DEFAULT_BOSS_ROOM)
 	end
 
 	if roomRef == nil then
-		warn("MineFloorManager: Missing Default intermission room for floor", floorNumber)
+		warn("MineFloorManager: Missing Default boss room for floor", floorNumber)
 		return nil
 	end
 
 	if not roomRef:IsA("Model") then
-		warn("MineFloorManager: Intermission room must be a Model", roomRef:GetFullName())
+		warn("MineFloorManager: Boss room must be a Model", roomRef:GetFullName())
 		return nil
 	end
 
 	local roomModel = roomRef:Clone()
-	roomModel.Name = "IntermissionRoom"
+	roomModel.Name = "BossRoom"
 	roomModel:SetAttribute("FloorNumber", floorNumber)
 
 	local primaryPart = getModelPrimaryPart(roomModel)
 	if primaryPart == nil then
-		warn("MineFloorManager: Intermission room is missing PrimaryPart or Floor part", roomRef:GetFullName())
+		warn("MineFloorManager: Boss room is missing PrimaryPart or Floor part", roomRef:GetFullName())
 		roomModel:Destroy()
 		return nil
 	end
 
 	local spawnPart = findSpawnPart(roomModel)
 	if spawnPart == nil then
-		warn("MineFloorManager: Intermission room is missing a Spawn part", roomRef:GetFullName())
+		warn("MineFloorManager: Boss room is missing a Spawn part", roomRef:GetFullName())
+		roomModel:Destroy()
+		return nil
+	end
+
+	local bossSpawnPart = findBossSpawnPart(roomModel)
+	if bossSpawnPart == nil then
+		warn("MineFloorManager: Boss room is missing a BossSpawn part", roomRef:GetFullName())
 		roomModel:Destroy()
 		return nil
 	end
 
 	pivotModelPrimaryPartTo(roomModel, CFrame.new(floorOrigin))
-	applyFloorNumberToIntermissionLadders(roomModel, floorNumber)
+	applyFloorNumberToBossRoomLadders(roomModel, floorNumber)
 	roomModel.Parent = parent
+	BossEnemyService.SpawnBoss(parent, bossEnemyType, floorNumber, bossSpawnPart)
 
 	return createRandomPartSpawn(spawnPart)
 end
@@ -429,17 +447,26 @@ local function getFloorOrigin(floorNumber: number): Vector3
 	return MINE_ORIGIN + Vector3.new(0, -floorNumber * FLOOR_SPACING, 0)
 end
 
-local function getIntermissionRoomNameForFloor(floorNumber: number): string?
+local function getBossRoomNameForFloor(floorNumber: number): string?
 	local _, layerData = MineFloorManager.GetLayerForFloor(floorNumber)
 	if layerData == nil or floorNumber ~= layerData.floors.max then
 		return nil
 	end
 
-	if type(layerData.intermissionRoom) == "string" and layerData.intermissionRoom ~= "" then
-		return layerData.intermissionRoom
+	if type(layerData.bossRoom) == "string" and layerData.bossRoom ~= "" then
+		return layerData.bossRoom
 	end
 
-	return DEFAULT_INTERMISSION_ROOM
+	return DEFAULT_BOSS_ROOM
+end
+
+local function getBossEnemyTypeForFloor(floorNumber: number): string
+	local _, layerData = MineFloorManager.GetLayerForFloor(floorNumber)
+	if layerData ~= nil and type(layerData.bossEnemy) == "string" and layerData.bossEnemy ~= "" then
+		return layerData.bossEnemy
+	end
+
+	return MineLayerConfig.defaultBossEnemy or "Cave Slime"
 end
 
 local function getEntranceTeleportPosition(): Vector3
@@ -529,9 +556,9 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, FloorSpawn?
 
 	local floorOrigin = getFloorOrigin(floorNumber)
 
-	local intermissionRoomName = getIntermissionRoomNameForFloor(floorNumber)
-	if intermissionRoomName ~= nil then
-		local spawn = createIntermissionRoom(floorOrigin, floorFolder, floorNumber, intermissionRoomName)
+	local bossRoomName = getBossRoomNameForFloor(floorNumber)
+	if bossRoomName ~= nil then
+		local spawn = createBossRoom(floorOrigin, floorFolder, floorNumber, bossRoomName, getBossEnemyTypeForFloor(floorNumber))
 		if spawn == nil then
 			floorFolder:Destroy()
 			return nil

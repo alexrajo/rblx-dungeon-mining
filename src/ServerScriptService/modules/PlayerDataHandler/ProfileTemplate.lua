@@ -4,6 +4,7 @@ return {
 	Level = 1,
 	MaxFloorReached = 0,
 	LatestCheckpointFloor = 0,
+	LatestCompletedBossFloor = 0,
 	OpenedMineChests = {},
 	Inventory = {},
 	EquippedHelmet = "",

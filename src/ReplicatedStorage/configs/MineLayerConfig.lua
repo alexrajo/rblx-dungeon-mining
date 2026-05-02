@@ -5,9 +5,10 @@ local MineLayerConfig = {
 	-- Global default enemy density: fraction of available floor positions that spawn an enemy.
 	-- Individual layers may override this with their own enemyDensity field.
 	defaultEnemyDensity = 0.005,
+	defaultBossEnemy = "Cave Slime",
 	checkpointInterval = 5,
-	-- Optional per-layer field: intermissionRoom = "RoomModelName".
-	-- Layer-end floors use ServerStorage.IntermissionRooms.Default when omitted.
+	-- Optional per-layer field: bossRoom = "RoomModelName".
+	-- Layer-end floors use ServerStorage.BossRooms.Default when omitted.
 
 	[1] = {
 		name = "Shallow Mines",
