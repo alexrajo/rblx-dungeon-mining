@@ -94,7 +94,6 @@ local function createAscendingLadder(position: Vector3, parent: Instance, floorN
 	ladderModel.Name = "SurfaceLadder"
 	ladderModel:SetAttribute("FloorNumber", floorNumber)
 	ladderModel:SetAttribute("LadderAction", "exit")
-	ladderModel:SetAttribute("LadderVariant", "ascending")
 
 	local platform = Instance.new("Part")
 	platform.Name = "Platform"
@@ -156,7 +155,6 @@ local function createDescendingLadder(position: Vector3, parent: Instance, floor
 	ladder.BrickColor = BrickColor.new("Brown")
 	ladder:SetAttribute("FloorNumber", floorNumber)
 	ladder:SetAttribute("LadderAction", "descend")
-	ladder:SetAttribute("LadderVariant", "descending")
 	CollectionService:AddTag(ladder, "MineLadder")
 	ladder.Parent = parent
 

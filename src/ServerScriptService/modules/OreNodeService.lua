@@ -39,7 +39,6 @@ local function createLadder(position: Vector3, parent: Instance, floorNumber: nu
 		ladder:SetAttribute("FloorNumber", floorNumber)
 	end
 	ladder:SetAttribute("LadderAction", "descend")
-	ladder:SetAttribute("LadderVariant", "descending")
 	CollectionService:AddTag(ladder, "MineLadder")
 	ladder.Parent = parent
 
