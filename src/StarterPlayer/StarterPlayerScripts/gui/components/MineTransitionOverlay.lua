@@ -6,6 +6,7 @@ local Services = ReplicatedStorage.services
 local Roact = require(Services.Roact)
 local APIService = require(Services.APIService)
 local configs = ReplicatedStorage.configs
+local MineLayerConfig = require(configs.MineLayerConfig)
 local MineRewardFloorConfig = require(configs.MineRewardFloorConfig)
 
 local createElement = Roact.createElement
@@ -22,7 +23,17 @@ local FADE_TWEEN_INFO = TweenInfo.new(FADE_DURATION, Enum.EasingStyle.Sine, Enum
 
 local MineTransitionOverlay = Roact.Component:extend("MineTransitionOverlay")
 
+local function isIntermissionFloor(floorNumber: number): boolean
+	local layerNumber = MineLayerConfig.GetLayerForFloor(floorNumber)
+	local layerData = if layerNumber ~= nil then MineLayerConfig[layerNumber] else nil
+	return layerData ~= nil and floorNumber == layerData.floors.max
+end
+
 local function getExpectedReadyInstance(floorNumber: number): (string, string)
+	if isIntermissionFloor(floorNumber) then
+		return "IntermissionRoom", "Floor"
+	end
+
 	if MineRewardFloorConfig.IsRewardFloor(floorNumber) then
 		return "RewardRoom", "Floor"
 	end
