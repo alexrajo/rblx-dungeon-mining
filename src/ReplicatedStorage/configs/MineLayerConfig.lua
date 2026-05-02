@@ -6,6 +6,8 @@ local MineLayerConfig = {
 	-- Individual layers may override this with their own enemyDensity field.
 	defaultEnemyDensity = 0.005,
 	checkpointInterval = 5,
+	-- Optional per-layer field: intermissionRoom = "RoomModelName".
+	-- Layer-end floors use ServerStorage.IntermissionRooms.Default when omitted.
 
 	[1] = {
 		name = "Shallow Mines",

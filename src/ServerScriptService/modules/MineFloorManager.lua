@@ -22,6 +22,10 @@ local APIService = require(Services.APIService)
 
 local EnemyNPCRefsFolder = ServerStorage.NPCs.Enemies
 
+type FloorSpawn =
+	{ kind: "fixed", cframe: CFrame }
+	| { kind: "randomPart", part: BasePart }
+
 -- Mine area offset — the mine exists far below the hub
 local MINE_ORIGIN = Vector3.new(0, -500, 0)
 local FLOOR_SPACING = 100 -- Distance between floors on Y axis
@@ -30,8 +34,8 @@ local FLOOR_SPACING = 100 -- Distance between floors on Y axis
 local HUB_SPAWN = Vector3.new(0, 10, 0)
 local MINE_EXIT_OFFSET = 8
 
--- Floor pool: floorNumber → { folder: Folder, players: {[Player]: true}, spawnPosition: Vector3 }
-local floorPool: { [number]: { folder: Folder, players: { [Player]: boolean }, spawnPosition: Vector3 } } = {}
+-- Floor pool: floorNumber → { folder: Folder, players: {[Player]: true}, spawn: FloorSpawn }
+local floorPool: { [number]: { folder: Folder, players: { [Player]: boolean }, spawn: FloorSpawn } } = {}
 
 -- Track which floor each player is on (nil = not in mine / above ground)
 local playerFloors: { [Player]: number } = {}
@@ -69,6 +73,21 @@ local REWARD_ROOM_EXIT_LADDER_OFFSET = Vector3.new(-12, 1, 14)
 local REWARD_ROOM_DESCEND_LADDER_OFFSET = Vector3.new(12, 3, -14)
 local REWARD_ROOM_CHEST_OFFSET = Vector3.new(0, 2, 0)
 local FLOOR_POSITION_TO_SURFACE_OFFSET = Vector3.new(0, 4, 0)
+local DEFAULT_INTERMISSION_ROOM = "Default"
+
+local function createFixedSpawn(position: Vector3): FloorSpawn
+	return {
+		kind = "fixed",
+		cframe = CFrame.new(position),
+	}
+end
+
+local function createRandomPartSpawn(part: BasePart): FloorSpawn
+	return {
+		kind = "randomPart",
+		part = part,
+	}
+end
 
 local function createAscendingLadder(position: Vector3, parent: Instance, floorNumber: number)
 	local ladderModel = Instance.new("Model")
@@ -261,6 +280,114 @@ local function createRewardRoom(floorOrigin: Vector3, parent: Instance, floorNum
 	return floorOrigin + REWARD_ROOM_SPAWN_OFFSET
 end
 
+local function getModelPrimaryPart(model: Model): BasePart?
+	if model.PrimaryPart ~= nil then
+		return model.PrimaryPart
+	end
+
+	local floorPart = model:FindFirstChild("Floor", true)
+	if floorPart ~= nil and floorPart:IsA("BasePart") then
+		model.PrimaryPart = floorPart
+		return floorPart
+	end
+
+	return nil
+end
+
+local function findSpawnPart(model: Model): BasePart?
+	local spawnPart = model:FindFirstChild("Spawn", true)
+	if spawnPart ~= nil and spawnPart:IsA("BasePart") then
+		return spawnPart
+	end
+
+	return nil
+end
+
+local function pivotModelPrimaryPartTo(model: Model, targetPrimaryPartCFrame: CFrame)
+	local primaryPart = model.PrimaryPart
+	if primaryPart == nil then
+		return
+	end
+
+	local currentPivot = model:GetPivot()
+	local currentPrimaryPartCFrame = primaryPart.CFrame
+	local targetPivot = targetPrimaryPartCFrame * currentPrimaryPartCFrame:ToObjectSpace(currentPivot)
+	model:PivotTo(targetPivot)
+end
+
+local function applyFloorNumberToIntermissionLadders(roomModel: Model, floorNumber: number)
+	local taggedAncestors = {}
+	for _, descendant in ipairs(roomModel:GetDescendants()) do
+		if CollectionService:HasTag(descendant, "MineLadder") then
+			descendant:SetAttribute("FloorNumber", floorNumber)
+			if descendant:IsA("Model") then
+				taggedAncestors[descendant] = true
+			end
+		end
+	end
+
+	for _, descendant in ipairs(roomModel:GetDescendants()) do
+		if not descendant:IsA("BasePart") then
+			continue
+		end
+
+		for taggedAncestor in pairs(taggedAncestors) do
+			if descendant:IsDescendantOf(taggedAncestor) then
+				descendant:SetAttribute("FloorNumber", floorNumber)
+				break
+			end
+		end
+	end
+end
+
+local function createIntermissionRoom(floorOrigin: Vector3, parent: Instance, floorNumber: number, roomName: string): FloorSpawn?
+	local intermissionRoomsFolder = ServerStorage:FindFirstChild("IntermissionRooms")
+	if intermissionRoomsFolder == nil then
+		warn("MineFloorManager: Missing ServerStorage.IntermissionRooms folder")
+		return nil
+	end
+
+	local roomRef = intermissionRoomsFolder:FindFirstChild(roomName)
+	if roomRef == nil and roomName ~= DEFAULT_INTERMISSION_ROOM then
+		warn("MineFloorManager: Missing intermission room", roomName, "for floor", floorNumber, "- using Default")
+		roomRef = intermissionRoomsFolder:FindFirstChild(DEFAULT_INTERMISSION_ROOM)
+	end
+
+	if roomRef == nil then
+		warn("MineFloorManager: Missing Default intermission room for floor", floorNumber)
+		return nil
+	end
+
+	if not roomRef:IsA("Model") then
+		warn("MineFloorManager: Intermission room must be a Model", roomRef:GetFullName())
+		return nil
+	end
+
+	local roomModel = roomRef:Clone()
+	roomModel.Name = "IntermissionRoom"
+	roomModel:SetAttribute("FloorNumber", floorNumber)
+
+	local primaryPart = getModelPrimaryPart(roomModel)
+	if primaryPart == nil then
+		warn("MineFloorManager: Intermission room is missing PrimaryPart or Floor part", roomRef:GetFullName())
+		roomModel:Destroy()
+		return nil
+	end
+
+	local spawnPart = findSpawnPart(roomModel)
+	if spawnPart == nil then
+		warn("MineFloorManager: Intermission room is missing a Spawn part", roomRef:GetFullName())
+		roomModel:Destroy()
+		return nil
+	end
+
+	pivotModelPrimaryPartTo(roomModel, CFrame.new(floorOrigin))
+	applyFloorNumberToIntermissionLadders(roomModel, floorNumber)
+	roomModel.Parent = parent
+
+	return createRandomPartSpawn(spawnPart)
+end
+
 --- Fisher-Yates shuffle in place.
 local function shuffleArray(arr: { any })
 	for i = #arr, 2, -1 do
@@ -302,6 +429,19 @@ end
 --- Get the floor origin position for a given floor number.
 local function getFloorOrigin(floorNumber: number): Vector3
 	return MINE_ORIGIN + Vector3.new(0, -floorNumber * FLOOR_SPACING, 0)
+end
+
+local function getIntermissionRoomNameForFloor(floorNumber: number): string?
+	local _, layerData = MineFloorManager.GetLayerForFloor(floorNumber)
+	if layerData == nil or floorNumber ~= layerData.floors.max then
+		return nil
+	end
+
+	if type(layerData.intermissionRoom) == "string" and layerData.intermissionRoom ~= "" then
+		return layerData.intermissionRoom
+	end
+
+	return DEFAULT_INTERMISSION_ROOM
 end
 
 local function getEntranceTeleportPosition(): Vector3
@@ -377,7 +517,7 @@ local function cleanupFloorIfEmpty(floorNumber: number)
 	end
 end
 
-function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
+function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, FloorSpawn?)
 	local layerNum, layerData = MineFloorManager.GetLayerForFloor(floorNumber)
 	if layerData == nil then
 		warn("MineFloorManager: No layer data for floor", floorNumber)
@@ -391,10 +531,22 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 	local floorOrigin = getFloorOrigin(floorNumber)
 
+	local intermissionRoomName = getIntermissionRoomNameForFloor(floorNumber)
+	if intermissionRoomName ~= nil then
+		local spawn = createIntermissionRoom(floorOrigin, floorFolder, floorNumber, intermissionRoomName)
+		if spawn == nil then
+			floorFolder:Destroy()
+			return nil
+		end
+
+		floorFolder.Parent = workspace
+		return floorFolder, spawn
+	end
+
 	if MineRewardFloorConfig.IsRewardFloor(floorNumber) then
 		local spawnPosition = createRewardRoom(floorOrigin, floorFolder, floorNumber)
 		floorFolder.Parent = workspace
-		return floorFolder, spawnPosition
+		return floorFolder, createFixedSpawn(spawnPosition)
 	end
 
 	-- Generate procedural cave
@@ -600,7 +752,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, Vector3?)
 
 	floorFolder.Parent = workspace
 
-	return floorFolder, spawnPosition
+	return floorFolder, createFixedSpawn(spawnPosition)
 end
 
 local function getThemeForFloor(floorNumber: number): string
@@ -624,12 +776,12 @@ local function getOrCreateFloor(floorNumber: number): Folder?
 	end
 
 	-- Fallback: generate synchronously
-	local folder, spawnPosition = MineFloorManager.SpawnFloor(floorNumber)
-	if folder and spawnPosition then
+	local folder, spawn = MineFloorManager.SpawnFloor(floorNumber)
+	if folder and spawn then
 		floorPool[floorNumber] = {
 			folder = folder,
 			players = {},
-			spawnPosition = spawnPosition,
+			spawn = spawn,
 		}
 	end
 	return folder
@@ -639,12 +791,12 @@ end
 local function preloadFloor(floorNumber: number)
 	if floorPool[floorNumber] then return end
 
-	local folder, spawnPosition = MineFloorManager.SpawnFloor(floorNumber)
-	if folder and spawnPosition then
+	local folder, spawn = MineFloorManager.SpawnFloor(floorNumber)
+	if folder and spawn then
 		floorPool[floorNumber] = {
 			folder = folder,
 			players = {},
-			spawnPosition = spawnPosition,
+			spawn = spawn,
 		}
 	end
 end
@@ -685,6 +837,46 @@ local function movePlayerToFloor(player: Player, oldFloor: number?, newFloor: nu
 	end
 end
 
+local function getFixedSpawnCFrame(spawn: FloorSpawn): CFrame?
+	if spawn.kind ~= "fixed" then
+		return nil
+	end
+
+	return spawn.cframe
+end
+
+local function getRandomPartSpawnCFrame(spawn: FloorSpawn): CFrame?
+	if spawn.kind ~= "randomPart" then
+		return nil
+	end
+
+	local spawnPart = spawn.part
+	if spawnPart.Parent == nil then
+		return nil
+	end
+
+	local halfX = spawnPart.Size.X / 2
+	local halfZ = spawnPart.Size.Z / 2
+	local randomX = (math.random() * 2 - 1) * halfX
+	local randomZ = (math.random() * 2 - 1) * halfZ
+	local localSpawnPosition = Vector3.new(randomX, spawnPart.Size.Y / 2, randomZ)
+	local spawnPosition = (spawnPart.CFrame * CFrame.new(localSpawnPosition)).Position
+
+	local lookVector = spawnPart.CFrame.LookVector
+	local flatLookVector = Vector3.new(lookVector.X, 0, lookVector.Z)
+	if flatLookVector.Magnitude < 0.001 then
+		flatLookVector = Vector3.new(0, 0, -1)
+	else
+		flatLookVector = flatLookVector.Unit
+	end
+
+	return CFrame.lookAt(spawnPosition, spawnPosition + flatLookVector)
+end
+
+local function getSpawnCFrame(spawn: FloorSpawn): CFrame?
+	return getFixedSpawnCFrame(spawn) or getRandomPartSpawnCFrame(spawn)
+end
+
 --- Teleport a player to a floor's origin.
 local function teleportToFloor(player: Player, floorNumber: number)
 	local character = player.Character
@@ -693,9 +885,12 @@ local function teleportToFloor(player: Player, floorNumber: number)
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if humanoidRootPart and humanoid then
 			local entry = floorPool[floorNumber]
-			local spawnPosition = if entry then entry.spawnPosition else getFloorOrigin(floorNumber)
+			local spawnCFrame = if entry then getSpawnCFrame(entry.spawn) else CFrame.new(getFloorOrigin(floorNumber))
+			if spawnCFrame == nil then
+				spawnCFrame = CFrame.new(getFloorOrigin(floorNumber))
+			end
 			local rootHeightOffset = humanoid.HipHeight + (humanoidRootPart.Size.Y / 2)
-			local targetCFrame = CFrame.new(spawnPosition + Vector3.new(0, rootHeightOffset, 0))
+			local targetCFrame = spawnCFrame + Vector3.new(0, rootHeightOffset, 0)
 
 			humanoidRootPart.AssemblyLinearVelocity = Vector3.zero
 			humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
