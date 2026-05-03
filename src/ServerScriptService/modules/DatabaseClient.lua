@@ -1,7 +1,7 @@
 local DatabaseClient = {}
 DatabaseClient.__index = DatabaseClient
 
-local DATASTORE_PREFIX = "PlayerData4_"
+local DATASTORE_PREFIX = "PlayerData5_"
 
 function updatePlayerDataFolder(playerDataFolder: Folder, dbProfile)
 	if playerDataFolder == nil then warn("updatePlayerDataFolder: player data folder was not provided / was nil!") return end
