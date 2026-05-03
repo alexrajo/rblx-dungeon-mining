@@ -17,19 +17,38 @@ function GearDetailPopup:render()
 
 	local zIndex = self.props.ZIndex or 20
 	local detailElements = {}
+	local lineLayoutOrder = 1
+
+	if type(details.description) == "string" and details.description ~= "" then
+		detailElements.Description = createElement(TextLabel, {
+			Text = details.description,
+			textSize = 12,
+			Size = UDim2.new(1, 0, 0, 48),
+			LayoutOrder = lineLayoutOrder,
+			ZIndex = zIndex + 4,
+			textProps = {
+				TextScaled = true,
+				TextWrapped = true,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextYAlignment = Enum.TextYAlignment.Top,
+			},
+		})
+		lineLayoutOrder += 1
+	end
 
 	for index, lineText in ipairs(details.detailLines or {}) do
 		detailElements["Line" .. tostring(index)] = createElement(TextLabel, {
 			Text = lineText,
 			textSize = 13,
 			Size = UDim2.new(1, 0, 0, 16),
-			LayoutOrder = index,
+			LayoutOrder = lineLayoutOrder,
 			ZIndex = zIndex + 4,
 			textProps = {
 				TextScaled = true,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
 		})
+		lineLayoutOrder += 1
 	end
 
 	local hasPrimaryAction = self.props.onPrimaryAction ~= nil and self.props.primaryButtonText ~= nil

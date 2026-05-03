@@ -1,43 +1,56 @@
 local dropsConfig = {
 	itemDefinitions = {
 		Stone = {
-			imageId = "131498599100053"
+			imageId = "131498599100053",
+			description = "A common rock used for early crafting and building around camp.",
 		},
 		Copper = {
-			imageId = "119748007578926"
+			imageId = "119748007578926",
+			description = "A soft metal ore used to craft your first upgraded tools and armor.",
 		},
 		Iron = {
-			imageId = "94875433906041"
+			imageId = "94875433906041",
+			description = "A sturdy ore used for reliable mid-depth mining and combat gear.",
 		},
 		Gold = {
-			imageId = "109771614530170"
+			imageId = "109771614530170",
+			description = "A valuable ore used for advanced crafting and profitable sales.",
 		},
 		Diamond = {
-			imageId = "124595491268959"
+			imageId = "124595491268959",
+			description = "A rare crystal used to craft powerful gear for dangerous mine layers.",
 		},
 		Obsidian = {
-			imageId = "136977272561074"
+			imageId = "136977272561074",
+			description = "A dense volcanic resource used for late-game equipment.",
 		},
 		Mythril = {
-			imageId = "124856000628050"
+			imageId = "124856000628050",
+			description = "A very rare ore from the deepest mines, prized for top-tier crafting.",
 		},
 		Wood = {
-			imageId = "111503525768885"
+			imageId = "111503525768885",
+			description = "A basic crafting material used for handles, shafts, and camp supplies.",
 		},
 		["Slime Gel"] = {
-			imageId = "113708158375500"
+			imageId = "113708158375500",
+			description = "A sticky monster drop used in potion crafting.",
 		},
 		["Bat Wing"] = {
-			imageId = "100838722686920"
+			imageId = "100838722686920",
+			description = "A lightweight monster drop used for mobility-focused consumables.",
 		},
 		["Bone Fragment"] = {
-			imageId = "134407417210423"
+			imageId = "134407417210423",
+			description = "A brittle monster drop used for weapon and potion recipes.",
 		},
 		["Fire Essence"] = {
-			imageId = "137224694813959"
+			imageId = "137224694813959",
+			description = "A hot magical reagent gathered from dangerous deep-mine enemies.",
 		},
 		["Healing Herb"] = {
-			imageId = "108507164585415"
+			imageId = "108507164585415",
+			description = "A restorative plant used to brew healing consumables.",
 		},
 	},
 	types = {}

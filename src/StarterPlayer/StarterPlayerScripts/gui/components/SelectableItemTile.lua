@@ -15,8 +15,10 @@ function SelectableItemTile:render()
 	local imageId = self.props.imageId or ItemConfig.GetImageIdForItem(itemName)
 	local amount = self.props.amount
 	local slotNumber = self.props.slotNumber
+	local showName = self.props.showName ~= false
 	local showSelectionTint = self.props.showSelectionTint == true
 	local selected = self.props.selected == true
+	local isCompactItemCell = not showName
 
 	return createElement(SelectablePanel, {
 		selected = selected,
@@ -44,22 +46,27 @@ function SelectableItemTile:render()
 		Icon = createElement("ImageLabel", {
 			Image = "rbxassetid://" .. imageId,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = self.props.iconPosition or UDim2.fromScale(0.5, 0.45),
-			Size = self.props.iconSize or UDim2.fromScale(0.58, 0.58),
+			Position = self.props.iconPosition or (isCompactItemCell and UDim2.fromScale(0.5, 0.5) or UDim2.fromScale(0.5, 0.45)),
+			Size = self.props.iconSize or (isCompactItemCell and UDim2.new(0.75, 0, 0.75, 0) or UDim2.fromScale(0.58, 0.58)),
 			BackgroundTransparency = 1,
 			ScaleType = Enum.ScaleType.Fit,
 			ZIndex = 1,
-		}),
+		}, isCompactItemCell and {
+			UISizeConstraint = createElement("UISizeConstraint", {
+				MaxSize = Vector2.new(64, 64),
+			}),
+		} or nil),
 		Amount = amount ~= nil and createElement("Frame", {
-			BackgroundColor3 = Color3.fromRGB(0, 43, 106),
+			BackgroundColor3 = isCompactItemCell and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(0, 43, 106),
+			BackgroundTransparency = isCompactItemCell and 1 or 0,
 			AnchorPoint = Vector2.new(1, 1),
-			Position = UDim2.new(1, -8, 1, -8),
-			Size = UDim2.fromOffset(24, 18),
+			Position = isCompactItemCell and UDim2.fromScale(0.95, 0.95) or UDim2.new(1, -8, 1, -8),
+			Size = isCompactItemCell and UDim2.fromScale(0.9, 0.2) or UDim2.fromOffset(24, 18),
 			ZIndex = 5,
 		}, {
-			UICorner = createElement("UICorner", {
+			UICorner = not isCompactItemCell and createElement("UICorner", {
 				CornerRadius = UDim.new(0, 8),
-			}),
+			}) or nil,
 			Text = createElement(TextLabel, {
 				Text = tostring(amount),
 				textSize = 11,
@@ -67,10 +74,11 @@ function SelectableItemTile:render()
 				ZIndex = 6,
 				textProps = {
 					TextScaled = true,
+					TextXAlignment = isCompactItemCell and Enum.TextXAlignment.Right or Enum.TextXAlignment.Center,
 				},
 			}),
 		}) or nil,
-		Name = itemName ~= nil and itemName ~= "" and createElement(TextLabel, {
+		Name = showName and itemName ~= nil and itemName ~= "" and createElement(TextLabel, {
 			Text = itemName,
 			textSize = 12,
 			Size = self.props.nameSize or UDim2.new(1, -8, 0, 28),
