@@ -14,6 +14,7 @@ local QuestService = require(modules.QuestService)
 
 local configs = ReplicatedStorage.configs
 local CrateConfig = require(configs.CrateConfig)
+local EnemyConfig = require(configs.EnemyConfig)
 local MineLayerConfig = require(configs.MineLayerConfig)
 local MineRewardFloorConfig = require(configs.MineRewardFloorConfig)
 local OreConfig = require(configs.OreConfig)
@@ -75,6 +76,7 @@ local REWARD_ROOM_DESCEND_LADDER_OFFSET = Vector3.new(12, 3, -14)
 local REWARD_ROOM_CHEST_OFFSET = Vector3.new(0, 2, 0)
 local FLOOR_POSITION_TO_SURFACE_OFFSET = Vector3.new(0, 4, 0)
 local DEFAULT_BOSS_ROOM = "Default"
+local warnedEnemyConfigIssues: {[string]: boolean} = {}
 
 local function createFixedSpawn(position: Vector3): FloorSpawn
 	return {
@@ -469,6 +471,65 @@ local function getBossEnemyTypeForFloor(floorNumber: number): string
 	return MineLayerConfig.defaultBossEnemy or "Cave Slime"
 end
 
+local function warnEnemyConfigIssue(key: string, ...: any)
+	if warnedEnemyConfigIssues[key] then
+		return
+	end
+
+	warnedEnemyConfigIssues[key] = true
+	warn(...)
+end
+
+local function getLayerEnemyTypes(layerNum: number, layerData: table): {string}
+	local configuredEnemyTypes = layerData.enemies
+	if configuredEnemyTypes == nil then
+		return {}
+	end
+
+	if type(configuredEnemyTypes) ~= "table" then
+		warnEnemyConfigIssue(
+			"invalidLayerEnemyList_" .. layerNum,
+			"MineFloorManager: Layer enemies must be an array",
+			layerNum
+		)
+		return {}
+	end
+
+	local enemyTypes = {}
+	for _, enemyType in ipairs(configuredEnemyTypes) do
+		if type(enemyType) ~= "string" or enemyType == "" then
+			warnEnemyConfigIssue(
+				"invalidLayerEnemyType_" .. layerNum,
+				"MineFloorManager: Layer enemy entry must be a non-empty string",
+				layerNum
+			)
+			continue
+		end
+
+		if EnemyConfig[enemyType] == nil then
+			warnEnemyConfigIssue(
+				"missingEnemyConfig_" .. enemyType,
+				"MineFloorManager: Layer enemy is missing EnemyConfig entry",
+				enemyType
+			)
+			continue
+		end
+
+		local enemyRef = EnemyNPCRefsFolder:FindFirstChild(enemyType)
+		if enemyRef == nil or not enemyRef:IsA("Model") or enemyRef:FindFirstChild("HumanoidRootPart") == nil then
+			warnEnemyConfigIssue(
+				"missingEnemyNpcRef_" .. enemyType,
+				"MineFloorManager: Layer enemy is missing a valid ServerStorage.NPCs.Enemies model; using fallback model",
+				enemyType
+			)
+		end
+
+		table.insert(enemyTypes, enemyType)
+	end
+
+	return enemyTypes
+end
+
 local function getEntranceTeleportPosition(): Vector3
 	local mineEntrances = CollectionService:GetTagged("MineEntrance")
 	local entrance = mineEntrances[1]
@@ -711,7 +772,7 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, FloorSpawn?
 	end
 
 	-- Spawn enemies on floor positions
-	local enemyTypes = layerData.enemies
+	local enemyTypes = getLayerEnemyTypes(layerNum, layerData)
 	local enemyDensity = if layerData.enemyDensity ~= nil then layerData.enemyDensity else MineLayerConfig.defaultEnemyDensity
 	local numEnemies = if enemyTypes ~= nil and #enemyTypes > 0 then math.floor(#floorPositions * enemyDensity + 0.5) else 0
 
@@ -721,29 +782,29 @@ function MineFloorManager.SpawnFloor(floorNumber: number): (Folder?, FloorSpawn?
 
 		local enemyType = enemyTypes[math.random(1, #enemyTypes)]
 
-        local enemyRef = EnemyNPCRefsFolder:FindFirstChild(enemyType)
-        local enemyModel
+		local enemyRef = EnemyNPCRefsFolder:FindFirstChild(enemyType)
+		local enemyModel
 
-        if enemyRef == nil or enemyRef:FindFirstChild("HumanoidRootPart") == nil then
-            enemyModel = Instance.new("Model")
-            enemyModel.Name = enemyType
-    
-            local rootPart = Instance.new("Part")
-            rootPart.Name = "HumanoidRootPart"
-            rootPart.Size = Vector3.new(2, 2, 1)
-            rootPart.Position = floorPosition + Vector3.new(0, 1, 0)
-            rootPart.Anchored = false
-            rootPart.CanCollide = true
-            rootPart.BrickColor = BrickColor.new("Bright red")
-            rootPart.Parent = enemyModel
-		    enemyModel.PrimaryPart = rootPart
+		if enemyRef == nil or enemyRef:FindFirstChild("HumanoidRootPart") == nil then
+			enemyModel = Instance.new("Model")
+			enemyModel.Name = enemyType
 
-            local humanoid = Instance.new("Humanoid")
-            humanoid.Parent = enemyModel
-        else
-            enemyModel = enemyRef:Clone()
-            enemyModel:PivotTo(CFrame.new(floorPosition + Vector3.new(0, 1, 0)))
-        end
+			local rootPart = Instance.new("Part")
+			rootPart.Name = "HumanoidRootPart"
+			rootPart.Size = Vector3.new(2, 2, 1)
+			rootPart.Position = floorPosition + Vector3.new(0, 1, 0)
+			rootPart.Anchored = false
+			rootPart.CanCollide = true
+			rootPart.BrickColor = BrickColor.new("Bright red")
+			rootPart.Parent = enemyModel
+			enemyModel.PrimaryPart = rootPart
+
+			local humanoid = Instance.new("Humanoid")
+			humanoid.Parent = enemyModel
+		else
+			enemyModel = enemyRef:Clone()
+			enemyModel:PivotTo(CFrame.new(floorPosition + Vector3.new(0, 1, 0)))
+		end
 
 
 		enemyModel:SetAttribute("FloorNumber", floorNumber)

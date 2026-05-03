@@ -1,6 +1,5 @@
 local EnemyConfig = {
 	["Cave Slime"] = {
-		layer = 1,
 		hp = 15,
 		damage = 3,
 		defense = 0,
@@ -17,7 +16,6 @@ local EnemyConfig = {
 		xpReward = 10,
 	},
 	["Cave Bat"] = {
-		layer = 1,
 		hp = 10,
 		damage = 8,
 		defense = 0,
@@ -34,7 +32,6 @@ local EnemyConfig = {
 		xpReward = 10,
 	},
 	["Goblin"] = {
-		layer = 2,
 		hp = 30,
 		damage = 12,
 		defense = 3,
@@ -51,7 +48,6 @@ local EnemyConfig = {
 		xpReward = 20,
 	},
 	["Shadow Bat"] = {
-		layer = 2,
 		hp = 20,
 		damage = 15,
 		defense = 2,
@@ -68,7 +64,6 @@ local EnemyConfig = {
 		xpReward = 20,
 	},
 	["Skeleton"] = {
-		layer = 3,
 		hp = 50,
 		damage = 18,
 		defense = 5,
@@ -85,7 +80,6 @@ local EnemyConfig = {
 		xpReward = 30,
 	},
 	["Rock Golem"] = {
-		layer = 3,
 		hp = 80,
 		damage = 15,
 		defense = 12,
@@ -103,7 +97,6 @@ local EnemyConfig = {
 		xpReward = 35,
 	},
 	["Gold Guardian"] = {
-		layer = 4,
 		hp = 100,
 		damage = 25,
 		defense = 10,
@@ -120,7 +113,6 @@ local EnemyConfig = {
 		xpReward = 40,
 	},
 	["Crystal Spider"] = {
-		layer = 4,
 		hp = 60,
 		damage = 30,
 		defense = 5,
@@ -137,7 +129,6 @@ local EnemyConfig = {
 		xpReward = 40,
 	},
 	["Lava Slime"] = {
-		layer = 5,
 		hp = 90,
 		damage = 28,
 		defense = 8,
@@ -155,7 +146,6 @@ local EnemyConfig = {
 		xpReward = 45,
 	},
 	["Obsidian Knight"] = {
-		layer = 5,
 		hp = 150,
 		damage = 35,
 		defense = 20,
@@ -172,7 +162,6 @@ local EnemyConfig = {
 		xpReward = 50,
 	},
 	["Fire Elemental"] = {
-		layer = 6,
 		hp = 120,
 		damage = 40,
 		defense = 10,
@@ -189,7 +178,6 @@ local EnemyConfig = {
 		xpReward = 50,
 	},
 	["Magma Wyrm"] = {
-		layer = 6,
 		hp = 200,
 		damage = 45,
 		defense = 15,
