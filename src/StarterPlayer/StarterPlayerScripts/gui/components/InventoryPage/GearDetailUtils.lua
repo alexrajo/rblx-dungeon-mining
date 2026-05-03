@@ -46,6 +46,18 @@ local function formatSignedDelta(delta: number): string
 end
 
 local function getEquippedItemNameForSlot(slotName: string, statsData): string
+	if slotName == "Pickaxe" or slotName == "Weapon" then
+		local hotbarSlots = HotbarConfig.NormalizeStoredSlots(statsData.HotbarSlots or {})
+		for _, entryId in ipairs(hotbarSlots) do
+			local itemName = HotbarConfig.ResolveEntryItemName(entryId, statsData)
+			if GearConfig.GetSlotForItem(itemName) == slotName then
+				return itemName
+			end
+		end
+
+		return ""
+	end
+
 	local equippedFieldName = GearConfig.slotToField[slotName]
 	local equippedEntryId = equippedFieldName and statsData[equippedFieldName] or ""
 
