@@ -5,9 +5,9 @@ local MineLayerConfig = {
 	-- Global default enemy density: fraction of available floor positions that spawn an enemy.
 	-- Individual layers may override this with their own enemyDensity field.
 	defaultEnemyDensity = 0.005,
-	defaultBossEnemy = "Cave Slime",
+	defaultBossEnemy = "Giant Slime",
 	checkpointInterval = 5,
-	-- Normal enemy spawn pools are configured per layer with enemies = { "Enemy Type" }.
+	-- Normal enemy spawn pools are configured per layer with enemies = { "" }.
 	-- EnemyConfig only defines enemy stats, behaviors, drops, and rewards.
 	-- Optional per-layer field: bossRoom = "RoomModelName".
 	-- Optional per-layer field: bossEnemy = "Enemy Type".
@@ -22,6 +22,7 @@ local MineLayerConfig = {
 		enemies = { "Cave Slime", "Cave Bat" },
 		floorCompletionBonus = 10,
 		enemyDensity = 0.003, -- Override default enemy density for this layer
+        bossEnemy = "Giant Slime", -- Override default boss enemy for this layer
 	},
 	[2] = {
 		name = "Copper Caves",

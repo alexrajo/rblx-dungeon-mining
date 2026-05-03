@@ -1,7 +1,7 @@
 local EnemyConfig = {
 	["Cave Slime"] = {
 		hp = 15,
-		damage = 3,
+		damage = 8,
 		defense = 0,
 		behavior = "wander",
 		movementBehavior = "SlimeLeap",
@@ -11,7 +11,6 @@ local EnemyConfig = {
 		attackRange = 8,
 		drops = {
 			{ name = "Slime Gel", chance = 0.5 },
-			{ name = "Coins", minAmount = 2, maxAmount = 5 },
 		},
 		xpReward = 10,
 	},
@@ -27,7 +26,22 @@ local EnemyConfig = {
 		attackRange = 3,
 		drops = {
 			{ name = "Bat Wing", chance = 0.5 },
-			{ name = "Coins", minAmount = 2, maxAmount = 5 },
+		},
+		xpReward = 10,
+	},
+	["Giant Slime"] = {
+		hp = 100,
+		damage = 10,
+		defense = 0,
+		behavior = "wander",
+		movementBehavior = "SlimeLeap",
+		attackBehavior = "SlimeLunge",
+		walkSpeed = 5,
+		detectionRadius = 25,
+		attackRange = 16,
+		drops = {
+			{ name = "Slime Gel", chance = 0.5 },
+			{ name = "Coins", minAmount = 5, maxAmount = 10 },
 		},
 		xpReward = 10,
 	},
@@ -42,7 +56,6 @@ local EnemyConfig = {
 		detectionRadius = 25,
 		attackRange = 5,
 		drops = {
-			{ name = "Coins", minAmount = 5, maxAmount = 10 },
 			{ name = "Iron", chance = 0.3 },
 		},
 		xpReward = 20,
@@ -59,7 +72,6 @@ local EnemyConfig = {
 		attackRange = 3,
 		drops = {
 			{ name = "Bat Wing", chance = 0.6 },
-			{ name = "Coins", minAmount = 5, maxAmount = 8 },
 		},
 		xpReward = 20,
 	},
@@ -75,7 +87,6 @@ local EnemyConfig = {
 		attackRange = 6,
 		drops = {
 			{ name = "Bone Fragment", chance = 0.6 },
-			{ name = "Coins", minAmount = 8, maxAmount = 12 },
 		},
 		xpReward = 30,
 	},
@@ -92,7 +103,6 @@ local EnemyConfig = {
 		drops = {
 			{ name = "Stone", chance = 0.8 },
 			{ name = "Gold", chance = 0.3 },
-			{ name = "Coins", minAmount = 8, maxAmount = 15 },
 		},
 		xpReward = 35,
 	},
@@ -108,7 +118,6 @@ local EnemyConfig = {
 		attackRange = 5,
 		drops = {
 			{ name = "Gold", chance = 0.6 },
-			{ name = "Coins", minAmount = 10, maxAmount = 15 },
 		},
 		xpReward = 40,
 	},
@@ -124,7 +133,6 @@ local EnemyConfig = {
 		attackRange = 4,
 		drops = {
 			{ name = "Diamond", chance = 0.2 },
-			{ name = "Coins", minAmount = 10, maxAmount = 15 },
 		},
 		xpReward = 40,
 	},
@@ -141,7 +149,6 @@ local EnemyConfig = {
 		drops = {
 			{ name = "Slime Gel", chance = 0.6 },
 			{ name = "Obsidian", chance = 0.3 },
-			{ name = "Coins", minAmount = 12, maxAmount = 15 },
 		},
 		xpReward = 45,
 	},
@@ -157,7 +164,6 @@ local EnemyConfig = {
 		attackRange = 5,
 		drops = {
 			{ name = "Obsidian", chance = 0.5 },
-			{ name = "Coins", minAmount = 12, maxAmount = 15 },
 		},
 		xpReward = 50,
 	},
@@ -173,7 +179,6 @@ local EnemyConfig = {
 		attackRange = 8,
 		drops = {
 			{ name = "Fire Essence", chance = 0.5 },
-			{ name = "Coins", minAmount = 15, maxAmount = 15 },
 		},
 		xpReward = 50,
 	},
@@ -190,7 +195,6 @@ local EnemyConfig = {
 		drops = {
 			{ name = "Fire Essence", chance = 0.6 },
 			{ name = "Mythril", chance = 0.3 },
-			{ name = "Coins", minAmount = 15, maxAmount = 15 },
 		},
 		xpReward = 50,
 	},
