@@ -28,6 +28,13 @@ local function getHorizontalDistance(origin: Vector3, target: Vector3): number
 	return Vector2.new(offset.X, offset.Z).Magnitude
 end
 
+local function playFuseSound(visual: Instance)
+	local fuseSound = visual:FindFirstChild("Fuse", true)
+	if fuseSound ~= nil and fuseSound:IsA("Sound") then
+		fuseSound:Play()
+	end
+end
+
 function BombService.CreatePlacedBombVisual(handleTemplate: Instance?, position: Vector3): BasePart?
 	local visual = nil
 	if handleTemplate ~= nil and handleTemplate:IsA("BasePart") then
@@ -48,6 +55,7 @@ function BombService.CreatePlacedBombVisual(handleTemplate: Instance?, position:
 	visual.AssemblyAngularVelocity = Vector3.zero
 	visual.CFrame = CFrame.new(position + Vector3.new(0, visual.Size.Y * 0.5, 0))
 	visual.Parent = workspace
+	playFuseSound(visual)
 
 	return visual
 end
