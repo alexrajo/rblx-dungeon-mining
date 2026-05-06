@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local GlobalConfig = require(ReplicatedStorage.GlobalConfig)
 
 local StatCalculation = {}
 
@@ -38,7 +39,7 @@ function StatCalculation.GetPlayerMaxHealth(_level: number): number
 end
 
 function StatCalculation.GetPlayerMoveSpeed(bootsItemName: string?): number
-	return 16 + GearConfig.GetMoveSpeedBonus(bootsItemName)
+	return GlobalConfig.DEFAULT_WALKSPEED + GearConfig.GetMoveSpeedBonus(bootsItemName)
 end
 
 function StatCalculation.GetLevelUpXPRequirement(currentLevel: number): number

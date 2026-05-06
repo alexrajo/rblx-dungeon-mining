@@ -16,8 +16,8 @@ ConsumablesConfig.items = {
 	},
 	["Speed Potion"] = {
 		effectId = "speed",
-		-- Fraction of DEFAULT_WALKSPEED (16) added as a flat WalkSpeed bonus.
-		-- 0.20 -> +3.2 -> rounds to +3 studs/s (~20% increase).
+		-- Fraction of DEFAULT_WALKSPEED added as a flat WalkSpeed bonus.
+		-- 0.20 -> +4.2 -> rounds to +4 studs/s (~20% increase).
 		speedBonus = 0.20,
 		duration = 30,
 	},
