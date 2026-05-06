@@ -38,3 +38,9 @@ Pull requests should describe player-facing behavior changes, list touched syste
 ## Project specific skills
 
 There are project specific skills, or instructions, inside .claude/skills. When implkementing features, first look into the skills to know how to structure the code and the project in general, and to get guidance on the game idea and direction.
+
+## Guidance on using the Roblox Studio MCP server
+
+When working on this project, implement features in the local project files.
+Do not modify scripts directly in Studio.
+After changes, use Roblox Studio MCP to run a playtest, check output, and fix errors.

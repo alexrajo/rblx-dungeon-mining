@@ -33,20 +33,26 @@ For detailed architecture, code patterns, and conventions, use the `/codebase` s
 
 ### Source Layout
 
-| Directory | Purpose |
-|---|---|
-| `ReplicatedStorage/services/` | Bundled libs (APIService, ProfileService, Roact, Maid) |
-| `ReplicatedStorage/configs/` | Game config tables (ores, gear, enemies, recipes, layers) |
-| `ReplicatedStorage/utils/` | Shared utilities (StatCalculation, StatRetrieval, ModuleLoader, etc.) |
-| `ServerScriptService/src/` | Server entry scripts |
-| `ServerScriptService/modules/` | Server modules (api_endpoints, tag_handlers, PlayerDataHandler) |
-| `StarterPlayerScripts/ActionHandler/` | Client action system |
-| `StarterPlayerScripts/gui/` | Client UI scripts |
+| Directory                             | Purpose                                                               |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| `ReplicatedStorage/services/`         | Bundled libs (APIService, ProfileService, Roact, Maid)                |
+| `ReplicatedStorage/configs/`          | Game config tables (ores, gear, enemies, recipes, layers)             |
+| `ReplicatedStorage/utils/`            | Shared utilities (StatCalculation, StatRetrieval, ModuleLoader, etc.) |
+| `ServerScriptService/src/`            | Server entry scripts                                                  |
+| `ServerScriptService/modules/`        | Server modules (api_endpoints, tag_handlers, PlayerDataHandler)       |
+| `StarterPlayerScripts/ActionHandler/` | Client action system                                                  |
+| `StarterPlayerScripts/gui/`           | Client UI scripts                                                     |
 
 ## Critical Conventions
 
 - Always use `game:GetService("X")` — never `game.X` (exception: `game.Players.LocalPlayer`, `game.Workspace` in client scripts)
 - Type-annotate all function signatures with Luau types
-- PascalCase for files/modules/classes/module methods; camelCase for local functions/variables; UPPER_SNAKE_CASE for constants; `_` prefix for private members
+- PascalCase for files/modules/classes/module methods; camelCase for local functions/variables; UPPER*SNAKE_CASE for constants; `*` prefix for private members
 - Roblox service declarations go at the top of every file
 - Server-only code belongs in `ServerScriptService/modules/`, never in `ReplicatedStorage`
+
+## Guidance on using the Roblox Studio MCP server
+
+When working on this project, implement features in the local project files.
+Do not modify scripts directly in Studio.
+After changes, use Roblox Studio MCP to run a playtest, check output, and fix errors.
