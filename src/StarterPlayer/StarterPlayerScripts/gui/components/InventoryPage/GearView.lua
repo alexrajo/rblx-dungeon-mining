@@ -15,6 +15,8 @@ local createElement = Roact.createElement
 
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
 local StatsContext = require(ModuleIndex.StatsContext)
+local DragSelect = require(ModuleIndex.DragSelect)
+local SelectableItemTile = require(ModuleIndex.SelectableItemTile)
 local GearGridView = require(script.Parent.GearGridView)
 local GearDetailPopup = require(script.Parent.GearDetailPopup)
 local GearDetailUtils = require(script.Parent.GearDetailUtils)
@@ -199,6 +201,15 @@ function GearView:equipSelectedItem(data)
 	self:closePopup()
 end
 
+function GearView:renderDragPreview(payload)
+	return createElement(SelectableItemTile, {
+		itemName = payload.itemName,
+		amount = payload.amount,
+		showName = false,
+		Size = UDim2.fromScale(1, 1),
+	})
+end
+
 function GearView:render()
 	return createElement(StatsContext.context.Consumer, {
 		render = function(data)
@@ -223,7 +234,7 @@ function GearView:render()
 				Visible = self.props.Visible,
 				[Roact.Ref] = self.rootRef,
 			}, {
-				Content = createElement("Frame", {
+				Content = createElement(DragSelect.Manager, {
 					BackgroundTransparency = 1,
 					Size = UDim2.new(1, 0, 1, 0),
 				}, {
@@ -233,10 +244,17 @@ function GearView:render()
 						itemsPerRow = GRID_ITEMS_PER_ROW,
 						paddingPixels = GRID_PADDING_PIXELS,
 						interactive = true,
+						dragEnabled = true,
 						selectedEntryId = self.state.selectedEntryId,
 						Size = UDim2.new(0.6, -12, 1, -16),
 						Position = UDim2.new(0, 8, 0.5, 0),
 						AnchorPoint = Vector2.new(0, 0.5),
+						renderDragPreview = function(payload)
+							return self:renderDragPreview(payload)
+						end,
+						onDragStart = function()
+							self:closePopup()
+						end,
 						onItemSelected = function(gearEntry)
 							self:setState({
 								selectedEntryId = gearEntry.id,
@@ -262,6 +280,16 @@ function GearView:render()
 						end,
 						onClearArmorSlot = function(slotName)
 							clearEquippedGearEvent:FireServer(slotName)
+						end,
+						onDropHotbarSlot = function(slotIndex, entryId)
+							if type(entryId) == "string" then
+								assignHotbarSlotEvent:FireServer(slotIndex, entryId)
+							end
+						end,
+						onDropArmorSlot = function(_, entryId)
+							if type(entryId) == "string" then
+								equipGearEvent:FireServer(entryId)
+							end
 						end,
 					}),
 				}),

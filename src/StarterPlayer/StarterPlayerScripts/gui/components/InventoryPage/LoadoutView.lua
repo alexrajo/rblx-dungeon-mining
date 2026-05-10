@@ -8,6 +8,7 @@ local GearConfig = require(ReplicatedStorage.configs.GearConfig)
 local createElement = Roact.createElement
 
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
+local DragSelect = require(ModuleIndex.DragSelect)
 local TextLabel = require(ModuleIndex.TextLabel)
 local InventoryUtils = require(ModuleIndex.InventoryUtils)
 
@@ -282,9 +283,9 @@ function LoadoutView:renderHotbarColumn(data, layoutMetrics)
 	for _, slotInfo in ipairs(HOTBAR_SLOT_DEFINITIONS) do
 		local entryId = hotbarSlots[slotInfo.slotIndex] or ""
 		local itemName = HotbarConfig.ResolveEntryItemName(entryId, data)
-		cards["Hotbar" .. tostring(slotInfo.slotIndex)] = createElement(LoadoutSlotCard, {
+		local card = createElement(LoadoutSlotCard, {
 			LayoutOrder = slotInfo.slotIndex,
-			Size = UDim2.fromOffset(layoutMetrics.hotbarSlotSize, layoutMetrics.hotbarSlotSize),
+			Size = UDim2.fromScale(1, 1),
 			badgeText = slotInfo.badgeText,
 			itemName = itemName,
 			stackCount = InventoryUtils.GetStackDisplayCount(data, itemName),
@@ -294,6 +295,23 @@ function LoadoutView:renderHotbarColumn(data, layoutMetrics)
 				end
 			end,
 			ZIndex = 5,
+		})
+
+		cards["Hotbar" .. tostring(slotInfo.slotIndex)] = createElement(DragSelect.Target, {
+			targetId = "HotbarSlot" .. tostring(slotInfo.slotIndex),
+			LayoutOrder = slotInfo.slotIndex,
+			Size = UDim2.fromOffset(layoutMetrics.hotbarSlotSize, layoutMetrics.hotbarSlotSize),
+			outlineCornerRadius = UDim.new(0, 10),
+			canDrop = function(payload)
+				return payload ~= nil and HotbarConfig.IsEntryHotbarEligible(payload.itemName)
+			end,
+			onDrop = function(payload)
+				if self.props.onDropHotbarSlot ~= nil then
+					self.props.onDropHotbarSlot(slotInfo.slotIndex, payload.entryId)
+				end
+			end,
+		}, {
+			Card = card,
 		})
 	end
 
@@ -321,9 +339,9 @@ function LoadoutView:renderArmorColumn(data, layoutMetrics)
 	local cards = {}
 
 	for index, slotInfo in ipairs(ARMOR_SLOT_DEFINITIONS) do
-		cards["Armor" .. slotInfo.slotName] = createElement(LoadoutSlotCard, {
+		local card = createElement(LoadoutSlotCard, {
 			LayoutOrder = index,
-			Size = UDim2.fromOffset(layoutMetrics.armorSlotSize, layoutMetrics.armorSlotSize),
+			Size = UDim2.fromScale(1, 1),
 			itemName = self:getCurrentArmorName(data, slotInfo.slotName),
 			placeholderImageId = slotInfo.placeholderImageId,
 			onRemove = function()
@@ -332,6 +350,23 @@ function LoadoutView:renderArmorColumn(data, layoutMetrics)
 				end
 			end,
 			ZIndex = 5,
+		})
+
+		cards["Armor" .. slotInfo.slotName] = createElement(DragSelect.Target, {
+			targetId = "ArmorSlot" .. slotInfo.slotName,
+			LayoutOrder = index,
+			Size = UDim2.fromOffset(layoutMetrics.armorSlotSize, layoutMetrics.armorSlotSize),
+			outlineCornerRadius = UDim.new(0, 10),
+			canDrop = function(payload)
+				return payload ~= nil and GearConfig.GetSlotForItem(payload.itemName) == slotInfo.slotName
+			end,
+			onDrop = function(payload)
+				if self.props.onDropArmorSlot ~= nil then
+					self.props.onDropArmorSlot(slotInfo.slotName, payload.entryId)
+				end
+			end,
+		}, {
+			Card = card,
 		})
 	end
 

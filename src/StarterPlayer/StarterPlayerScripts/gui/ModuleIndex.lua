@@ -13,6 +13,7 @@ local ModuleIndex = {
 	SelectablePanel = components.SelectablePanel,
 	SelectableItemTile = components.SelectableItemTile,
 	PageWrapper = components.PageWrapper,
+	DragSelect = components.DragSelect,
 	Sidebar = components.Sidebar,
 	ProgressBar = components.ProgressBar,
 	LevelBar = components.LevelBar,

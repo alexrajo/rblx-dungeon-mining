@@ -4,6 +4,7 @@ local Roact = require(ReplicatedStorage.services.Roact)
 local createElement = Roact.createElement
 
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
+local DragSelect = require(ModuleIndex.DragSelect)
 local SelectableItemTile = require(ModuleIndex.SelectableItemTile)
 local ItemCounter = require(ModuleIndex.ItemCounter)
 
@@ -68,22 +69,41 @@ function GearGridView:render()
 		local cellRef = self:_getCellRef(elementKey)
 
 		if interactive then
+			local tile = createElement(SelectableItemTile, {
+				itemName = gearEntry.name,
+				amount = gearEntry.amount,
+				Size = UDim2.fromScale(1, 1),
+				selected = selectedEntryId == elementKey,
+				onSelect = not self.props.dragEnabled and function()
+					if self.props.onItemSelected then
+						self.props.onItemSelected(gearEntry)
+					end
+				end or nil,
+			})
+
 			itemElements[elementKey] = createElement("Frame", {
 				BackgroundTransparency = 1,
 				Size = UDim2.fromScale(1, 1),
 				[Roact.Ref] = cellRef,
 			}, {
-				Cell = createElement(SelectableItemTile, {
-					itemName = gearEntry.name,
-					amount = gearEntry.amount,
+				Cell = self.props.dragEnabled and createElement(DragSelect.Source, {
 					Size = UDim2.fromScale(1, 1),
-					selected = selectedEntryId == elementKey,
-					onSelect = function()
+					payload = {
+						entryId = gearEntry.id,
+						itemName = gearEntry.name,
+						slot = gearEntry.slot,
+						amount = gearEntry.amount,
+					},
+					renderPreview = self.props.renderDragPreview,
+					onDragStart = self.props.onDragStart,
+					onClick = function()
 						if self.props.onItemSelected then
 							self.props.onItemSelected(gearEntry)
 						end
 					end,
-				}),
+				}, {
+					Tile = tile,
+				}) or tile,
 			})
 		else
 			itemElements[elementKey] = createElement("Frame", {
