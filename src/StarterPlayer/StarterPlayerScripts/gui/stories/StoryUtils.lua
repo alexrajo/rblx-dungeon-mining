@@ -64,37 +64,6 @@ end
 
 function StoryUtils.noop() end
 
-function StoryUtils.ensureMockApiEvents(names: {string})
-	local apiFolder = ReplicatedStorage:FindFirstChild("APIServiceEndpoints")
-	if apiFolder == nil then
-		apiFolder = Instance.new("Folder")
-		apiFolder.Name = "APIServiceEndpoints"
-		apiFolder.Parent = ReplicatedStorage
-	end
-
-	local eventFolder = apiFolder:FindFirstChild("Events")
-	if eventFolder == nil then
-		eventFolder = Instance.new("Folder")
-		eventFolder.Name = "Events"
-		eventFolder.Parent = apiFolder
-	end
-
-	local functionFolder = apiFolder:FindFirstChild("Functions")
-	if functionFolder == nil then
-		functionFolder = Instance.new("Folder")
-		functionFolder.Name = "Functions"
-		functionFolder.Parent = apiFolder
-	end
-
-	for _, name in ipairs(names) do
-		if eventFolder:FindFirstChild(name) == nil then
-			local event = Instance.new("RemoteEvent")
-			event.Name = name
-			event.Parent = eventFolder
-		end
-	end
-end
-
 function StoryUtils.withMockContexts(element, props)
 	props = props or {}
 	local screen = merge({

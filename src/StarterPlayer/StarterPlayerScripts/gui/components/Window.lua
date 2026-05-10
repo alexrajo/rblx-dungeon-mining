@@ -20,7 +20,7 @@ function Window:render()
 		Position = Position,
 		AnchorPoint = AnchorPoint,
 		Size = Size,
-		Visible = Visible
+		Visible = Visible,
 	}, {
 		uICorner = Roact.createElement("UICorner", {
 			CornerRadius = UDim.new(0, 6),
@@ -182,11 +182,13 @@ function Window:render()
 
 			body = Roact.createElement("Frame", {
 				AnchorPoint = Vector2.new(0.5, 0),
-				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 				BackgroundTransparency = 1,
 				Position = UDim2.fromScale(0.5, 0.2),
 				Size = UDim2.fromScale(1, 0.8),
-			}, self.props[Roact.Children]),
+				ClipsDescendants = self.props.ClipsDescendants,
+			}, {
+				children = Roact.createFragment(self.props[Roact.Children]),
+			}),
 		}),
 
 		close = Roact.createElement("Frame", {

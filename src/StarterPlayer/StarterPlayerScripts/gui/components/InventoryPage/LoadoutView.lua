@@ -80,16 +80,6 @@ function LoadoutSlotCard:render()
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Thickness = 2,
 		}),
-		Shadow = createElement("Frame", {
-			Size = UDim2.new(1, 0, 1, 5),
-			BackgroundColor3 = Color3.new(0, 0, 0),
-			BackgroundTransparency = 0.82,
-			ZIndex = zIndex - 1,
-		}, {
-			UICorner = createElement("UICorner", {
-				CornerRadius = UDim.new(0, 8),
-			}),
-		}),
 		Inner = createElement("Frame", {
 			BackgroundColor3 = Color3.fromRGB(22, 151, 230),
 			Position = UDim2.fromOffset(4, 4),
@@ -404,38 +394,29 @@ function LoadoutView:render()
 		BackgroundTransparency = 0.08,
 		Size = self.props.Size or UDim2.fromScale(1, 1),
 		Position = self.props.Position,
+        BorderSizePixel = 0,
 		AnchorPoint = self.props.AnchorPoint,
 		[Roact.Ref] = self.rootRef,
 		[Roact.Change.AbsoluteSize] = function()
 			self:updateAbsoluteSize()
 		end,
 	}, {
-		UICorner = createElement("UICorner", {
-			CornerRadius = UDim.new(0, 10),
-		}),
-		UIStroke = createElement("UIStroke", {
-			Color = Color3.fromRGB(0, 43, 106),
-			Thickness = 2,
-		}),
+        uICorner = Roact.createElement("UICorner", {
+            TopLeftRadius = UDim.new(0, 0),
+            TopRightRadius = UDim.new(0, 0),
+            BottomLeftRadius = UDim.new(0, 0),
+            BottomRightRadius = UDim.new(0, 6),
+        }),
 		Padding = createElement("UIPadding", {
 			PaddingTop = UDim.new(0, PANEL_PADDING),
 			PaddingBottom = UDim.new(0, PANEL_PADDING),
 			PaddingLeft = UDim.new(0, PANEL_PADDING),
 			PaddingRight = UDim.new(0, PANEL_PADDING),
 		}),
-		Title = createElement(TextLabel, {
-			Text = "Loadout",
-			textSize = 26,
-			Size = UDim2.new(1, 0, 0, PANEL_HEADER_HEIGHT),
-			textProps = {
-				TextScaled = true,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			},
-		}),
 		Columns = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 1, -(PANEL_HEADER_HEIGHT + PANEL_HEADER_GAP)),
-			Position = UDim2.fromOffset(0, PANEL_HEADER_HEIGHT + PANEL_HEADER_GAP),
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.fromOffset(0, 0),
 		}, {
 			HotbarColumn = self:renderHotbarColumn(data, layoutMetrics),
 			ArmorColumn = self:renderArmorColumn(data, layoutMetrics),

@@ -2,13 +2,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Roact = require(ReplicatedStorage.services.Roact)
 local StoryUtils = require(script.Parent.StoryUtils)
 
-StoryUtils.ensureMockApiEvents({
-	"EquipGear",
-	"AssignHotbarSlot",
-	"ClearHotbarSlot",
-	"ClearEquippedGear",
-})
-
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
 local InventoryPage = require(script.Parent.Parent.pages.InventoryPage)
 local ResourcesView = require(ModuleIndex.InventoryResourcesView)
