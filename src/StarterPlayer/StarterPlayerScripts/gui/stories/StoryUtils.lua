@@ -1,11 +1,121 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Roact = require(ReplicatedStorage.services.Roact)
+local StatsContext = require(script.Parent.Parent.contexts.StatsContext)
+local ScreenContext = require(script.Parent.Parent.contexts.ScreenContext)
 
 local createElement = Roact.createElement
 
 local StoryUtils = {}
 
+local DEFAULT_STATS = {
+	Coins = 0,
+	Level = 1,
+	XP = 0,
+	MaxFloorReached = 0,
+	LatestCheckpointFloor = 0,
+	LatestCompletedBossFloor = 0,
+	Inventory = {},
+	EquippedHelmet = "",
+	EquippedChestplate = "",
+	EquippedLeggings = "",
+	EquippedBoots = "",
+	HotbarSlots = {
+		{name = "1", value = ""},
+		{name = "2", value = ""},
+		{name = "3", value = ""},
+		{name = "4", value = ""},
+		{name = "5", value = ""},
+	},
+	SelectedHotbarSlot = 0,
+	ActiveQuests = {},
+	QuestObjectiveProgress = {},
+	QuestCompletions = {},
+	QuestClaims = {},
+	UnlockedRecipes = {},
+	TutorialStates = {{name = "Intro", value = false}},
+	CurrentFloor = 0,
+	InMine = false,
+	ActiveTheme = "default",
+	ActiveEffects = {},
+}
+
+local SCREEN_SIZE_ORDER = {
+	xs = 1,
+	sm = 2,
+	md = 3,
+	lg = 4,
+	xl = 5,
+	["2xl"] = 6,
+}
+
+local function merge(defaults, overrides)
+	local result = {}
+
+	for key, value in pairs(defaults) do
+		result[key] = value
+	end
+
+	for key, value in pairs(overrides or {}) do
+		result[key] = value
+	end
+
+	return result
+end
+
 function StoryUtils.noop() end
+
+function StoryUtils.ensureMockApiEvents(names: {string})
+	local apiFolder = ReplicatedStorage:FindFirstChild("APIServiceEndpoints")
+	if apiFolder == nil then
+		apiFolder = Instance.new("Folder")
+		apiFolder.Name = "APIServiceEndpoints"
+		apiFolder.Parent = ReplicatedStorage
+	end
+
+	local eventFolder = apiFolder:FindFirstChild("Events")
+	if eventFolder == nil then
+		eventFolder = Instance.new("Folder")
+		eventFolder.Name = "Events"
+		eventFolder.Parent = apiFolder
+	end
+
+	local functionFolder = apiFolder:FindFirstChild("Functions")
+	if functionFolder == nil then
+		functionFolder = Instance.new("Folder")
+		functionFolder.Name = "Functions"
+		functionFolder.Parent = apiFolder
+	end
+
+	for _, name in ipairs(names) do
+		if eventFolder:FindFirstChild(name) == nil then
+			local event = Instance.new("RemoteEvent")
+			event.Name = name
+			event.Parent = eventFolder
+		end
+	end
+end
+
+function StoryUtils.withMockContexts(element, props)
+	props = props or {}
+	local screen = merge({
+		Size = "md",
+		Device = "computer",
+	}, props.screen)
+	local screenSize = screen.Size
+	screen.IsAtleast = screen.IsAtleast or function(sizeToCompare: string)
+		return (SCREEN_SIZE_ORDER[screenSize] or 0) >= (SCREEN_SIZE_ORDER[sizeToCompare] or math.huge)
+	end
+
+	return createElement(StatsContext.context.Provider, {
+		value = merge(DEFAULT_STATS, props.stats),
+	}, {
+		ScreenContextProvider = createElement(ScreenContext.context.Provider, {
+			value = screen,
+		}, {
+			Story = element,
+		}),
+	})
+end
 
 function StoryUtils.mount(target: Frame, element)
 	local root = Roact.mount(element, target)
