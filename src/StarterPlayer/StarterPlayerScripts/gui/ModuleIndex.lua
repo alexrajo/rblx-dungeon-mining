@@ -25,6 +25,7 @@ local ModuleIndex = {
 	NotificationPanel = components.NotificationPanel,
 	TutorialManager = components.TutorialManager,
 	ConversationManager = components.ConversationManager,
+	ConversationActionButton = components.ConversationActionButton,
 	ConfirmationModal = components.ConfirmationModal,
 	ItemCounter = components.ItemCounter,
 	Tab = components.Tab,

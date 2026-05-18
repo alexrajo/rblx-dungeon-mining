@@ -10,6 +10,7 @@ local Panel = require(ModuleIndex.Panel)
 local TextLabel = require(ModuleIndex.TextLabel)
 local TextButton = require(ModuleIndex.TextButton)
 local ScreenContext = require(ModuleIndex.ScreenContext)
+local ConversationActionButton = require(ModuleIndex.ConversationActionButton)
 
 local ConversationManager = Roact.Component:extend("ConversationManager")
 
@@ -17,10 +18,6 @@ local DESKTOP_SIZE = UDim2.fromOffset(620, 260)
 local MOBILE_SIZE = UDim2.new(0.92, 0, 0, 270)
 local DESKTOP_POSITION = UDim2.new(0.5, 0, 1, -118)
 local MOBILE_POSITION = UDim2.new(0.5, 0, 1, -100)
-
-local function quoteResponseText(text: string): string
-	return '"' .. text .. '"'
-end
 
 local function normalizeConversationPayload(payload)
 	if type(payload) ~= "table" then
@@ -108,32 +105,29 @@ function ConversationManager:_leaveConversation()
 	end
 end
 
-function ConversationManager:_renderActions(responses)
+function ConversationManager:_renderActionButton(text: string, onClick, layoutOrder: number, isMobile: boolean)
+	return createElement(ConversationActionButton, {
+		text = text,
+		LayoutOrder = layoutOrder,
+		isMobile = isMobile,
+		onClick = onClick,
+	})
+end
+
+function ConversationManager:_renderActions(responses, isMobile: boolean)
 	local buttons = {}
 	local hasResponses = type(responses) == "table" and #responses > 0
 	local buttonWidth = hasResponses and 260 or 120
 
 	if hasResponses then
-		for index, response in ipairs(responses) do
+		for responseIndex, response in ipairs(responses) do
 			if type(response) ~= "table" or type(response.id) ~= "string" then
 				continue
 			end
 
-			buttons["Response" .. tostring(index)] = createElement(TextButton, {
-				text = quoteResponseText(tostring(response.text or "")),
-				size = "xs",
-				color = "green",
-				customSize = UDim2.fromOffset(buttonWidth, 36),
-				LayoutOrder = index,
-				disableHoverScaleTween = true,
-				textProps = {
-					TextScaled = true,
-					TextWrapped = true,
-				},
-				onClick = function()
-					self:_selectConversationResponse(response.id)
-				end,
-			})
+			buttons["Response" .. tostring(responseIndex)] = self:_renderActionButton(tostring(response.text or ""), function()
+				self:_selectConversationResponse(response.id)
+			end, responseIndex, isMobile)
 		end
 	else
 		buttons.Next = createElement(TextButton, {
@@ -224,7 +218,7 @@ function ConversationManager:_renderPanel(screenData)
 					SortOrder = Enum.SortOrder.LayoutOrder,
 					Padding = UDim.new(0, 6),
 				}),
-				Buttons = Roact.createFragment(self:_renderActions(responses)),
+				Buttons = Roact.createFragment(self:_renderActions(responses, isMobile)),
 			}),
 		}),
 	})
