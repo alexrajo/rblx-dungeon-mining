@@ -22,24 +22,30 @@ local SWORD_SWING_SOUND_IDS = {
 }
 local ATTACK_ARC_DOT = 0 -- forward 180° arc
 
-local attackAnim = Instance.new("Animation")
-attackAnim.AnimationId = "rbxassetid://93287550553129"
+local attackAnimIds = {93287550553129, 102003869594474}
 
 local cachedCharacter: Model? = nil
-local cachedTrack: AnimationTrack? = nil
+local cachedTracks: {AnimationTrack} = {}
 
 local function getTrack(humanoid: Humanoid): AnimationTrack?
 	local character = humanoid.Parent
 	if character ~= cachedCharacter then
 		cachedCharacter = character
-		cachedTrack = nil
+		cachedTracks = {}
 	end
+    local selectedAnimId = attackAnimIds[math.random(1, #attackAnimIds)]
+    local cachedTrack = cachedTracks[selectedAnimId]
 	if cachedTrack == nil then
 		local animator = humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator", 5)
 		if animator == nil then return nil end
+
+        local attackAnim = Instance.new("Animation")
+        attackAnim.AnimationId = "rbxassetid://" .. selectedAnimId
+
 		cachedTrack = animator:LoadAnimation(attackAnim)
 		cachedTrack.Looped = false
 		cachedTrack.Priority = Enum.AnimationPriority.Action
+        cachedTracks[selectedAnimId] = cachedTrack
 	end
 	return cachedTrack
 end

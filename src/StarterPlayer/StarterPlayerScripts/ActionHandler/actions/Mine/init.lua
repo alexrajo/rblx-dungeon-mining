@@ -24,27 +24,34 @@ local ORE_HIT_SOUND_IDS = {
 	8666684617,
 }
 
-local mineAnim = Instance.new("Animation")
-mineAnim.AnimationId = "rbxassetid://135782976252428"
+local mineAnimIds = {135782976252428, 118193420070818}
 
 local cachedCharacter: Model? = nil
-local cachedTrack: AnimationTrack? = nil
+local cachedTracks: {AnimationTrack} = {}
 
 local function getTrack(humanoid: Humanoid): AnimationTrack?
 	local character = humanoid.Parent
 	if character ~= cachedCharacter then
 		cachedCharacter = character
-		cachedTrack = nil
+		cachedTracks = {}
 	end
+    local selectedAnimId = mineAnimIds[math.random(1, #mineAnimIds)]
+    local cachedTrack = cachedTracks[selectedAnimId]
 	if cachedTrack == nil then
 		local animator = humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator", 5)
 		if animator == nil then return nil end
-		cachedTrack = animator:LoadAnimation(mineAnim)
+
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://" .. selectedAnimId
+
+		cachedTrack = animator:LoadAnimation(anim)
 		cachedTrack.Looped = false
 		cachedTrack.Priority = Enum.AnimationPriority.Action
+        cachedTracks[selectedAnimId] = cachedTrack
 	end
 	return cachedTrack
 end
+
 
 -- Per-node shake state (client-local)
 local nodeOrigins: {[Instance]: CFrame} = {}
