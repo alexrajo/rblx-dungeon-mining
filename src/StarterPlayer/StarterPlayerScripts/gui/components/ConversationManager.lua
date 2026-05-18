@@ -3,11 +3,6 @@ local Roact = require(ReplicatedStorage.services.Roact)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
-local showConversationStepEvent = APIService.GetEvent("ShowConversationStep")
-local endConversationEvent = APIService.GetEvent("EndConversation")
-local advanceConversationEvent = APIService.GetEvent("AdvanceConversation")
-local selectConversationResponseEvent = APIService.GetEvent("SelectConversationResponse")
-local leaveConversationEvent = APIService.GetEvent("LeaveConversation")
 
 local createElement = Roact.createElement
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
@@ -27,32 +22,47 @@ local function quoteResponseText(text: string): string
 	return '"' .. text .. '"'
 end
 
+local function normalizeConversationPayload(payload)
+	if type(payload) ~= "table" then
+		return {
+			active = false,
+			entityName = "",
+			text = "",
+			responses = {},
+		}
+	end
+
+	return {
+		active = if payload.active == nil then true else payload.active == true,
+		entityName = tostring(payload.entityName or ""),
+		text = tostring(payload.text or ""),
+		responses = if type(payload.responses) == "table" then payload.responses else {},
+	}
+end
+
 function ConversationManager:init()
 	self.connections = {}
+	self.remoteEvents = {}
 
-	self:setState({
-		active = false,
-		entityName = "",
-		text = "",
-		responses = {},
-	})
+	self:setState(normalizeConversationPayload(self.props.initialConversation))
 end
 
 function ConversationManager:didMount()
-	self.connections.showConversationStep = showConversationStepEvent.OnClientEvent:Connect(function(payload)
-		if type(payload) ~= "table" then
-			return
-		end
+	if self.props.disableRemoteEvents then
+		return
+	end
 
-		self:setState({
-			active = true,
-			entityName = tostring(payload.entityName or ""),
-			text = tostring(payload.text or ""),
-			responses = if type(payload.responses) == "table" then payload.responses else {},
-		})
+	self.remoteEvents.showConversationStep = APIService.GetEvent("ShowConversationStep")
+	self.remoteEvents.endConversation = APIService.GetEvent("EndConversation")
+	self.remoteEvents.advanceConversation = APIService.GetEvent("AdvanceConversation")
+	self.remoteEvents.selectConversationResponse = APIService.GetEvent("SelectConversationResponse")
+	self.remoteEvents.leaveConversation = APIService.GetEvent("LeaveConversation")
+
+	self.connections.showConversationStep = self.remoteEvents.showConversationStep.OnClientEvent:Connect(function(payload)
+		self:setState(normalizeConversationPayload(payload))
 	end)
 
-	self.connections.endConversation = endConversationEvent.OnClientEvent:Connect(function()
+	self.connections.endConversation = self.remoteEvents.endConversation.OnClientEvent:Connect(function()
 		self:setState({
 			active = false,
 			entityName = "",
@@ -62,9 +72,39 @@ function ConversationManager:didMount()
 	end)
 end
 
+function ConversationManager:didUpdate(previousProps)
+	if previousProps.initialConversation ~= self.props.initialConversation then
+		self:setState(normalizeConversationPayload(self.props.initialConversation))
+	end
+end
+
 function ConversationManager:willUnmount()
 	for _, connection in pairs(self.connections) do
 		connection:Disconnect()
+	end
+end
+
+function ConversationManager:_advanceConversation()
+	if self.props.onAdvanceConversation then
+		self.props.onAdvanceConversation()
+	elseif self.remoteEvents.advanceConversation then
+		self.remoteEvents.advanceConversation:FireServer()
+	end
+end
+
+function ConversationManager:_selectConversationResponse(responseId: string)
+	if self.props.onSelectConversationResponse then
+		self.props.onSelectConversationResponse(responseId)
+	elseif self.remoteEvents.selectConversationResponse then
+		self.remoteEvents.selectConversationResponse:FireServer(responseId)
+	end
+end
+
+function ConversationManager:_leaveConversation()
+	if self.props.onLeaveConversation then
+		self.props.onLeaveConversation()
+	elseif self.remoteEvents.leaveConversation then
+		self.remoteEvents.leaveConversation:FireServer()
 	end
 end
 
@@ -91,7 +131,7 @@ function ConversationManager:_renderActions(responses)
 					TextWrapped = true,
 				},
 				onClick = function()
-					selectConversationResponseEvent:FireServer(response.id)
+					self:_selectConversationResponse(response.id)
 				end,
 			})
 		end
@@ -104,7 +144,7 @@ function ConversationManager:_renderActions(responses)
 			LayoutOrder = 1,
 			disableHoverScaleTween = true,
 			onClick = function()
-				advanceConversationEvent:FireServer()
+				self:_advanceConversation()
 			end,
 		})
 	end
@@ -117,7 +157,7 @@ function ConversationManager:_renderActions(responses)
 		LayoutOrder = 999,
 		disableHoverScaleTween = true,
 		onClick = function()
-			leaveConversationEvent:FireServer()
+			self:_leaveConversation()
 		end,
 	})
 
