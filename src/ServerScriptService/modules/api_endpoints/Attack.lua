@@ -72,9 +72,9 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 		return { success = false, cooldown = 0.1 }
 	end
 
-	local validTool, weaponItemName, toolReason = HotbarToolValidator.Validate(player, tool, "Attack", "Weapon")
+	local validTool, weaponItemName, toolReason, levelFailure = HotbarToolValidator.Validate(player, tool, "Attack", "Weapon")
 	if not validTool or weaponItemName == nil then
-		return { success = false, cooldown = 0.1, reason = toolReason }
+		return levelFailure or { success = false, cooldown = 0.1, reason = toolReason }
 	end
 
 	local character = player.Character

@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local PlayerDataHandler = require(ServerScriptService.modules.PlayerDataHandler)
+local ItemLevelService = require(ServerScriptService.modules.ItemLevelService)
 
 local configs = ReplicatedStorage.configs
 local GearConfig = require(configs.GearConfig)
@@ -14,7 +15,7 @@ function HotbarToolValidator.Validate(
 	tool: Instance?,
 	expectedActionName: string,
 	expectedGearSlot: string?
-): (boolean, string?, string?)
+): (boolean, string?, string?, ItemLevelService.LevelFailure?)
 	if tool == nil or not tool:IsA("Tool") then
 		return false, nil, "invalid_tool"
 	end
@@ -57,7 +58,12 @@ function HotbarToolValidator.Validate(
 		return false, nil, "entry_item_mismatch"
 	end
 
-	return true, itemName, nil
+	local levelFailure = ItemLevelService.Check(player, itemName)
+	if levelFailure ~= nil then
+		return false, nil, levelFailure.reason, levelFailure
+	end
+
+	return true, itemName, nil, nil
 end
 
 return HotbarToolValidator

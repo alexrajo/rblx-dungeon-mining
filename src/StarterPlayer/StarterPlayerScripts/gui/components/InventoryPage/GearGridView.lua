@@ -7,6 +7,7 @@ local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
 local DragSelect = require(ModuleIndex.DragSelect)
 local SelectableItemTile = require(ModuleIndex.SelectableItemTile)
 local ItemCounter = require(ModuleIndex.ItemCounter)
+local ScreenContext = require(ModuleIndex.ScreenContext)
 
 local GearGridView = Roact.Component:extend("GearGridView")
 
@@ -56,8 +57,11 @@ function GearGridView:didUpdate()
 	self:_reportSelectedCellLayout()
 end
 
-function GearGridView:render()
+function GearGridView:renderGrid(screenData)
 	local itemsPerRow = self.props.itemsPerRow or 6
+	if not screenData.IsAtleast("md") then
+		itemsPerRow = math.min(itemsPerRow, screenData.IsAtleast("sm") and 4 or 3)
+	end
 	local paddingPixels = self.props.paddingPixels or 4
 	local gearEntries = self.props.gearEntries or {}
 	local interactive = self.props.interactive == true
@@ -71,6 +75,7 @@ function GearGridView:render()
 		if interactive then
 			local tile = createElement(SelectableItemTile, {
 				itemName = gearEntry.name,
+				playerLevel = self.props.playerLevel,
 				amount = gearEntry.amount,
 				Size = UDim2.fromScale(1, 1),
 				selected = selectedEntryId == elementKey,
@@ -148,6 +153,14 @@ function GearGridView:render()
 			}),
 		}),
 		Items = Roact.createFragment(itemElements),
+	})
+end
+
+function GearGridView:render()
+	return createElement(ScreenContext.context.Consumer, {
+		render = function(screenData)
+			return self:renderGrid(screenData)
+		end,
 	})
 end
 

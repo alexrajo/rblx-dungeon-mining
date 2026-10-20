@@ -6,6 +6,7 @@ local createElement = Roact.createElement
 local ModuleIndex = require(script.Parent.Parent.Parent.ModuleIndex)
 local Button = require(ModuleIndex.Button)
 local TextLabel = require(ModuleIndex.TextLabel)
+local ItemLevelRequirement = require(ModuleIndex.ItemLevelRequirement)
 
 local GearDetailPopup = Roact.Component:extend("GearDetailPopup")
 
@@ -53,12 +54,12 @@ function GearDetailPopup:render()
 
 	local hasPrimaryAction = self.props.onPrimaryAction ~= nil and self.props.primaryButtonText ~= nil
 	local actionHintText = self.props.actionHintText
-	local statsBottomInset = hasPrimaryAction and 134 or 86
+	local statsBottomInset = hasPrimaryAction and 192 or 124
 
 	return createElement("Frame", {
 		AnchorPoint = self.props.AnchorPoint or Vector2.new(0.5, 0),
 		Position = self.props.Position,
-		Size = self.props.Size or UDim2.fromOffset(260, 236),
+		Size = self.props.Size or UDim2.fromOffset(260, 300),
 		BackgroundTransparency = 1,
 		ZIndex = zIndex,
 	}, {
@@ -160,10 +161,22 @@ function GearDetailPopup:render()
 						TextXAlignment = Enum.TextXAlignment.Left,
 					},
 				}) or nil,
-				Stats = createElement("Frame", {
-					Size = UDim2.new(1, 0, 1, -statsBottomInset),
+				LevelRequirement = createElement(ItemLevelRequirement, {
+					itemName = details.name,
+					playerLevel = details.currentLevel,
+					Size = UDim2.new(1, 0, 0, 32),
 					Position = UDim2.fromOffset(0, 84),
+					ZIndex = zIndex + 4,
+				}),
+				Stats = createElement("ScrollingFrame", {
+					Size = UDim2.new(1, 0, 1, -statsBottomInset),
+					Position = UDim2.fromOffset(0, 120),
 					BackgroundTransparency = 1,
+					BorderSizePixel = 0,
+					CanvasSize = UDim2.new(),
+					AutomaticCanvasSize = Enum.AutomaticSize.Y,
+					ScrollingDirection = Enum.ScrollingDirection.Y,
+					ScrollBarThickness = 3,
 					ZIndex = zIndex + 2,
 				}, {
 					UIListLayout = createElement("UIListLayout", {

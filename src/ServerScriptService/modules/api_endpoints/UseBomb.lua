@@ -5,6 +5,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local ItemLevelService = require(modules.ItemLevelService)
 local BombService = require(modules.BombService)
 
 local configs = ReplicatedStorage.configs
@@ -51,6 +52,10 @@ function endpoint.Call(player: Player)
 	local bombItemName = getSelectedBombItemName(player)
 	if bombItemName == nil then
 		return { success = false, cooldown = 0.1, reason = "invalid_bomb" }
+	end
+	local levelFailure = ItemLevelService.Check(player, bombItemName)
+	if levelFailure ~= nil then
+		return levelFailure
 	end
 
 	local bombData = BombConfig.GetBombData(bombItemName)

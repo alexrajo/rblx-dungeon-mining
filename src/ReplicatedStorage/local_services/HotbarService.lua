@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local APIService = require(ReplicatedStorage.services.APIService)
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 
 local player = Players.LocalPlayer
 local selectHotbarSlotEvent = APIService.GetEvent("SelectHotbarSlot")
@@ -92,6 +93,31 @@ local function unequipLocalTools()
 	end
 end
 
+local function meetsSlotLevelRequirement(slotIndex: number): boolean
+	if slotIndex == 0 then
+		return true
+	end
+
+	local dataFolder = ReplicatedStorage:FindFirstChild("PlayerData")
+	local myData = dataFolder and dataFolder:FindFirstChild(player.Name)
+	local level = myData and myData:FindFirstChild("Level")
+	if level == nil then
+		return false
+	end
+
+	local entryId = state.slots[slotIndex]
+	local tool = getToolForSlot(slotIndex)
+	local itemName = tool and tool:GetAttribute("HotbarItemName")
+	if itemName == nil then
+		local inventory = myData:FindFirstChild("Inventory")
+		local entry = inventory and inventory:FindFirstChild(entryId or "")
+		local nameValue = entry and entry:FindFirstChild("name")
+		itemName = nameValue and nameValue.Value or entryId
+	end
+
+	return ItemConfig.GetItemData(itemName) ~= nil and ItemConfig.MeetsLevelRequirement(itemName, level.Value)
+end
+
 local function clearLocalSelection()
 	pendingSelectedSlot = 0
 	pendingServerSelectedSlot = nil
@@ -100,6 +126,9 @@ local function clearLocalSelection()
 end
 
 local function equipLocalSlot(slotIndex: number): boolean
+	if not meetsSlotLevelRequirement(slotIndex) then
+		return false
+	end
 	if slotIndex == 0 then
 		pendingSelectedSlot = 0
 		unequipLocalTools()
@@ -215,10 +244,19 @@ local function initialize()
 
 	selectedHotbarSlotValue.Changed:Connect(updateSelectedSlot)
 
-	local backpack = player:WaitForChild("Backpack")
-	backpack.ChildAdded:Connect(function(child)
-		if child:IsA("Tool") then
-			retryPendingEquip()
+	local function connectBackpack(backpack: Backpack)
+		backpack.ChildAdded:Connect(function(child)
+			if child:IsA("Tool") then
+				retryPendingEquip()
+			end
+		end)
+		retryPendingEquip()
+	end
+
+	connectBackpack(player:WaitForChild("Backpack"))
+	player.ChildAdded:Connect(function(child)
+		if child:IsA("Backpack") then
+			connectBackpack(child)
 		end
 	end)
 
@@ -298,6 +336,11 @@ function HotbarService.SelectSlot(slotIndex: number)
 	if slotIndex ~= 0 and state.slots[slotIndex] == "" then
 		return
 	end
+	if not meetsSlotLevelRequirement(slotIndex) then
+		-- Let the server explain the rejection without optimistically wielding the tool.
+		selectHotbarSlotEvent:FireServer(slotIndex)
+		return
+	end
 
 	equipLocalSlot(slotIndex)
 	setState(nil, slotIndex)
@@ -313,6 +356,10 @@ function HotbarService.SyncSelectedSlot(slotIndex: number)
 		return
 	end
 	if state.selectedSlot == slotIndex then
+		return
+	end
+	if not meetsSlotLevelRequirement(slotIndex) then
+		selectHotbarSlotEvent:FireServer(slotIndex)
 		return
 	end
 

@@ -5,6 +5,7 @@ local Roact = require(Services.Roact)
 
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 
 local equipGearEvent = APIService.GetEvent("EquipGear")
 local assignHotbarSlotEvent = APIService.GetEvent("AssignHotbarSlot")
@@ -25,7 +26,7 @@ local LoadoutView = require(script.Parent.LoadoutView)
 
 local GearView = Roact.Component:extend("GearView")
 
-local POPUP_SIZE = Vector2.new(260, 236)
+local POPUP_SIZE = Vector2.new(260, 300)
 local POPUP_MARGIN = 8
 local GRID_ITEMS_PER_ROW = 6
 local GRID_PADDING_PIXELS = 4
@@ -70,16 +71,21 @@ function GearView:updatePopupPosition(cellLayout)
 
 	local localCenterX = cellLayout.absolutePosition.X - root.AbsolutePosition.X + cellLayout.absoluteSize.X / 2
 	local localY = cellLayout.absolutePosition.Y - root.AbsolutePosition.Y + cellLayout.absoluteSize.Y + POPUP_MARGIN
-	local minX = POPUP_SIZE.X / 2
-	local maxX = math.max(minX, root.AbsoluteSize.X - POPUP_SIZE.X / 2)
-	local maxY = math.max(POPUP_MARGIN, root.AbsoluteSize.Y - POPUP_SIZE.Y)
+	local popupWidth = math.min(POPUP_SIZE.X, root.AbsoluteSize.X - POPUP_MARGIN * 2)
+	local popupHeight = math.min(POPUP_SIZE.Y, root.AbsoluteSize.Y - POPUP_MARGIN * 2)
+	local minX = popupWidth / 2
+	local maxX = math.max(minX, root.AbsoluteSize.X - popupWidth / 2)
+	local maxY = math.max(POPUP_MARGIN, root.AbsoluteSize.Y - popupHeight)
 	local nextAnchor = {
 		x = math.clamp(localCenterX, minX, maxX),
 		y = math.clamp(localY, POPUP_MARGIN, maxY),
+		width = popupWidth,
+		height = popupHeight,
 	}
 	local currentAnchor = self.state.popupAnchor
 
-	if currentAnchor ~= nil and currentAnchor.x == nextAnchor.x and currentAnchor.y == nextAnchor.y then
+	if currentAnchor ~= nil and currentAnchor.x == nextAnchor.x and currentAnchor.y == nextAnchor.y
+		and currentAnchor.width == nextAnchor.width and currentAnchor.height == nextAnchor.height then
 		return
 	end
 
@@ -154,6 +160,13 @@ function GearView:getEquipActionState(itemName: string?, data)
 	if itemData == nil then
 		return nil
 	end
+	if not ItemConfig.MeetsLevelRequirement(itemName, data.Level or 1) then
+		return {
+			buttonText = string.format("Requires level %d", ItemConfig.GetRequiredLevel(itemName)),
+			disabled = true,
+			hintText = string.format("Your level: %d", data.Level or 1),
+		}
+	end
 
 	if HotbarConfig.IsEntryHotbarEligible(itemName) then
 		local nextSlot, isSwap = self:getTargetHotbarSlot(itemName, data)
@@ -201,9 +214,10 @@ function GearView:equipSelectedItem(data)
 	self:closePopup()
 end
 
-function GearView:renderDragPreview(payload)
+function GearView:renderDragPreview(payload, playerLevel: number)
 	return createElement(SelectableItemTile, {
 		itemName = payload.itemName,
+		playerLevel = playerLevel,
 		amount = payload.amount,
 		showName = false,
 		Size = UDim2.fromScale(1, 1),
@@ -239,6 +253,7 @@ function GearView:render()
 					Size = UDim2.new(1, 0, 1, 0),
 				}, {
 					GearGrid = createElement(GearGridView, {
+						playerLevel = data.Level or 1,
 						Visible = self.props.Visible,
 						gearEntries = gearEntries,
 						itemsPerRow = GRID_ITEMS_PER_ROW,
@@ -250,7 +265,7 @@ function GearView:render()
 						Position = UDim2.new(0, 8, 0.5, 0),
 						AnchorPoint = Vector2.new(0, 0.5),
 						renderDragPreview = function(payload)
-							return self:renderDragPreview(payload)
+							return self:renderDragPreview(payload, data.Level or 1)
 						end,
 						onDragStart = function()
 							self:closePopup()
@@ -295,7 +310,7 @@ function GearView:render()
 				}),
 				Popup = popupDetails ~= nil and self.state.popupAnchor ~= nil and createElement(GearDetailPopup, {
 					Position = UDim2.fromOffset(self.state.popupAnchor.x, self.state.popupAnchor.y),
-					Size = UDim2.fromOffset(POPUP_SIZE.X, POPUP_SIZE.Y),
+					Size = UDim2.fromOffset(self.state.popupAnchor.width, self.state.popupAnchor.height),
 					details = popupDetails,
 					ZIndex = 20,
 					primaryButtonText = equipActionState and equipActionState.buttonText or nil,
