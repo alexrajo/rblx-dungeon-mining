@@ -3,6 +3,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local ItemLevelService = require(modules.ItemLevelService)
 
 local configs = ReplicatedStorage.configs
 local GearConfig = require(configs.GearConfig)
@@ -23,6 +24,9 @@ function endpoint.Call(player: Player, itemId: string)
 		return false
 	end
 
+	if ItemLevelService.Check(player, itemInstance.name, true) ~= nil then
+		return false
+	end
 	return PlayerDataHandler.EquipGear(player, itemId, slot)
 end
 

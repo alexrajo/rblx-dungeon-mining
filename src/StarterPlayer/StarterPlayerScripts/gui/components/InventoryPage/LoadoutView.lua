@@ -4,6 +4,7 @@ local Roact = require(Services.Roact)
 
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 
 local createElement = Roact.createElement
 
@@ -294,6 +295,7 @@ function LoadoutView:renderHotbarColumn(data, layoutMetrics)
 			outlineCornerRadius = UDim.new(0, 10),
 			canDrop = function(payload)
 				return payload ~= nil and HotbarConfig.IsEntryHotbarEligible(payload.itemName)
+					and ItemConfig.MeetsLevelRequirement(payload.itemName, data.Level or 1)
 			end,
 			onDrop = function(payload)
 				if self.props.onDropHotbarSlot ~= nil then
@@ -349,6 +351,7 @@ function LoadoutView:renderArmorColumn(data, layoutMetrics)
 			outlineCornerRadius = UDim.new(0, 10),
 			canDrop = function(payload)
 				return payload ~= nil and GearConfig.GetSlotForItem(payload.itemName) == slotInfo.slotName
+					and ItemConfig.MeetsLevelRequirement(payload.itemName, data.Level or 1)
 			end,
 			onDrop = function(payload)
 				if self.props.onDropArmorSlot ~= nil then

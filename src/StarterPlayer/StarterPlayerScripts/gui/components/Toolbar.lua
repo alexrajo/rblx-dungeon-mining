@@ -87,6 +87,7 @@ function Toolbar:renderToolbar(screenData, statsData)
 
 			slotButtons["Slot" .. tostring(i)] = createElement(SelectableItemTile, {
 				itemName = itemName,
+				playerLevel = statsData.Level or 1,
 				imageId = imageId,
 				amount = stackCount,
 				slotNumber = i,

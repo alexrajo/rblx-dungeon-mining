@@ -59,9 +59,9 @@ function endpoint.Call(player: Player, tool: Instance?, nodeInstance: Instance, 
 		return { success = false, cooldown = 0.1 }
 	end
 
-	local validTool, pickaxeItemName, toolReason = HotbarToolValidator.Validate(player, tool, "Mine", "Pickaxe")
+	local validTool, pickaxeItemName, toolReason, levelFailure = HotbarToolValidator.Validate(player, tool, "Mine", "Pickaxe")
 	if not validTool or pickaxeItemName == nil then
-		return { success = false, cooldown = 0.1, reason = toolReason }
+		return levelFailure or { success = false, cooldown = 0.1, reason = toolReason }
 	end
 
 	-- Validate target exists and is tagged

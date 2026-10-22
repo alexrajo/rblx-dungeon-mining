@@ -9,6 +9,7 @@ local ProfileStore = ProfileService.GetProfileStore("PlayerData", ProfileTemplat
 local APIService = require(Services.APIService)
 local HotbarConfig = require(ReplicatedStorage.configs.HotbarConfig)
 local GearConfig = require(ReplicatedStorage.configs.GearConfig)
+local ItemConfig = require(ReplicatedStorage.configs.ItemConfig)
 local MineLayerConfig = require(ReplicatedStorage.configs.MineLayerConfig)
 
 local utils = ReplicatedStorage.utils
@@ -243,6 +244,10 @@ function PlayerDataHandler.GetCoins(player: Player): number
 end
 
 -- XP & Leveling
+function PlayerDataHandler.GetLevel(player: Player): number
+	return getStat("Level", 1, player)
+end
+
 function PlayerDataHandler.GiveXP(player: Player, amount: number)
 	local xp = getStat("XP", 0, player)
 	local level = getStat("Level", 1, player)
@@ -403,6 +408,9 @@ function PlayerDataHandler.EquipGear(player: Player, itemId: string, slot: strin
 	if GearConfig.GetSlotForItem(itemName) ~= slot then
 		return false
 	end
+	if not ItemConfig.MeetsLevelRequirement(itemName, PlayerDataHandler.GetLevel(player)) then
+		return false
+	end
 
 	local fieldName = "Equipped" .. slot
 	setStat(fieldName, itemId, player)
@@ -489,6 +497,10 @@ function PlayerDataHandler.AssignHotbarEntry(player: Player, slotIndex: number, 
 	if not HotbarConfig.IsEntryAvailable(entryId, snapshot) then
 		return false
 	end
+	local itemName = HotbarConfig.ResolveEntryItemName(entryId, snapshot)
+	if not ItemConfig.MeetsLevelRequirement(itemName, PlayerDataHandler.GetLevel(player)) then
+		return false
+	end
 
 	local slots = PlayerDataHandler.GetHotbarSlots(player)
 	local previousEntryId = slots[slotIndex] or ""
@@ -541,6 +553,10 @@ function PlayerDataHandler.SetSelectedHotbarSlot(player: Player, slotIndex: numb
 
 	local slots = PlayerDataHandler.GetHotbarSlots(player)
 	if slotIndex < 1 or slotIndex > HotbarConfig.MAX_SLOTS or slots[slotIndex] == "" then
+		return false
+	end
+	local itemName = PlayerDataHandler.ResolveInventoryEntryItemName(player, slots[slotIndex])
+	if not ItemConfig.MeetsLevelRequirement(itemName, PlayerDataHandler.GetLevel(player)) then
 		return false
 	end
 

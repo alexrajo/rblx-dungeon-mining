@@ -4,6 +4,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local ItemLevelService = require(modules.ItemLevelService)
 local BuffsManager = require(modules.BuffsManager)
 
 local configs = ReplicatedStorage.configs
@@ -50,6 +51,10 @@ function endpoint.Call(player: Player)
 		return { success = false, cooldown = 0.1, reason = "invalid_consumable" }
 	end
 	local itemName = selectedConsumable.itemName
+	local levelFailure = ItemLevelService.Check(player, itemName)
+	if levelFailure ~= nil then
+		return levelFailure
+	end
 
 	local consumableData = ConsumablesConfig.GetConsumableData(itemName)
 	if consumableData == nil then

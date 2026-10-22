@@ -19,6 +19,7 @@ function ItemService.GetItemDefinitionFromName(name)
 			slot = itemData.slot,
 			category = itemData.category,
 			stackable = itemData.stackable,
+			requiredLevel = ItemConfig.GetRequiredLevel(name),
 		}
 	end
 

@@ -18,9 +18,11 @@ local PageWrapper = require(ModuleIndex.PageWrapper)
 local SelectablePanel = require(ModuleIndex.SelectablePanel)
 local TextButton = require(ModuleIndex.TextButton)
 local TextLabel = require(ModuleIndex.TextLabel)
+local ItemLevelRequirement = require(ModuleIndex.ItemLevelRequirement)
 local Window = require(ModuleIndex.Window)
 
 local StatsContext = require(ModuleIndex.StatsContext)
+local ScreenContext = require(ModuleIndex.ScreenContext)
 local GearDetailUtils = require(script.Parent.Parent.components.InventoryPage.GearDetailUtils)
 
 local COIN_ICON_ID = "11953783945"
@@ -82,7 +84,7 @@ function ShopPage:didUpdate(previousProps)
 	end
 end
 
-function ShopPage:_renderItemCell(itemName: string, price: number, isSelected: boolean)
+function ShopPage:_renderItemCell(itemName: string, price: number, isSelected: boolean, playerLevel: number)
 	return createElement(SelectablePanel, {
 		selected = isSelected,
 		aspectRatio = 1,
@@ -94,8 +96,16 @@ function ShopPage:_renderItemCell(itemName: string, price: number, isSelected: b
 			})
 		end,
 	}, {
+		Requirement = createElement(ItemLevelRequirement, {
+			itemName = itemName,
+			playerLevel = playerLevel,
+			badge = true,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -5, 0, 5),
+		}),
 		Icon = createElement("ImageLabel", {
 			Image = "rbxassetid://" .. getItemImageId(itemName),
+			ImageTransparency = ItemConfig.MeetsLevelRequirement(itemName, playerLevel) and 0 or 0.55,
 			AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.fromScale(0.5, 0.02),
 			Size = UDim2.fromScale(0.6, 0.6),
@@ -144,7 +154,7 @@ function ShopPage:_renderItemCell(itemName: string, price: number, isSelected: b
 	})
 end
 
-function ShopPage:_renderContent(statsData)
+function ShopPage:_renderContent(statsData, screenData)
 	local closeAllPages = self.props.closeAllPages
 	local currentPageBinding = self.props.currentPageBinding
 	local currentPage = currentPageBinding:getValue()
@@ -188,38 +198,42 @@ function ShopPage:_renderContent(statsData)
 	local totalCost = selectedPrice * effectiveBuyQuantity
 	local canAfford = effectiveBuyQuantity > 0 and totalCost <= coins
 
-	local itemsPerRow = 6
+	local itemsPerRow = screenData.IsAtleast("md") and 6 or (screenData.IsAtleast("sm") and 4 or 3)
 	local paddingPixels = 4
 
 	local gridChildren = {}
 	for _, itemData in ipairs(shopItems) do
-		gridChildren[itemData.name] = self:_renderItemCell(itemData.name, itemData.price, selectedItem == itemData.name)
+		gridChildren[itemData.name] = self:_renderItemCell(itemData.name, itemData.price, selectedItem == itemData.name, statsData.Level or 1)
 	end
 
 	local detailChildren = {}
+	local buyButton = nil
 	if selectedItem ~= nil then
 		local imageId = getItemImageId(selectedItem)
 		local gearComparison = shopDef.type == "gear" and getGearStatComparison(selectedItem, statsData) or nil
-		local priceSectionY = gearComparison and 0.49 or 0.40
-		local quantitySectionY = priceSectionY + 0.11
-		local totalSectionY = quantitySectionY + 0.12
+		detailChildren.Requirement = createElement(ItemLevelRequirement, {
+			itemName = selectedItem,
+			playerLevel = statsData.Level or 1,
+			showAcquisitionHint = true,
+			Size = UDim2.new(1, -4, 0, 76),
+			LayoutOrder = 3,
+		})
 
 		detailChildren.ItemName = createElement(TextLabel, {
 			Text = selectedItem,
-			Size = UDim2.new(0.9, 0, 0, 22),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, 0.02),
+			Size = UDim2.new(1, -4, 0, 40),
+			LayoutOrder = 1,
 			textSize = 18,
 			textProps = {
 				TextWrapped = true,
+				TextScaled = true,
 			},
 		})
 
 		detailChildren.ItemIcon = createElement("ImageLabel", {
 			Image = "rbxassetid://" .. imageId,
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, 0.12),
-			Size = UDim2.fromScale(0.42, 0.25),
+			Size = UDim2.new(1, -4, 0, 72),
+			LayoutOrder = 2,
 			BackgroundTransparency = 1,
 			ScaleType = Enum.ScaleType.Fit,
 		})
@@ -227,29 +241,28 @@ function ShopPage:_renderContent(statsData)
 		if gearComparison ~= nil then
 			detailChildren.StatComparison = createElement(TextLabel, {
 				Text = gearComparison.statText,
-				Size = UDim2.new(0.9, 0, 0, 20),
-				AnchorPoint = Vector2.new(0.5, 0),
-				Position = UDim2.fromScale(0.5, 0.39),
+				Size = UDim2.new(1, -4, 0, 20),
+				LayoutOrder = 4,
 				textSize = 16,
 			})
 
 			detailChildren.EquippedItem = createElement(TextLabel, {
 				Text = gearComparison.equippedText,
-				Size = UDim2.new(0.9, 0, 0, 18),
-				AnchorPoint = Vector2.new(0.5, 0),
-				Position = UDim2.fromScale(0.5, 0.445),
+				Size = UDim2.new(1, -4, 0, 32),
+				LayoutOrder = 5,
 				textSize = 13,
 				textProps = {
 					TextTransparency = 0.15,
+					TextScaled = true,
+					TextWrapped = true,
 				},
 			})
 		end
 
 		detailChildren.PricePerUnit = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.new(0.9, 0, 0, 20),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, priceSectionY),
+			Size = UDim2.new(1, -4, 0, 20),
+			LayoutOrder = 6,
 		}, {
 			UIListLayout = createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -278,9 +291,8 @@ function ShopPage:_renderContent(statsData)
 
 		detailChildren.QuantitySelector = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.new(0.95, 0, 0, 34),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, quantitySectionY),
+			Size = UDim2.new(1, -4, 0, 34),
+			LayoutOrder = 7,
 		}, {
 			UIListLayout = createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -335,9 +347,8 @@ function ShopPage:_renderContent(statsData)
 
 		detailChildren.TotalCost = createElement("Frame", {
 			BackgroundTransparency = 1,
-			Size = UDim2.new(0.9, 0, 0, 20),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, totalSectionY),
+			Size = UDim2.new(1, -4, 0, 20),
+			LayoutOrder = 8,
 		}, {
 			UIListLayout = createElement("UIListLayout", {
 				FillDirection = Enum.FillDirection.Horizontal,
@@ -366,16 +377,15 @@ function ShopPage:_renderContent(statsData)
 
 		detailChildren.CoinStatus = createElement(TextLabel, {
 			Text = string.format("Coins: %d", coins),
-			Size = UDim2.new(0.9, 0, 0, 18),
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.fromScale(0.5, totalSectionY + 0.08),
+			Size = UDim2.new(1, -4, 0, 18),
+			LayoutOrder = 9,
 			textSize = 13,
 			textProps = {
 				TextTransparency = 0.15,
 			},
 		})
 
-		detailChildren.BuyButton = createElement(TextButton, {
+		buyButton = createElement(TextButton, {
 			text = "BUY",
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			size = "sm",
@@ -455,7 +465,23 @@ function ShopPage:_renderContent(statsData)
 					AnchorPoint = Vector2.new(0.5, 0.5),
 					Position = UDim2.fromScale(0.5, 0.5),
 				}),
-				Details = Roact.createFragment(detailChildren),
+				BuyButton = buyButton,
+				Details = createElement("ScrollingFrame", {
+					BackgroundTransparency = 1,
+					BorderSizePixel = 0,
+					Position = UDim2.fromOffset(8, 8),
+					Size = UDim2.new(1, -16, 1, -72),
+					CanvasSize = UDim2.new(),
+					AutomaticCanvasSize = Enum.AutomaticSize.Y,
+					ScrollingDirection = Enum.ScrollingDirection.Y,
+					ScrollBarThickness = 3,
+				}, {
+					Layout = createElement("UIListLayout", {
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						Padding = UDim.new(0, 8),
+					}),
+					Content = Roact.createFragment(detailChildren),
+				}),
 			}),
 		}),
 	})
@@ -464,7 +490,11 @@ end
 function ShopPage:render()
 	return createElement(StatsContext.context.Consumer, {
 		render = function(data)
-			return self:_renderContent(data)
+			return createElement(ScreenContext.context.Consumer, {
+				render = function(screenData)
+					return self:_renderContent(data, screenData)
+				end,
+			})
 		end,
 	})
 end

@@ -216,6 +216,9 @@ function GearDetailUtils.GetPopupDetails(itemName: string, statsData)
 
 	return {
 		name = itemName,
+		requiredLevel = ItemConfig.GetRequiredLevel(itemName),
+		currentLevel = statsData.Level or 1,
+		levelLocked = not ItemConfig.MeetsLevelRequirement(itemName, statsData.Level or 1),
 		slot = gearInfo.slot,
 		imageId = ItemConfig.GetImageIdForItem(itemName),
 		equippedText = primaryStat and primaryStat.equippedText or "Equipped: None",

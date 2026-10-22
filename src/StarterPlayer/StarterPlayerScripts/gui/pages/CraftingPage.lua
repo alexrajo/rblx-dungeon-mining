@@ -17,9 +17,11 @@ local TextLabel = require(ModuleIndex.TextLabel)
 local ItemCounter = require(ModuleIndex.ItemCounter)
 local InventoryUtils = require(ModuleIndex.InventoryUtils)
 local SelectableItemTile = require(ModuleIndex.SelectableItemTile)
+local ItemLevelRequirement = require(ModuleIndex.ItemLevelRequirement)
 local Tab = require(ModuleIndex.Tab)
 
 local StatsContext = require(ModuleIndex.StatsContext)
+local ScreenContext = require(ModuleIndex.ScreenContext)
 local GearDetailUtils = require(script.Parent.Parent.components.InventoryPage.GearDetailUtils)
 
 local CraftingPage = Roact.Component:extend("CraftingPage")
@@ -89,7 +91,7 @@ function CraftingPage:init()
 	})
 end
 
-function CraftingPage:_renderContent(statsData)
+function CraftingPage:_renderContent(statsData, screenData)
 	local closeAllPages = self.props.closeAllPages
 	local currentPageBinding = self.props.currentPageBinding
 	local currentPage = currentPageBinding:getValue()
@@ -98,7 +100,7 @@ function CraftingPage:_renderContent(statsData)
 		closeAllPages()
 	end
 
-	local itemsPerRow = 6
+	local itemsPerRow = screenData.IsAtleast("md") and 6 or (screenData.IsAtleast("sm") and 4 or 3)
 	local paddingPixels = 4
 
 	local currentSection = self.state.currentSection
@@ -151,6 +153,7 @@ function CraftingPage:_renderContent(statsData)
 		local imageId = ItemConfig.GetImageIdForItem(recipe.name)
 		recipeComponents[recipe.name] = createElement(SelectableItemTile, {
 			itemName = recipe.name,
+			playerLevel = statsData.Level or 1,
 			imageId = imageId,
 			selected = recipe.name == selectedRecipeName,
 			LayoutOrder = i,
@@ -237,13 +240,6 @@ function CraftingPage:_renderContent(statsData)
 				BorderSizePixel = 0
 			}, {
 				UICorner = createElement("UICorner"),
-				ResultLabel = selectedRecipe and createElement(TextLabel, {
-					Text = selectedRecipe.name,
-					Size = UDim2.new(0.9, 0, 0, 25),
-					AnchorPoint = Vector2.new(0.5, 0),
-					Position = UDim2.fromScale(0.5, 0.02),
-					textSize = 18
-				}),
 				EmptyLabel = (selectedRecipe == nil) and createElement(TextLabel, {
 					Text = "Select a recipe",
 					Size = UDim2.fromScale(0.8, 0.2),
@@ -251,44 +247,58 @@ function CraftingPage:_renderContent(statsData)
 					Position = UDim2.fromScale(0.5, 0.45),
 					textSize = 18,
 				}) or nil,
-				Stats = selectedRecipe and createElement("Frame", {
+				Details = selectedRecipe and createElement("ScrollingFrame", {
 					BackgroundTransparency = 1,
-					Size = UDim2.new(0.9, 0, 0.26, 0),
-					AnchorPoint = Vector2.new(0.5, 0),
-					Position = UDim2.fromScale(0.5, 0.12),
+					BorderSizePixel = 0,
+					Size = UDim2.new(1, -16, 1, -72),
+					Position = UDim2.fromOffset(8, 8),
+					CanvasSize = UDim2.new(),
+					AutomaticCanvasSize = Enum.AutomaticSize.Y,
+					ScrollingDirection = Enum.ScrollingDirection.Y,
+					ScrollBarThickness = 3,
 				}, {
-					Lines = createElement("Frame", {
+					Layout = createElement("UIListLayout", {
+						SortOrder = Enum.SortOrder.LayoutOrder,
+						Padding = UDim.new(0, 8),
+					}),
+					ResultLabel = createElement(TextLabel, {
+						Text = selectedRecipe.name,
+						Size = UDim2.new(1, -4, 0, 40),
+						LayoutOrder = 1,
+						textSize = 18,
+						textProps = { TextScaled = true, TextWrapped = true },
+					}),
+					Requirement = createElement(ItemLevelRequirement, {
+						itemName = selectedRecipe.name,
+						playerLevel = statsData.Level or 1,
+						showAcquisitionHint = true,
+						Size = UDim2.new(1, -4, 0, 76),
+						LayoutOrder = 2,
+					}),
+					Stats = createElement("Frame", {
 						BackgroundTransparency = 1,
-						Size = UDim2.fromScale(1, 1),
+						Size = UDim2.new(1, -4, 0, 0),
+						AutomaticSize = Enum.AutomaticSize.Y,
+						LayoutOrder = 3,
 					}, {
-						UIListLayout = createElement("UIListLayout", {
-							FillDirection = Enum.FillDirection.Vertical,
-							HorizontalAlignment = Enum.HorizontalAlignment.Left,
+						Layout = createElement("UIListLayout", {
 							SortOrder = Enum.SortOrder.LayoutOrder,
 							Padding = UDim.new(0, 1),
 						}),
-						StatsFragment = Roact.createFragment(itemStatComponents),
+						Lines = Roact.createFragment(itemStatComponents),
+					}),
+					Ingredients = createElement("Frame", {
+						BackgroundTransparency = 1,
+						Size = UDim2.new(1, -4, 0, #requiredIngredientComponents * 56),
+						LayoutOrder = 4,
+					}, {
+						Layout = createElement("UIGridLayout", {
+							CellSize = UDim2.new(1, 0, 0, 52),
+							CellPadding = UDim2.fromOffset(0, 4),
+						}),
+						Items = Roact.createFragment(requiredIngredientComponents),
 					}),
 				}) or nil,
-				Ingredients = createElement("Frame", {
-					BackgroundTransparency = 1,
-					Size = UDim2.new(0.9, 0, 0.34, 0),
-					AnchorPoint = Vector2.new(0.5, 0),
-					Position = UDim2.fromScale(0.5, 0.43)
-				}, {
-					UIGridLayout = createElement("UIGridLayout", {
-						HorizontalAlignment = Enum.HorizontalAlignment.Center,
-						VerticalAlignment = Enum.VerticalAlignment.Center,
-						CellSize = UDim2.fromScale(1, 0.5),
-						CellPadding = UDim2.fromOffset(paddingPixels, paddingPixels),
-					}, {
-						UIAspectRatioConstraint = Roact.createElement("UIAspectRatioConstraint", {
-							AspectRatio = 1,
-							DominantAxis = Enum.DominantAxis.Height
-						})
-					}),
-					IngredientsFragment = Roact.createFragment(requiredIngredientComponents)
-				}),
 				CraftButton = createElement(TextButton, {
 					text = "CRAFT",
 					AnchorPoint = Vector2.new(0.5, 0.5),
@@ -310,7 +320,11 @@ end
 function CraftingPage:render()
 	return createElement(StatsContext.context.Consumer, {
 		render = function(data)
-			return self:_renderContent(data)
+			return createElement(ScreenContext.context.Consumer, {
+				render = function(screenData)
+					return self:_renderContent(data, screenData)
+				end,
+			})
 		end,
 	})
 end

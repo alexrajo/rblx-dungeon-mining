@@ -7,6 +7,7 @@ local createElement = Roact.createElement
 local ModuleIndex = require(script.Parent.Parent.ModuleIndex)
 local SelectablePanel = require(ModuleIndex.SelectablePanel)
 local TextLabel = require(ModuleIndex.TextLabel)
+local ItemLevelRequirement = require(ModuleIndex.ItemLevelRequirement)
 
 local SelectableItemTile = Roact.Component:extend("SelectableItemTile")
 
@@ -19,6 +20,8 @@ function SelectableItemTile:render()
 	local showSelectionTint = self.props.showSelectionTint == true
 	local selected = self.props.selected == true
 	local isCompactItemCell = not showName
+	local locked = self.props.playerLevel ~= nil
+		and not ItemConfig.MeetsLevelRequirement(itemName, self.props.playerLevel)
 
 	return createElement(SelectablePanel, {
 		selected = selected,
@@ -31,6 +34,14 @@ function SelectableItemTile:render()
 		dominantAxis = self.props.dominantAxis,
 		onSelect = self.props.onSelect,
 	}, {
+		LevelRequirement = self.props.playerLevel ~= nil and createElement(ItemLevelRequirement, {
+			itemName = itemName,
+			playerLevel = self.props.playerLevel,
+			badge = true,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -5, 0, 5),
+			Size = UDim2.new(slotNumber ~= nil and 0.55 or 0.7, 0, 0, 16),
+		}) or nil,
 		SlotNumber = slotNumber ~= nil and createElement(TextLabel, {
 			Text = tostring(slotNumber),
 			textSize = 14,
@@ -45,6 +56,7 @@ function SelectableItemTile:render()
 		}) or nil,
 		Icon = createElement("ImageLabel", {
 			Image = "rbxassetid://" .. imageId,
+			ImageTransparency = locked and 0.55 or 0,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = self.props.iconPosition or (isCompactItemCell and UDim2.fromScale(0.5, 0.5) or UDim2.fromScale(0.5, 0.45)),
 			Size = self.props.iconSize or (isCompactItemCell and UDim2.new(0.75, 0, 0.75, 0) or UDim2.fromScale(0.58, 0.58)),
@@ -81,9 +93,9 @@ function SelectableItemTile:render()
 		Name = showName and itemName ~= nil and itemName ~= "" and createElement(TextLabel, {
 			Text = itemName,
 			textSize = 12,
-			Size = self.props.nameSize or UDim2.new(1, -8, 0, 28),
+			Size = self.props.nameSize or UDim2.new(1, amount ~= nil and -40 or -8, 0, 28),
 			AnchorPoint = Vector2.new(0.5, 1),
-			Position = self.props.namePosition or UDim2.new(0.5, 0, 1, -6),
+			Position = self.props.namePosition or UDim2.new(0.5, amount ~= nil and -16 or 0, 1, -6),
 			ZIndex = 3,
 			textProps = {
 				TextScaled = true,
