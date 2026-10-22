@@ -4,11 +4,10 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
-local BreakEffectService = require(modules.BreakEffectService)
+local DestructibleStateService = require(modules.DestructibleStateService)
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local OreNodeUtil = require(modules.OreNodeUtil)
 local QuestService = require(modules.QuestService)
-local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -20,7 +19,6 @@ local dropsConfig = require(configs.DropsConfig)
 
 local OreNodeService = {}
 
-local ORE_NODE_BREAK_SOUND_ID = "9118587701"
 
 local RE_ItemDrop = APIService.GetEvent("DropItems")
 
@@ -45,7 +43,7 @@ local function createLadder(position: Vector3, parent: Instance, floorNumber: nu
 	return ladder
 end
 
-function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boolean
+function OreNodeService.BreakNode(player: Player, nodeInstance: Instance, actionId: string?): boolean
 	if nodeInstance == nil or nodeInstance.Parent == nil or not nodeInstance:IsA("Model") then
 		return false
 	end
@@ -105,8 +103,7 @@ function OreNodeService.BreakNode(player: Player, nodeInstance: Instance): boole
 		createLadder(revealPosition, originalParent, floorNumber)
 	end
 
-	WorldSoundService.PlayOneShotAtPosition(ORE_NODE_BREAK_SOUND_ID, nodePosition)
-	BreakEffectService.PlaySmokePuff(nodePosition)
+	DestructibleStateService.PublishBreak(nodeModel, "Ore", player, actionId)
 	nodeModel:Destroy()
 
 	return true

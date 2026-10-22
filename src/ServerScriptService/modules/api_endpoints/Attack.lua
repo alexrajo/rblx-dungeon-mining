@@ -11,6 +11,7 @@ local HotbarToolValidator = require(modules.HotbarToolValidator)
 local BuffsManager = require(modules.BuffsManager)
 local CrateService = require(modules.CrateService)
 local BossEnemyService = require(modules.BossEnemyService)
+local ActionTargeting = require(ReplicatedStorage.utils.ActionTargeting)
 
 local utils = ReplicatedStorage.utils
 local StatCalculation = require(utils.StatCalculation)
@@ -67,8 +68,9 @@ local function applyKnockback(attackerRoot: BasePart, enemyRoot: BasePart, knock
 	enemyRoot:ApplyImpulse(impulseDirection.Unit * knockback * enemyRoot.AssemblyMass)
 end
 
-function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
-	if type(enemies) ~= "table" then
+function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance}, actionId: string?)
+	if type(enemies) ~= "table" or #enemies > 128
+		or (actionId ~= nil and (type(actionId) ~= "string" or #actionId > 80)) then
 		return { success = false, cooldown = 0.1 }
 	end
 
@@ -81,6 +83,10 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 	if character == nil then return { success = false, cooldown = 0.5 } end
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	if humanoidRootPart == nil then return { success = false, cooldown = 0.5 } end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil or humanoid.Health <= 0 or player:GetAttribute("TeleportProtected") then
+		return { success = false, cooldown = 0.1, reason = "invalid_character", actionId = actionId }
+	end
 
 	-- Compute weapon cooldown first so it can be used in the server-side window check.
 	local weaponStats = GearConfig.GetWeaponCombatStats(weaponItemName)
@@ -100,13 +106,16 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 
 	local totalDamage = 0
 	local hitCount = 0
-	local hitData: {{enemy: Model, damage: number, isCritical: boolean}} = {}
+	local hitData: {{enemy: Model, damage: number, isCritical: boolean, position: Vector3}} = {}
+	local seenTargets = {}
 
 	for _, targetInstance in ipairs(enemies) do
-		if targetInstance == nil or targetInstance.Parent == nil then continue end
+		if typeof(targetInstance) ~= "Instance" or not targetInstance:IsDescendantOf(workspace) then continue end
 
 		local crateInstance = findTaggedAncestor(targetInstance, "MineCrate")
 		if crateInstance ~= nil then
+			if seenTargets[crateInstance] then continue end
+			seenTargets[crateInstance] = true
 			if not isOnPlayerFloor(player, crateInstance) then
 				continue
 			end
@@ -117,7 +126,7 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 				continue
 			end
 
-			if CrateService.BreakCrate(player, crateInstance) then
+			if CrateService.BreakCrate(player, crateInstance, actionId) then
 				hitCount += 1
 			end
 			continue
@@ -126,6 +135,8 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 		-- Confirm Enemy tag (server re-validates client claim)
 		local enemyModel = findTaggedAncestor(targetInstance, "Enemy")
 		if enemyModel == nil then continue end
+		if seenTargets[enemyModel] then continue end
+		seenTargets[enemyModel] = true
 		if not isOnPlayerFloor(player, enemyModel) then
 			continue
 		end
@@ -133,8 +144,7 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 		-- Validate distance
 		local enemyRoot = enemyModel:FindFirstChild("HumanoidRootPart")
 		if enemyRoot == nil then continue end
-		local distance = (enemyRoot.Position - humanoidRootPart.Position).Magnitude
-		if distance > globalConfig.ATTACK_REACH_DISTANCE then continue end
+		if not ActionTargeting.IsInRange(humanoidRootPart, enemyModel, globalConfig.ATTACK_REACH_DISTANCE) then continue end
 
 		-- Validate enemy is alive
 		local enemyHumanoid = enemyModel:FindFirstChildOfClass("Humanoid")
@@ -162,14 +172,14 @@ function endpoint.Call(player: Player, tool: Instance?, enemies: {Instance})
 		applyKnockback(humanoidRootPart, enemyRoot, weaponStats.knockback)
 		totalDamage += damage
 		hitCount += 1
-		table.insert(hitData, { enemy = enemyModel, damage = damage, isCritical = isCritical })
+		table.insert(hitData, { enemy = enemyModel, damage = damage, isCritical = isCritical, position = enemyRoot.Position })
 	end
 
 	if hitCount > 0 then
-		APIService.GetEvent("VisualizeAttackHit"):FireClient(player, hitData)
+		APIService.GetEvent("VisualizeAttackHit"):FireClient(player, hitData, actionId)
 	end
 
-	return { success = hitCount > 0, cooldown = attackCooldown, damage = totalDamage, hitCount = hitCount }
+	return { success = hitCount > 0, cooldown = attackCooldown, damage = totalDamage, hitCount = hitCount, actionId = actionId }
 end
 
 return endpoint

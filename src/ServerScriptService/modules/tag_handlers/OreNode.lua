@@ -3,6 +3,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local OreNodeUtil = require(modules.OreNodeUtil)
+local DestructibleStateService = require(modules.DestructibleStateService)
 
 local configs = ReplicatedStorage.configs
 local OreConfig = require(configs.OreConfig)
@@ -36,6 +37,7 @@ function TagHandler.Apply(instance: Instance)
 	-- Initialize current HP
 	local maxHP = nodeModel:GetAttribute("NodeHP") or 4
 	nodeModel:SetAttribute("CurrentHP", maxHP)
+	DestructibleStateService.Initialize(nodeModel)
 end
 
 return TagHandler

@@ -3,6 +3,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local modules = ServerScriptService.modules
 local CrateService = require(modules.CrateService)
+local DestructibleStateService = require(modules.DestructibleStateService)
 
 local configs = ReplicatedStorage.configs
 local CrateConfig = require(configs.CrateConfig)
@@ -23,6 +24,7 @@ function TagHandler.Apply(instance: Instance)
 
 	local maxHP = instance:GetAttribute("CrateHP") or CrateConfig.defaultHealth
 	instance:SetAttribute("CurrentHP", maxHP)
+	DestructibleStateService.Initialize(instance)
 end
 
 return TagHandler

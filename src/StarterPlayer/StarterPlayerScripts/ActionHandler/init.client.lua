@@ -1,4 +1,10 @@
-local plr = game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Runtime = require(ReplicatedStorage.local_services.ActionRuntime)
+local Feedback = require(ReplicatedStorage.local_services.ActionFeedback)
+Runtime.Initialize()
+Feedback.Initialize()
+local plr = Players.LocalPlayer
 local eventFolder = Instance.new("Folder")
 eventFolder.Name = "LocalActionBindables"
 eventFolder.Parent = plr

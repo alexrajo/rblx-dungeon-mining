@@ -1,4 +1,3 @@
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -8,144 +7,58 @@ local modules = ServerScriptService.modules
 local CrateService = require(modules.CrateService)
 local HotbarToolValidator = require(modules.HotbarToolValidator)
 local OreNodeService = require(modules.OreNodeService)
-local OreNodeUtil = require(modules.OreNodeUtil)
 local PlayerDataHandler = require(modules.PlayerDataHandler)
+local DestructibleStateService = require(modules.DestructibleStateService)
+local ActionTargeting = require(ReplicatedStorage.utils.ActionTargeting)
+local StatCalculation = require(ReplicatedStorage.utils.StatCalculation)
+local OreConfig = require(ReplicatedStorage.configs.OreConfig)
+local GlobalConfig = require(ReplicatedStorage.GlobalConfig)
 
-local Services = ReplicatedStorage.services
-local APIService = require(Services.APIService)
-
-local utils = ReplicatedStorage.utils
-local StatCalculation = require(utils.StatCalculation)
-
-local configs = ReplicatedStorage.configs
-local OreConfig = require(configs.OreConfig)
-local globalConfig = require(ReplicatedStorage.GlobalConfig)
-
--- Cross script communication
-local crossScriptCommunicationBindables = ServerStorage.CrossScriptCommunicationBindables
-local signalTutorialEvent = crossScriptCommunicationBindables.SignalTutorial
-
--- Timestamp-based per-player cooldown. Keyed by Player instance so entries
--- are automatically distinct across sessions; cleaned up on PlayerRemoving.
+local signalTutorialEvent = ServerStorage.CrossScriptCommunicationBindables.SignalTutorial
 local lastMineTime: {[Player]: number} = {}
-
-Players.PlayerRemoving:Connect(function(player)
-	lastMineTime[player] = nil
-end)
+Players.PlayerRemoving:Connect(function(player: Player) lastMineTime[player] = nil end)
 
 local endpoint = {}
 
-local function findTaggedAncestor(instance: Instance, tagName: string): Instance?
-	local current = instance
-	while current and current ~= workspace do
-		if CollectionService:HasTag(current, tagName) then
-			return current
-		end
-		current = current.Parent
+function endpoint.Call(player: Player, tool: Instance?, nodeInstance: Instance?, _hitPosition: Vector3?, actionId: string?): any
+	local function failure(reason: string): any
+		return { success = false, cooldown = 0.1, reason = reason, actionId = actionId }
 	end
-
-	return nil
-end
-
-local function isOnPlayerFloor(player: Player, instance: Instance): boolean
-	local floorNumber = instance:GetAttribute("FloorNumber")
-	return type(floorNumber) ~= "number" or PlayerDataHandler.GetCurrentFloor(player) == floorNumber
-end
-
-function endpoint.Call(player: Player, tool: Instance?, nodeInstance: Instance, hitPosition: Vector3)
-	local now = os.clock()
-	local serverWindow = globalConfig.MINE_SWING_COOLDOWN - globalConfig.SERVER_ACTION_LENIENCY
-	if lastMineTime[player] and (now - lastMineTime[player]) < serverWindow then
-		return { success = false, cooldown = 0.1 }
-	end
-
-	local validTool, pickaxeItemName, toolReason, levelFailure = HotbarToolValidator.Validate(player, tool, "Mine", "Pickaxe")
-	if not validTool or pickaxeItemName == nil then
-		return levelFailure or { success = false, cooldown = 0.1, reason = toolReason }
-	end
-
-	-- Validate target exists and is tagged
-	if nodeInstance == nil or nodeInstance.Parent == nil then
-		return { success = false, cooldown = 0.1 }
-	end
-
-	local crateInstance = findTaggedAncestor(nodeInstance, "MineCrate")
-	local oreNodeInstance = findTaggedAncestor(nodeInstance, "OreNode")
-	if crateInstance == nil and oreNodeInstance == nil then
-		return { success = false, cooldown = 0.1 }
-	end
-
-	-- Validate player character and range
+	if actionId ~= nil and (type(actionId) ~= "string" or #actionId > 80) then return failure("invalid_action") end
+	local validTool, pickaxeName, reason, levelFailure = HotbarToolValidator.Validate(player, tool, "Mine", "Pickaxe")
+	if not validTool or pickaxeName == nil then return levelFailure or failure(reason or "invalid_tool") end
+	if typeof(nodeInstance) ~= "Instance" or not nodeInstance:IsDescendantOf(workspace) then return failure("missing_target") end
+	local crate = ActionTargeting.FindTaggedAncestor(nodeInstance, "MineCrate")
+	local node = crate or ActionTargeting.FindTaggedAncestor(nodeInstance, "OreNode")
+	if not node or (not crate and not node:IsA("Model")) then return failure("invalid_target") end
+	local floor = node:GetAttribute("FloorNumber")
+	if type(floor) == "number" and floor ~= PlayerDataHandler.GetCurrentFloor(player) then return failure("wrong_floor") end
 	local character = player.Character
-	if character == nil then return { success = false, cooldown = 0.5 } end
-	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-	if humanoidRootPart == nil then return { success = false, cooldown = 0.5 } end
-
-	if crateInstance ~= nil then
-		if not isOnPlayerFloor(player, crateInstance) then
-			return { success = false, cooldown = 0.1 }
-		end
-
-		local cratePosition = CrateService.GetPosition(crateInstance)
-		local distance = (cratePosition - humanoidRootPart.Position).Magnitude
-		if distance > globalConfig.MINE_REACH_DISTANCE then
-			return { success = false, cooldown = 0.1 }
-		end
-
-		lastMineTime[player] = os.clock()
-
-		local miningDamage = StatCalculation.GetMiningDamage(pickaxeItemName)
-		local currentHP = crateInstance:GetAttribute("CurrentHP") or crateInstance:GetAttribute("CrateHP") or 1
-		currentHP -= miningDamage
-		crateInstance:SetAttribute("CurrentHP", currentHP)
-
-		signalTutorialEvent:Fire(player, "mine")
-
-		if currentHP <= 0 then
-			CrateService.BreakCrate(player, crateInstance)
-			return { success = true, cooldown = globalConfig.MINE_SWING_COOLDOWN, broken = true }
-		end
-
-		return { success = true, cooldown = globalConfig.MINE_SWING_COOLDOWN, broken = false, remainingHP = currentHP }
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not root or not root:IsA("BasePart") or not humanoid or humanoid.Health <= 0
+		or player:GetAttribute("TeleportProtected") then return failure("invalid_character") end
+	if not ActionTargeting.IsInRange(root, node, GlobalConfig.MINE_REACH_DISTANCE) then return failure("out_of_range") end
+	if DestructibleStateService.HasApplied(node, actionId) then
+		return { success = true, cooldown = GlobalConfig.MINE_SWING_COOLDOWN, actionId = actionId,
+			state = DestructibleStateService.Snapshot(node) }
 	end
-
-	if oreNodeInstance == nil or not oreNodeInstance:IsA("Model") then
-		return { success = false, cooldown = 0.1 }
+	if node:GetAttribute("Broken") then return failure("already_broken") end
+	local now = os.clock()
+	if lastMineTime[player] and now - lastMineTime[player] < GlobalConfig.MINE_SWING_COOLDOWN - GlobalConfig.SERVER_ACTION_LENIENCY then
+		return failure("cooldown")
 	end
-
-	local nodeModel = oreNodeInstance :: Model
-	local nodePosition = OreNodeUtil.GetPosition(nodeModel)
-	local distance = (nodePosition - humanoidRootPart.Position).Magnitude
-	if distance > globalConfig.MINE_REACH_DISTANCE then
-		return { success = false, cooldown = 0.1 }
-	end
-
-	local oreType = nodeModel:GetAttribute("OreType") or "Stone"
-	local oreData = OreConfig.byName[oreType]
-	if oreData == nil then
-		return { success = false, cooldown = 0.5 }
-	end
-
-	-- Record the accepted action time (no task.delay needed with timestamp approach)
-	lastMineTime[player] = os.clock()
-
-	-- Calculate damage
-	local miningDamage = StatCalculation.GetMiningDamage(pickaxeItemName)
-
-	-- Reduce node HP
-	local currentHP = nodeModel:GetAttribute("CurrentHP") or nodeModel:GetAttribute("NodeHP") or oreData.nodeHP
-	currentHP = currentHP - miningDamage
-	nodeModel:SetAttribute("CurrentHP", currentHP)
-
+	if not crate and not OreConfig.byName[node:GetAttribute("OreType") or "Stone"] then return failure("invalid_ore") end
+	lastMineTime[player] = now
+	local state = DestructibleStateService.Damage(node, StatCalculation.GetMiningDamage(pickaxeName), actionId)
 	signalTutorialEvent:Fire(player, "mine")
-
-	if currentHP <= 0 then
-		OreNodeService.BreakNode(player, nodeModel)
-
-		return { success = true, cooldown = globalConfig.MINE_SWING_COOLDOWN, broken = true }
+	local broken = state.remainingHP <= 0
+	if broken then
+		if crate then CrateService.BreakCrate(player, node, actionId) else OreNodeService.BreakNode(player, node, actionId) end
+		state = DestructibleStateService.Snapshot(node)
 	end
-
-	return { success = true, cooldown = globalConfig.MINE_SWING_COOLDOWN, broken = false, remainingHP = currentHP }
+	return { success = true, cooldown = GlobalConfig.MINE_SWING_COOLDOWN, actionId = actionId,
+		broken = broken, remainingHP = state.remainingHP, state = state }
 end
 
 return endpoint
