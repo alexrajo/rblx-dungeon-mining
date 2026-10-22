@@ -106,8 +106,8 @@ Gear progression comes from explicit per-item stats in `GearConfig`, not from sh
 
 ## Mining Mechanics
 
-- **Click/tap** an ore node to swing the pickaxe.
-- Ore nodes have an **HP bar** that decreases with each hit. HP scales by ore type.
+- **Click/tap** with the pickaxe equipped to swing toward the character's facing direction; targeting is evaluated at contact.
+- The latest struck ore node has an **HP bar** that decreases provisionally at contact. Finishing hits clear the ore locally while the server validates damage and rewards. See `Docs/ActionResponsiveness.md` for prediction and rollback behavior.
 - **Mining power** from the equipped pickaxe item determines damage per swing to the ore node.
 - Mined ore goes directly into the player's **inventory**.
 - Ore nodes **respawn** after a configurable timer (server-side).

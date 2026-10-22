@@ -3,10 +3,9 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local modules = ServerScriptService.modules
-local BreakEffectService = require(modules.BreakEffectService)
+local DestructibleStateService = require(modules.DestructibleStateService)
 local PlayerDataHandler = require(modules.PlayerDataHandler)
 local QuestService = require(modules.QuestService)
-local WorldSoundService = require(modules.WorldSoundService)
 
 local Services = ReplicatedStorage.services
 local APIService = require(Services.APIService)
@@ -17,7 +16,6 @@ local CrateConfig = require(configs.CrateConfig)
 
 local CrateService = {}
 
-local CRATE_BREAK_SOUND_ID = "117158373103667"
 
 local RE_ItemDrop = APIService.GetEvent("DropItems")
 
@@ -76,7 +74,7 @@ function CrateService.PlaceOnFloor(crate: Instance, floorPosition: Vector3)
 	end
 end
 
-function CrateService.BreakCrate(player: Player, crate: Instance): boolean
+function CrateService.BreakCrate(player: Player, crate: Instance, actionId: string?): boolean
 	if crate == nil or crate.Parent == nil then
 		return false
 	end
@@ -107,8 +105,7 @@ function CrateService.BreakCrate(player: Player, crate: Instance): boolean
 		signalTutorialEvent:Fire(player, "getItem")
 	end
 
-	WorldSoundService.PlayOneShotAtPosition(CRATE_BREAK_SOUND_ID, cratePosition)
-	BreakEffectService.PlaySmokePuff(cratePosition)
+	DestructibleStateService.PublishBreak(crate, "Crate", player, actionId)
 	crate:Destroy()
 
 	return true

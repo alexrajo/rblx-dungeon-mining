@@ -1,34 +1,34 @@
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local SoundService = game:GetService("SoundService")
+local Debris = game:GetService("Debris")
 
 local APIService = require(ReplicatedStorage.services.APIService)
+local Feedback = require(ReplicatedStorage.local_services.ActionFeedback)
 
 local RISE_START_Y = 1.5
 local RISE_END_Y = 4.5
 local X_SPREAD = 1.5
 local NORMAL_DAMAGE_COLOR = Color3.fromRGB(255, 60, 60)
 local CRITICAL_DAMAGE_COLOR = Color3.fromRGB(255, 215, 80)
-local HIT_CONFIRM_SOUND_IDS = {
-	140706011418118,
-	128275263747292,
-}
 
-local function playHitConfirmSound()
-	local soundId = HIT_CONFIRM_SOUND_IDS[math.random(1, #HIT_CONFIRM_SOUND_IDS)]
-	local sound = Instance.new("Sound")
-	sound.SoundId = "rbxassetid://" .. soundId
-	SoundService:PlayLocalSound(sound)
-
-	task.spawn(function()
-		sound.Ended:Wait()
-		sound:Destroy()
-	end)
-end
-
-local function spawnIndicator(enemyModel: Model, damage: number, isCritical: boolean)
-	local hrp = enemyModel:FindFirstChild("HumanoidRootPart")
-	if hrp == nil then return end
+local function spawnIndicator(enemyModel: Model?, damage: number, isCritical: boolean, position: Vector3?): ()
+	local hrp = enemyModel and enemyModel:FindFirstChild("HumanoidRootPart")
+	if hrp == nil then
+		if position == nil then return end
+		-- A lethal hit or streaming can remove the model before confirmation.
+		local anchor = Instance.new("Part")
+		anchor.Name = "LocalDamageAnchor"
+		anchor.Size = Vector3.one
+		anchor.Anchored = true
+		anchor.CanCollide = false
+		anchor.CanQuery = false
+		anchor.CanTouch = false
+		anchor.Transparency = 1
+		anchor.Position = position
+		anchor.Parent = workspace
+		Debris:AddItem(anchor, 2)
+		hrp = anchor
+	end
 
 	local startOffset = Vector3.new(math.random(-X_SPREAD * 10, X_SPREAD * 10) / 10, RISE_START_Y, 0)
 
@@ -101,12 +101,10 @@ local function spawnIndicator(enemyModel: Model, damage: number, isCritical: boo
 	end
 end
 
-APIService.GetEvent("VisualizeAttackHit").OnClientEvent:Connect(function(hitData: {{enemy: Model, damage: number, isCritical: boolean?}})
-	if #hitData > 0 then
-		playHitConfirmSound()
-	end
+APIService.GetEvent("VisualizeAttackHit").OnClientEvent:Connect(function(hitData: {{enemy: Model?, damage: number, isCritical: boolean?, position: Vector3?}}, actionId: string?)
+	Feedback.ConfirmAttack(hitData, actionId)
 
 	for _, hit in ipairs(hitData) do
-		task.spawn(spawnIndicator, hit.enemy, hit.damage, hit.isCritical == true)
+		task.spawn(spawnIndicator, hit.enemy, hit.damage, hit.isCritical == true, hit.position)
 	end
 end)
